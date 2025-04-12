@@ -1,6 +1,6 @@
 {
   "name": "nehonix-uri-processor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A comprehensive library for detecting, encoding, and decoding different types of URI encoding",
   "main": "main.js",
   "scripts": {
