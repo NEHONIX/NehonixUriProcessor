@@ -1,0 +1,7 @@
+node_modules/
+dist/
+tests/
+.git/
+*.log
+.env
+*.tgz

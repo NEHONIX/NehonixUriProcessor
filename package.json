@@ -1,8 +1,8 @@
 {
-  "name": "nehonixuriprocessor",
-  "version": "1.0.0",
+  "name": "nehonix-uri-processor",
+  "version": "1.0.2",
   "description": "A comprehensive library for detecting, encoding, and decoding different types of URI encoding",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NEHONIX/nehonix-uri-processor.git"
+    "url": "git+https://github.com/NEHONIX/NehonixUriProcessor.git"
   },
   "keywords": [
     "uri",
@@ -19,10 +19,13 @@
   ],
   "author": "nehonix",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/NEHONIX/nehonix-uri-processor/issues"
+  "publishConfig": {
+    "access": "public"
   },
-  "homepage": "https://github.com/NEHONIX/nehonix-uri-processor#readme",
+  "bugs": {
+    "url": "https://github.com/NEHONIX/NehonixUriProcessor/issues"
+  },
+  "homepage": "https://github.com/NEHONIX/NehonixUriProcessor#readme",
   "dependencies": {
     "punycode": "^2.3.1"
   },

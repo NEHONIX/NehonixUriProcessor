@@ -1,4 +1,4 @@
-import { NURIPocess as NehonixURIProcessor } from "../nehonix.uriprocessor";
+import { NURIPocess as NehonixURIProcessor } from "../main";
 
 /**
  * Supported encoding types. This enumeration defines all the encoding schemes

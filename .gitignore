@@ -2,3 +2,4 @@
 /dist
 /private
 *.private.*
+*.tgz
