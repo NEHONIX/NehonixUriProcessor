@@ -1,4 +1,4 @@
-import { NehonixURIProcessor } from "../main";
+import { NehonixURIProcessor } from "..";
 
 /**
  * Supported encoding types. This enumeration defines all the encoding schemes
