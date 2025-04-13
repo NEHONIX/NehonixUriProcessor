@@ -7,21 +7,23 @@ import { NehonixURIProcessor } from "..";
  * in URLs, web applications, and data transmission.
  */
 export type ENC_TYPE =
-  | "percent" // Standard URL percent encoding (e.g., %20 for space)
-  | "percentEncoding" // Alias for 'percent'
-  | "url" // Alias for 'percent'
+  | "percentEncoding" // Standard URL percent encoding (e.g., %20 for space)
   | "doublepercent" // Double percent encoding (e.g., %2520 for space)
-  | "doublePercentEncoding" // Alias for 'doublepercent'
   | "base64" // Base64 encoding (e.g., converting binary data to ASCII string)
   | "hex" // Hexadecimal encoding (e.g., \x41 for 'A')
-  | "hexadecimal" // Alias for 'hex'
   | "unicode" // Unicode encoding (e.g., \u0041 for 'A')
   | "htmlEntity" // HTML entity encoding (e.g., &amp; for '&')
-  | "html" // Alias for 'htmlEntity'
   | "punycode" // Punycode encoding (for internationalized domain names)
-  | "asciihex" // ASCII characters represented by their hexadecimal values.
-  | "asciioct"; // ASCII characters represented by their octal values.
-
+  | "asciihex" // ASCII characters represented by their hexadecimal values
+  | "asciioct" // ASCII characters represented by their octal values
+  | "rot13" // ROT13 cipher encoding (rotates letters by 13 positions)
+  | "base32" // Base32 encoding (alphanumeric with padding)
+  | "urlSafeBase64" // URL-safe Base64 encoding (uses - and _ instead of + and /)
+  | "jsEscape" // JavaScript escape sequences for string contexts
+  | "cssEscape" // CSS escape sequences for selectors and values
+  | "utf7" // UTF-7 encoding for legacy systems
+  | "quotedPrintable" // Quoted-Printable encoding for email systems
+  | "decimalHtmlEntity"; // Decimal HTML entity encoding (&#123; format)
 /**
  * Result of encoding detection. This interface describes the outcome of an
  * attempt to identify the encoding scheme used in a given string. It provides
@@ -353,3 +355,25 @@ export interface INehonixURIProcessor {
 
 // Implementation type for the static class
 export type NehonixURIProcessorType = typeof NehonixURIProcessor;
+
+/**
+ *Real-world application: Encoding user input for various contexts (RWA)
+ * Defines the context in which user input will be used,
+ * allowing for appropriate encoding selection
+ */
+export type RWA_TYPES =
+  | "url" // For use in URL paths
+  | "urlParam" // For use in URL query parameters
+  | "html" // For insertion into HTML content
+  | "htmlAttr" // For use in HTML attribute values
+  | "js" // For insertion into JavaScript code
+  | "jsString" // For use specifically in JavaScript string literals
+  | "css" // For use in CSS content
+  | "cssSelector" // For use in CSS selectors
+  | "email" // For use in email content
+  | "emailSubject" // For use in email subject lines
+  | "command" // For use in command-line contexts
+  | "xml" // For use in XML content
+  | "json" // For use in JSON data
+  | "obfuscate" // For obfuscating content
+  | "idnDomain"; // For internationalized domain names

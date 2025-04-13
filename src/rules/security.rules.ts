@@ -5,11 +5,6 @@ export class SecurityRules {
   private static enc: typeof NehonixEncService = NehonixEncService;
   // =============== SECURITY UTILITIES ===============
 
-  /**
-   * Analyzes a URL and extracts potentially vulnerable parameters
-   * @param url The URL to analyze
-   * @returns An object containing information about the URL and parameters
-   */
   static analyzeURL(url: string): URLAnalysisResult {
     const vulnerabilities: string[] = [];
 

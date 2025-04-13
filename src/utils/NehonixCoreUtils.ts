@@ -2,7 +2,6 @@ import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
 
 export class NehonixCoreUtils extends NehonixSharedUtils {
   // =============== ENCODING DETECTION METHODS ===============
-
   /**
    * Checks if the string matches base64 pattern
    */
