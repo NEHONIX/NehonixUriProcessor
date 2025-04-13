@@ -9,7 +9,7 @@ import { ENC_TYPE } from "./types";
  * Useful for security testing and attack analysis
  */
 
-class NehonixURIProcessor {
+export class NehonixURIProcessor {
   //methods
   static generateWAFBypassVariants(input: string) {
     return sr.generateWAFBypassVariants(input);
@@ -39,6 +39,3 @@ class NehonixURIProcessor {
   }
 }
 // export
-
-export { NehonixURIProcessor as NURIPocess };
-export default NehonixURIProcessor;

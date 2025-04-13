@@ -3,7 +3,7 @@
   "version": "1.0.4",
   "description": "A powerful URI processor for encoding, decoding, and analyzing URI data securely.",
   "main": "dist/main.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/main.d.ts",
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
