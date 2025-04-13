@@ -15,12 +15,13 @@ class NehonixURIProcessor {
   private static rules: typeof SecurityRules = SecurityRules;
 
   //methods
-  static generateWAFBypassVariants = this.rules.generateWAFBypassVariants;
-  static analyzeURL = this.rules.analyzeURL;
-  static encode = this.enc.encode;
-  static detectEncoding = this.dec.detectEncoding;
-  static detectAndDecode = this.dec.detectAndDecode;
-  static decode = this.dec.decode;
+  static generateWAFBypassVariants =
+    NehonixURIProcessor.rules.generateWAFBypassVariants;
+  static analyzeURL = NehonixURIProcessor.rules.analyzeURL;
+  static encode = NehonixURIProcessor.enc.encode;
+  static detectEncoding = NehonixURIProcessor.dec.detectEncoding;
+  static detectAndDecode = NehonixURIProcessor.dec.detectAndDecode;
+  static decode = NehonixURIProcessor.dec.decode;
 }
 // export
 
