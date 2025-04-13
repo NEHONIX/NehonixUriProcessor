@@ -1,7 +1,7 @@
 import { NehonixEncService as enc } from "./services/NehonixEnc.service";
 import { SecurityRules as sr } from "./rules/security.rules";
 import { NehonixDecService as dec } from "./services/NehonixDec.service";
-import { ENC_TYPE } from "./types";
+import { DEC_FEATURE_TYPE, ENC_TYPE } from "./types";
 
 /**
  * URI Encoding Detector and Decoder
@@ -61,10 +61,14 @@ export class NehonixURIProcessor {
    */
   static decode(
     input: string,
-    encodingType: ENC_TYPE,
+    encodingType: ENC_TYPE | DEC_FEATURE_TYPE,
     maxRecursionDepth?: number
   ) {
-    return dec.decode(input, encodingType, maxRecursionDepth);
+    return dec.decode({
+      input,
+      encodingType,
+      maxRecursionDepth,
+    });
   }
 }
 export { NehonixURIProcessor as NURIP };

@@ -15,6 +15,7 @@ export type ENC_TYPE =
   | "htmlEntity" // HTML entity encoding (e.g., &amp; for '&')
   | "punycode" // Punycode encoding (for internationalized domain names)
   | "asciihex" // ASCII characters represented by their hexadecimal values
+  //new
   | "asciioct" // ASCII characters represented by their octal values
   | "rot13" // ROT13 cipher encoding (rotates letters by 13 positions)
   | "base32" // Base32 encoding (alphanumeric with padding)
@@ -23,7 +24,12 @@ export type ENC_TYPE =
   | "cssEscape" // CSS escape sequences for selectors and values
   | "utf7" // UTF-7 encoding for legacy systems
   | "quotedPrintable" // Quoted-Printable encoding for email systems
-  | "decimalHtmlEntity"; // Decimal HTML entity encoding (&#123; format)
+  | "decimalHtmlEntity" // Decimal HTML entity encoding (&#123; format)
+  //new
+  | "rawHexadecimal"
+  | "jwt";
+
+export type DEC_FEATURE_TYPE = "url" | "any";
 /**
  * Result of encoding detection. This interface describes the outcome of an
  * attempt to identify the encoding scheme used in a given string. It provides
@@ -38,7 +44,7 @@ export interface EncodingDetectionResult {
   /**
    * The encoding type that is considered the most likely based on analysis.
    */
-  mostLikely: string;
+  mostLikely: ENC_TYPE | "plainText";
   /**
    * A numerical value representing the confidence level of the most likely
    * encoding detection, usually between 0 and 1.
