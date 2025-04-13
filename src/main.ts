@@ -8,7 +8,7 @@ import { NehonixDecService } from "./services/NehonixDec.service";
  * Useful for security testing and attack analysis
  */
 
-class NehonixURICore {
+class NehonixURIProcessor {
   //Modules and services
   private static enc: typeof NehonixEncService = NehonixEncService;
   private static dec: typeof NehonixDecService = NehonixDecService;
@@ -22,5 +22,7 @@ class NehonixURICore {
   static detectAndDecode = this.dec.detectAndDecode;
   static decode = this.dec.decode;
 }
+// export
 
-export { NehonixURICore as NURIPocess };
+export { NehonixURIProcessor as NURIPocess };
+export default NehonixURIProcessor;

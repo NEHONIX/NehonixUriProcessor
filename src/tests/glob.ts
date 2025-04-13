@@ -5,7 +5,11 @@
  * This file contains various test cases for different encoding types and scenarios.
  */
 
-import { NehonixURIProcessor } from "..";
+import NehonixURIProcessor from "../main";
+
+// import { NehonixURIProcessor } from "..";
+
+// import { NehonixURIProcessor } from "..";
 
 // Helper function to run and display test results
 function runTest(
