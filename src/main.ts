@@ -1,6 +1,7 @@
-import { NehonixEncService } from "./services/NehonixEnc.service";
-import { SecurityRules } from "./rules/security.rules";
-import { NehonixDecService } from "./services/NehonixDec.service";
+import { NehonixEncService as enc } from "./services/NehonixEnc.service";
+import { SecurityRules as sr } from "./rules/security.rules";
+import { NehonixDecService as dec } from "./services/NehonixDec.service";
+import { ENC_TYPE } from "./types";
 
 /**
  * URI Encoding Detector and Decoder
@@ -9,19 +10,33 @@ import { NehonixDecService } from "./services/NehonixDec.service";
  */
 
 class NehonixURIProcessor {
-  //Modules and services
-  private static enc: typeof NehonixEncService = NehonixEncService;
-  private static dec: typeof NehonixDecService = NehonixDecService;
-  private static rules: typeof SecurityRules = SecurityRules;
-
   //methods
-  static generateWAFBypassVariants =
-    NehonixURIProcessor.rules.generateWAFBypassVariants;
-  static analyzeURL = NehonixURIProcessor.rules.analyzeURL;
-  static encode = NehonixURIProcessor.enc.encode;
-  static detectEncoding = NehonixURIProcessor.dec.detectEncoding;
-  static detectAndDecode = NehonixURIProcessor.dec.detectAndDecode;
-  static decode = NehonixURIProcessor.dec.decode;
+  static generateWAFBypassVariants(input: string) {
+    return sr.generateWAFBypassVariants(input);
+  }
+
+  static analyzeURL(input: string) {
+    return sr.analyzeURL(input);
+  }
+
+  static encode(input: string, encodingType: ENC_TYPE) {
+    return enc.encode(input, encodingType);
+  }
+
+  static detectEncoding(input: string, depth?: number) {
+    return dec.detectEncoding(input, depth);
+  }
+  static detectAndDecode(input: string) {
+    return dec.detectAndDecode(input);
+  }
+
+  static decode(
+    input: string,
+    encodingType: ENC_TYPE,
+    maxRecursionDepth?: number
+  ) {
+    return dec.decode(input, encodingType, maxRecursionDepth);
+  }
 }
 // export
 
