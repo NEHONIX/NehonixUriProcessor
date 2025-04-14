@@ -46,6 +46,16 @@ export class NehonixURIProcessor {
     return dec.detectEncoding(input, depth);
   }
   /**
+   * Automatically detects and decodes a URI based on the detected encoding type with increased precision
+   * @version 1.1.1
+   * @param input The URI string to decode
+   * @returns The decoded string according to the most probable encoding type
+   */
+  static autoDetectAndDecode(input: string) {
+    return dec.decodeAnyToPlaintext(input);
+  }
+
+  /**
    * Automatically detects and decodes a URI based on the detected encoding type
    * @param input The URI string to decode
    * @returns The decoded string according to the most probable encoding type

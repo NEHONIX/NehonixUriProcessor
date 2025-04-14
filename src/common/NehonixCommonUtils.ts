@@ -1,3 +1,5 @@
+import NDS from "../services/NehonixDec.service";
+
 /**
  * Shared utility methods for encoding detection and basic decoding operations
  */
@@ -201,12 +203,14 @@ class NehonixCommonUtils {
       (a, b) => a + b,
       0
     );
-
+    const decoded = NDS.decodeRot13(s);
+    const decoded_test = /^[a-zA-Z0-9:/?=&.]+$/.test(decoded) && decoded !== s;
     // If ROT13 pattern letters appear more frequently, it's likely ROT13
     return (
       hasCommonRot13Patterns &&
       hasAlphaAndSpaces &&
-      rot13LetterSum > commonLetterSum * 1.2
+      rot13LetterSum > commonLetterSum * 1.2 &&
+      decoded_test
     );
   }
 
@@ -418,12 +422,10 @@ class NehonixCommonUtils {
       if (s.includes("=")) {
         const parts = s.split("=");
         const value = parts[parts.length - 1];
-        return (
-          value &&
+        return (value &&
           value.length >= 6 &&
           /^[0-9A-Fa-f]+$/.test(value) &&
-          value.length % 2 === 0
-        ) as boolean
+          value.length % 2 === 0) as boolean;
       }
 
       // For path segments

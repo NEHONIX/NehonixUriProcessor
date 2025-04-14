@@ -58,14 +58,24 @@ class NDS {
 
             switch (detection.mostLikely) {
               case "base64":
-                // Properly handle Base64 padding
-                let base64Value = value;
-                while (base64Value.length % 4 !== 0) {
-                  base64Value += "=";
+                let base64Input = input;
+                // Ensure proper padding
+                while (base64Input.length % 4 !== 0) {
+                  base64Input += "=";
                 }
-                decodedValue = NehonixSharedUtils.decodeB64(
-                  base64Value.replace(/-/g, "+").replace(/_/g, "/")
-                );
+                base64Input = base64Input.replace(/-/g, "+").replace(/_/g, "/");
+                decodedValue = NehonixSharedUtils.decodeB64(base64Input);
+                // Check if the result is still Base64-encoded
+                if (NehonixCoreUtils.hasBase64Pattern(decodedValue)) {
+                  let nestedBase64 = decodedValue;
+                  while (nestedBase64.length % 4 !== 0) {
+                    nestedBase64 += "=";
+                  }
+                  nestedBase64 = nestedBase64
+                    .replace(/-/g, "+")
+                    .replace(/_/g, "/");
+                  decodedValue = NehonixSharedUtils.decodeB64(nestedBase64);
+                }
                 break;
               case "rawHexadecimal":
                 if (/^[0-9A-Fa-f]+$/.test(value) && value.length % 2 === 0) {
@@ -78,7 +88,7 @@ class NDS {
               case "doublepercent":
                 decodedValue = NDS.decodeDoublePercentEncoding(value);
                 break;
-              // Add other encoding types as needed
+              // We must add other enc type
             }
 
             // Validate the decoded value to ensure it's readable text
@@ -321,19 +331,33 @@ class NDS {
   /**
    * Decodes hexadecimal encoding
    */
+  /**
+   * Fix 1: Proper hex string decoding implementation
+   */
   static decodeHex(input: string): string {
+    // Remove any whitespace and convert to lowercase
+    input = input.trim().toLowerCase();
+
+    // Check if input is a valid hex string
+    if (!/^[0-9a-f]+$/.test(input)) {
+      throw new Error("Invalid hex string");
+    }
+
+    // Ensure even number of characters
+    if (input.length % 2 !== 0) {
+      throw new Error("Hex string must have an even number of characters");
+    }
+
     try {
-      // Replace \xXX and 0xXX sequences with their equivalent characters
-      return input
-        .replace(/\\x([0-9A-Fa-f]{2})/g, (match, hex) => {
-          return String.fromCharCode(parseInt(hex, 16));
-        })
-        .replace(/0x([0-9A-Fa-f]{2})/g, (match, hex) => {
-          return String.fromCharCode(parseInt(hex, 16));
-        });
-    } catch (e) {
-      console.error("Error in decodeHex:", e);
-      return input; // Return original input on error
+      let result = "";
+      for (let i = 0; i < input.length; i += 2) {
+        const hexByte = input.substring(i, i + 2);
+        const charCode = parseInt(hexByte, 16);
+        result += String.fromCharCode(charCode);
+      }
+      return result;
+    } catch (e: any) {
+      throw new Error(`Hex decoding failed: ${e.message}`);
     }
   }
 
@@ -458,7 +482,7 @@ class NDS {
       { type: "decimalHtmlEntity", fn: utils.isDecimalHtmlEntity, score: 0.83 },
       { type: "quotedPrintable", fn: utils.isQuotedPrintable, score: 0.77 },
       { type: "punycode", fn: utils.isPunycode, score: 0.9 },
-      { type: "rot13", fn: utils.isRot13.bind(utils), score: 0.8 },
+      { type: "rot13", fn: utils.isRot13.bind(utils), score: 0.9 },
       { type: "utf7", fn: utils.isUtf7, score: 0.75 },
       { type: "jsEscape", fn: utils.isJsEscape, score: 0.8 },
       { type: "cssEscape", fn: utils.isCssEscape, score: 0.78 },
@@ -582,7 +606,6 @@ class NDS {
     input: string,
     depth = 0
   ): NestedEncodingResult {
-    // Guard against too deep recursion
     if (depth > 3) {
       return {
         isNested: false,
@@ -592,21 +615,16 @@ class NDS {
       };
     }
 
-    // Try to decode with different first-level encodings
-    const encodingTypes = ["percentEncoding", "base64", "hexadecimal"];
+    const encodingTypes = ["base64", "percentEncoding", "hexadecimal"];
 
     for (const outerType of encodingTypes) {
       try {
-        // Decode first level
         const firstLevelDecoded = NDS.decode({
           input,
           encodingType: outerType as ENC_TYPE,
           maxRecursionDepth: 5 - depth,
-        }); // Limit decoding depth
+        });
 
-        // Check if the result is still encoded - but avoid recursion
-        // Instead of calling detectEncoding which would call detectNestedEncoding again,
-        // perform a simple check for known patterns
         let innerType = "";
         let confidence = 0;
 
@@ -621,17 +639,33 @@ class NDS {
           confidence = 0.7;
         }
 
-        // If another encoding is detected with high confidence
         if (confidence > 0.7 && innerType !== "") {
+          // Check for further nesting
+          const secondLevelDecoded = NDS.decode({
+            input: firstLevelDecoded,
+            encodingType: innerType as ENC_TYPE,
+            maxRecursionDepth: 5 - depth - 1,
+          });
+          if (
+            NehonixSharedUtils.hasPercentEncoding(secondLevelDecoded) ||
+            NehonixCoreUtils.hasBase64Pattern(secondLevelDecoded)
+          ) {
+            return {
+              isNested: true,
+              outerType,
+              innerType: innerType + "+nested",
+              confidenceScore: confidence * 0.9,
+            };
+          }
           return {
             isNested: true,
             outerType,
             innerType,
-            confidenceScore: confidence * 0.9, // Slight penalty
+            confidenceScore: confidence * 0.9,
           };
         }
       } catch (e) {
-        continue; // Decoding failed, try next type
+        continue;
       }
     }
 
@@ -907,6 +941,71 @@ class NDS {
     let lastResult = "";
     let iterations = 0;
 
+    // Handle mixed encodings (hex + percent)
+    if (input.match(/^[0-9A-Fa-f]+%[0-9A-Fa-f]{2}$/)) {
+      const hexPart = input.replace(/%[0-9A-Fa-f]{2}$/, "");
+      const percentPart = input.match(/%[0-9A-Fa-f]{2}$/)![0];
+      if (/^[0-9A-Fa-f]+$/.test(hexPart) && hexPart.length % 2 === 0) {
+        const decodedHex = NDS.decodeRawHex(hexPart);
+        const decodedPercent = NDS.decodePercentEncoding(percentPart);
+        return decodedHex + decodedPercent;
+      }
+    }
+
+    // Check if this is a URL with potential encoded parameters
+    if (
+      result.includes("?") &&
+      (result.includes("%") || result.includes("="))
+    ) {
+      try {
+        // Parse URL and extract parameters
+        const urlParts = result.split("?");
+        const base = urlParts[0];
+        const paramsPart = urlParts.slice(1).join("?");
+        const params = new URLSearchParams(paramsPart);
+        let modified = false;
+
+        // Process each parameter value for possible encodings
+        for (const [key, value] of params.entries()) {
+          // Skip very short values or empty values
+          if (value.length < 3) continue;
+
+          // Detect encoding for this parameter value
+          const detection = NDS.detectEncoding(value);
+
+          // If detected as encoded with high confidence, decode it
+          if (
+            detection.mostLikely !== "plainText" &&
+            detection.confidence > 0.6
+          ) {
+            try {
+              const decodedValue = NDS.decodeAnyToPlaintext(
+                value,
+                maxIterations - 1
+              );
+              // Only replace if we actually decoded something different
+              if (decodedValue !== value) {
+                params.set(key, decodedValue);
+                modified = true;
+              }
+            } catch (e) {
+              // Continue with original value if decoding fails
+            }
+          }
+        }
+
+        // Rebuild URL if parameters were modified
+        if (modified) {
+          result = base + "?" + params.toString();
+        }
+      } catch (e) {
+        // URL parsing failed, continue with normal decoding
+        console.warn(
+          "URL parameter parsing failed, continuing with standard decoding"
+        );
+      }
+    }
+
     // Continue decoding until no change is detected or max iterations reached
     while (result !== lastResult && iterations < maxIterations) {
       lastResult = result;
@@ -914,35 +1013,115 @@ class NDS {
       // Detect encoding
       const detection = NDS.detectEncoding(result);
 
-      // If detected as plaintext or very low confidence, stop decoding
-      if (detection.mostLikely === "plainText" || detection.confidence < 0.7) {
+      // If detected as plaintext with high confidence, stop decoding
+      if (detection.mostLikely === "plainText" && detection.confidence > 0.8) {
         break;
       }
 
-      // Try to decode
-      try {
-        const decoded = NDS.decode({
-          input: result,
-          encodingType: detection.mostLikely as ENC_TYPE,
-        });
+      // Adaptive confidence threshold - be more permissive with multiple iterations
+      const confidenceThreshold = Math.max(0.5, 0.8 - iterations * 0.1);
 
-        // Only accept the decoded result if it's not significantly smaller
-        // (to avoid decoding text that looks like encoded but isn't)
-        if (decoded.length > result.length * 0.5) {
-          result = decoded;
-        } else {
-          // If the result is much smaller, check if it looks valid
-          const printableRatio =
-            decoded.replace(/[^\x20-\x7E]/g, "").length / decoded.length;
-          if (printableRatio > 0.8) {
-            result = decoded;
+      // Only attempt decoding if reasonable confidence
+      if (detection.confidence >= confidenceThreshold) {
+        try {
+          const decoded = NDS.decode({
+            input: result,
+            encodingType: detection.mostLikely as ENC_TYPE,
+          });
+
+          // Quality checks for the decoded result
+          if (decoded.length > 0) {
+            const printableRatio =
+              decoded.replace(/[^\x20-\x7E]/g, "").length / decoded.length;
+
+            // Accept if:
+            // 1. Result is not significantly smaller (to avoid false positives)
+            // 2. Has high ratio of printable characters
+            if (
+              (decoded.length > result.length * 0.5 || printableRatio > 0.9) &&
+              printableRatio > 0.7
+            ) {
+              result = decoded;
+            } else {
+              // Low quality decode, try next encoding based on detection.types
+              // Since we don't have secondMostLikely, we'll use the types array
+              if (detection.types && detection.types.length > 1) {
+                // Find the next encoding type that's not the most likely one
+                const alternateType = detection.types.find(
+                  (type) =>
+                    type !== detection.mostLikely && type !== "plainText"
+                );
+
+                if (alternateType) {
+                  try {
+                    const alternateDecoded = NDS.decode({
+                      input: result,
+                      encodingType: alternateType as ENC_TYPE,
+                    });
+
+                    const altPrintableRatio =
+                      alternateDecoded.replace(/[^\x20-\x7E]/g, "").length /
+                      alternateDecoded.length;
+
+                    if (
+                      (alternateDecoded.length > result.length * 0.5 ||
+                        altPrintableRatio > 0.9) &&
+                      altPrintableRatio > 0.75
+                    ) {
+                      result = alternateDecoded;
+                    } else {
+                      break; // Neither option produced good results
+                    }
+                  } catch {
+                    break; // Alternative decoding failed
+                  }
+                } else {
+                  break; // No good alternative
+                }
+              } else {
+                break; // No alternatives available
+              }
+            }
           } else {
-            // Not valid decoded text, stop here
+            break; // Empty result
+          }
+        } catch (e) {
+          // Decoding failed, try next encoding type if available
+          if (detection.types && detection.types.length > 1) {
+            // Find an alternative encoding type
+            const alternateType = detection.types.find(
+              (type) => type !== detection.mostLikely && type !== "plainText"
+            );
+
+            if (alternateType) {
+              try {
+                const alternateDecoded = NDS.decode({
+                  input: result,
+                  encodingType: alternateType as ENC_TYPE,
+                });
+
+                // Same quality checks as above
+                const altPrintableRatio =
+                  alternateDecoded.replace(/[^\x20-\x7E]/g, "").length /
+                  alternateDecoded.length;
+
+                if (altPrintableRatio > 0.75) {
+                  result = alternateDecoded;
+                } else {
+                  break;
+                }
+              } catch {
+                break;
+              }
+            } else {
+              break;
+            }
+          } else {
             break;
           }
         }
-      } catch (e) {
-        // Decoding failed, stop here
+      } else {
+        // Confidence too low, stop decoding
         break;
       }
 
@@ -951,11 +1130,84 @@ class NDS {
 
     return result;
   }
+
   /**
-   * Decodes a string according to a specific encoding type
-   * @param input The string to decode
-   * @param encodingType The encoding type to use
-   * @returns The decoded string
+   * Enhanced URL parameter extraction and decoding
+   * @param url The URL string to process
+   * @returns URL with decoded parameters
+   */
+  static decodeUrlParameters(url: string): string {
+    if (!url.includes("?")) return url;
+
+    try {
+      const [baseUrl, queryString] = url.split("?", 2);
+      if (!queryString) return url;
+
+      // Split parameters manually to preserve &&
+      const params = queryString.split(/&{1,2}/);
+      let modified = false;
+      const decodedParams: string[] = [];
+
+      for (const param of params) {
+        const [key, value] = param.includes("=")
+          ? param.split("=", 2)
+          : [param, ""];
+        if (!value || value.length < 3) {
+          decodedParams.push(param);
+          continue;
+        }
+
+        const encodingTypes = [
+          { type: "percentEncoding", pattern: /%[0-9A-Fa-f]{2}/ },
+          { type: "base64", pattern: /^[A-Za-z0-9+/=]{4,}$/ },
+          { type: "hex", pattern: /^[0-9A-Fa-f]{6,}$/ },
+        ];
+
+        let decoded = value;
+        for (const { type, pattern } of encodingTypes) {
+          if (pattern.test(value)) {
+            try {
+              decoded = NDS.decode({
+                input: value,
+                encodingType: type as ENC_TYPE,
+              });
+              if (decoded !== value && decoded.length > 0) {
+                const printableRatio =
+                  decoded.replace(/[^\x20-\x7E]/g, "").length / decoded.length;
+                if (printableRatio > 0.8) {
+                  modified = true;
+                  break;
+                }
+              }
+            } catch (e) {
+              continue;
+            }
+          }
+        }
+
+        if (!modified && decoded === value) {
+          try {
+            decoded = NDS.decodeAnyToPlaintext(value, 3);
+            if (decoded !== value) {
+              modified = true;
+            }
+          } catch (e) {
+            // Keep original
+          }
+        }
+
+        decodedParams.push(`${key}=${decoded}`);
+      }
+
+      const separator = queryString.includes("&&") ? "&&" : "&";
+      return modified ? `${baseUrl}?${decodedParams.join(separator)}` : url;
+    } catch (e) {
+      console.warn("Error decoding URL parameters:", e);
+      return url;
+    }
+  }
+  /**
+   * Main decode method with improved error handling
    */
   static decode(props: {
     input: string;
@@ -971,6 +1223,7 @@ class NDS {
       maxRecursionDepth = 5,
       opt = { throwError: this.throwError },
     } = props;
+
     // Add recursion protection
     if (maxRecursionDepth <= 0) {
       console.warn("Maximum recursion depth reached in decode");
@@ -978,6 +1231,26 @@ class NDS {
     }
 
     try {
+      // Special case for URLs - handle parameter decoding
+      if (input.includes("://") && input.includes("?")) {
+        // For URLs with parameters, pre-process to decode parameters individually
+        if (
+          encodingType === "any" ||
+          encodingType === "url" ||
+          encodingType === "percentEncoding"
+        ) {
+          const preprocessed = NDS.decodeUrlParameters(input);
+
+          // If preprocessing made changes, continue with normal decoding flow
+          if (preprocessed !== input) {
+            // For "any" encoding, continue with normal decoding flow
+            if (encodingType === "any") {
+              return NDS.decodeAnyToPlaintext(preprocessed, 5);
+            }
+          }
+        }
+      }
+
       switch (encodingType) {
         case "percentEncoding":
         case "url":
@@ -1029,7 +1302,10 @@ class NDS {
       }
     } catch (e: any) {
       console.error(`Error while decoding (${encodingType}):`, e);
-      return input; // Return original input on error instead of throwing
+      if (opt.throwError) {
+        throw e;
+      }
+      return input; // Return original input on error
     }
   }
 }
