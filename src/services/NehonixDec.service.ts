@@ -338,7 +338,9 @@ class NDS {
 
     // Check if input is a valid hex string
     if (!/^[0-9a-f]+$/.test(input)) {
-      throw new Error("Invalid hex string");
+      if (this.throwError) {
+        throw new Error("Invalid hex string");
+      }
     }
 
     // Ensure even number of characters
