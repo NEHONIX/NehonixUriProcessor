@@ -1,6 +1,6 @@
 {
   "name": "nehonix-uri-processor",
-  "version": "1.0.7",
+  "version": "1.1.1",
   "description": "A powerful URI processor for encoding, decoding, and analyzing URI data securely.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build",
-    "test": "echo \"No test specified\" && exit 0",
+    "test": "jest",
     "patch": "npm version patch && npm publish"
   },
   "keywords": [
@@ -37,6 +37,7 @@
     "punycode": "^2.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.14.1",
     "typescript": "^5.3.3"
   }
 }

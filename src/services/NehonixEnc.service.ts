@@ -1,11 +1,10 @@
 import { ENC_TYPE } from "../types";
 import punycode from "punycode";
-import { NehonixCoreUtils } from "../utils/NehonixCoreUtils";
+import { NehonixCoreUtils as NCU } from "../utils/NehonixCoreUtils";
 import { htmlEntities } from "../utils/html.enties";
 class NES {
-  private static NCU: typeof NehonixCoreUtils = NehonixCoreUtils;
-  private static hasBase64Pattern = NES.NCU.hasBase64Pattern;
-  private static decodeBase64 = NES.NCU.drwp;
+  // private static NCU: typeof NehonixCoreUtils = NehonixCoreUtils;
+  // private static decodeBase64 = NES.NCU.drwp;
 
   /**
    * Encodes a string according to a specific encoding type
@@ -223,7 +222,7 @@ class NES {
    * Calculates confidence level for base64 encoding
    */
   static calculateBase64Confidence(input: string): number {
-    if (!NES.hasBase64Pattern(input)) return 0;
+    if (!NCU.hasBase64Pattern(input)) return 0;
 
     // Isolate the potential Base64 part in URL parameters
     let testString = input;
@@ -262,7 +261,7 @@ class NES {
         decodableString += "=";
       }
 
-      const decoded = NES.decodeBase64(decodableString);
+      const decoded = NCU.decodeB64(decodableString);
 
       // Analyze decoded content
       const readableChars = decoded.replace(/[^\x20-\x7E]/g, "").length;

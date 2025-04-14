@@ -7,22 +7,20 @@ import {
 } from "../types";
 import punycode from "punycode";
 import { NehonixCoreUtils } from "../utils/NehonixCoreUtils";
-import { NehonixEncService } from "./NehonixEnc.service";
-import NehonixCommonUtils, {
-  NehonixSharedUtils,
-} from "../common/NehonixCommonUtils";
+import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
+import NES from "./NehonixEnc.service";
 
 class NDS {
   private static throwError: boolean = true;
   // private static hasBase64Pattern = NehonixCoreUtils.hasBase64Pattern;
   // // private static hasPercentEncoding = NehonixSharedUtils.hasPercentEncoding;
-  private static enc: typeof NehonixEncService = NehonixEncService;
+  // private static enc: typeof NehonixEncService = NehonixEncService;
   // private static hasDoublePercentEncoding =
   //   NehonixCoreUtils.hasDoublePercentEncoding;
   // private static hasHexEncoding = NehonixCoreUtils.hasHexEncoding;
   // private static hasUnicodeEncoding = NehonixCoreUtils.hasUnicodeEncoding;
   // private static hasRawHexString = NehonixCoreUtils.hasRawHexString;
-  private static calculateBase64Confidence = NDS.enc.calculateBase64Confidence;
+  // private static calculateBase64Confidence = NES.calculateBase64Confidence;
   // private static hasHTMLEntityEncoding = NehonixCoreUtils.hasHTMLEntityEncoding;
   // private static hasJWTFormat = NehonixCoreUtils.hasJWTFormat;
   // private static hasPunycode = NehonixCoreUtils.hasPunycode;
@@ -633,7 +631,7 @@ class NDS {
           confidence = 0.9;
         } else if (NehonixCoreUtils.hasBase64Pattern(firstLevelDecoded)) {
           innerType = "base64";
-          confidence = NDS.calculateBase64Confidence(firstLevelDecoded);
+          confidence = NES.calculateBase64Confidence(firstLevelDecoded);
         } else if (NehonixSharedUtils.hasHexEncoding(firstLevelDecoded)) {
           innerType = "hexadecimal";
           confidence = 0.7;
