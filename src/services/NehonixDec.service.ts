@@ -343,7 +343,7 @@ class NDS {
       }
     }
 
-    // Ensure even number of characters
+    // Ensure even number of characters 
     if (input.length % 2 !== 0) {
       throw new Error("Hex string must have an even number of characters");
     }

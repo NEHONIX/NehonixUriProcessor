@@ -57,6 +57,7 @@ export class NehonixURIProcessor {
 
   /**
    * Automatically detects and decodes a URI based on the detected encoding type
+   * @deprecated this method is depreciated, use "autoDetectAndDecode" method instead
    * @param input The URI string to decode
    * @returns The decoded string according to the most probable encoding type
    */
