@@ -383,3 +383,85 @@ export type RWA_TYPES =
   | "json" // For use in JSON data
   | "obfuscate" // For obfuscating content
   | "idnDomain"; // For internationalized domain names
+
+/**
+ * Options for URI validation.
+ */
+export interface UrlValidationOptions {
+  /**
+   * If `true`, requires a leading slash before paths or query parameters (e.g., `/path` or `/?query`).
+   * If `false`, allows query parameters without a leading slash (e.g., `?query`).
+   * @default false
+   */
+  strictMode?: boolean;
+
+  /**
+   * If `true`, allows Unicode escape sequences (e.g., `\u0068`) in query parameters.
+   * If `false`, rejects URIs containing Unicode escape sequences.
+   * @default true
+   */
+  allowUnicodeEscapes?: boolean;
+
+  /**
+   * If `true`, rejects URIs with duplicate query parameter keys (e.g., `?p1=a&p1=b`).
+   * If `false`, allows duplicate keys.
+   * @default true
+   */
+  rejectDuplicateParams?: boolean;
+
+  /**
+   * If `true`, only allows https:// URLs (rejects http://).
+   * If `false`, allows both http:// and https:// URLs.
+   * @default false
+   */
+  httpsOnly?: boolean;
+
+  /**
+   * Maximum allowed length for the entire URL.
+   * Set to 0 to disable length checking.
+   * @default 2048
+   */
+  maxUrlLength?: number;
+
+  /**
+   * List of allowed top-level domains (e.g., ['com', 'org', 'net']).
+   * If empty, all TLDs are allowed.
+   * @default []
+   */
+  allowedTLDs?: string[];
+
+  /**
+   * List of allowed protocols (e.g., ['https', 'http', 'ftp']).
+   * Only relevant if requireProtocol is true.
+   * @default ['http', 'https']
+   */
+  allowedProtocols?: string[];
+
+  /**
+   * If `true`, requires the protocol to be explicitly specified in the URL.
+   * If `false`, adds https:// if no protocol is specified.
+   * @default false
+   */
+  requireProtocol?: boolean;
+
+  /**
+   * If `true`, validates that the URL has a path or query string.
+   * If `false`, allows bare domains like 'example.com'.
+   * @default false
+   */
+  requirePathOrQuery?: boolean;
+
+  /**
+   * If `true`, validates each parameter value against URI encoding standards.
+   * If `false`, performs basic validation only.
+   * @default false
+   */
+  strictParamEncoding?: boolean;
+  /**
+   *If `true`, it will find keys in "parameters" that map to the same value (e.g.,
+   * { param1: "value1", param2: "value1", param3: "value2" }),
+   *  then group keys by their values and filter for values with multiple keys
+   * @default false
+   */
+  rejectDuplicatedValues?: boolean;
+}

@@ -109,3 +109,5 @@ export class SecurityRules {
     return result;
   }
 }
+
+export { SecurityRules as sr };

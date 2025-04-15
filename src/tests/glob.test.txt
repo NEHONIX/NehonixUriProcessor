@@ -1,0 +1,136 @@
+/**
+ * NOTE: This test was wrotten by claud (Anthropic ai) for a full testing
+ * Test suite for NehonixURIProcessor
+ * Testing various decoding scenarios from simple to complex
+ */ import NDS from "../services/NehonixDec.service";
+
+const originalUrl = "https://nehonix.space?test=true&p=hello world";
+// Simple test runner
+function runTests() {
+  let passedTests = 0;
+  let failedTests = 0;
+  const failedDetails: string[] = [];
+
+  function assertEqual(actual: string, expected: string, testName: string) {
+    if (
+      actual.toLocaleLowerCase().trim() === expected.toLocaleLowerCase().trim()
+    ) {
+      console.log(`✓ PASS: ${testName}`);
+      passedTests++;
+      return true;
+    } else {
+      console.log(`✗ FAIL: ${testName}`);
+      console.log(`  Expected: ${expected}`);
+      console.log(`  Received: ${actual}`);
+      failedTests++;
+      failedDetails.push(testName);
+      return false;
+    }
+  }
+  {
+    //
+    assertEqual(
+      NDS.decodeAnyToPlaintext(originalUrl),
+      originalUrl,
+      "Should return the original url"
+    );
+  }
+
+  {
+    // simple test with uri encoding
+    const actual = "https://nehonix.space?test=true&p=hello%20world";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should for ' with uri encoding' return the original url"
+    );
+  }
+
+  {
+    //  with uri encoding (one of queries has been encoded)
+    const actual = "https://nehonix.space?test=true&p%3Dhello%20world";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should for ' with uri encoding (on of queries has been encoded)' return the original url"
+    );
+  }
+
+  {
+    //  with uri encoding with different encodeType (test in b64 and p: uri encod))
+    const actual = "https://nehonix.space?test=dHJ1ZQ==&p%3Dhello%20world";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should for ' with uri encoding with different encodeType (test in b64 and p: uri encode))' return the original url"
+    );
+  }
+
+  {
+    //  with uri encoding with different encodeType (test in b64 and p: uri encode) queries encoded)
+    const actual = "https://nehonix.space?test=dHJ1ZSY=p%3Dhello%20world";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should return the original url for ' with uri encoding with different encodeType (test in b64 and p: uri encode))' "
+    );
+  }
+
+  {
+    //  with all caracteres uri encoding
+    const actual =
+      "https%3A%2F%2Fnehonix.space%3Ftest%3Dtrue%26p%253Dhello%2520world";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should return the original url for '  with all caracteres uri encoding ' "
+    );
+  }
+
+  {
+    // encoded "all caracteres uri encoding"  to  b64
+    const actual =
+      "aHR0cHMlM0ElMkYlMkZuZWhvbml4LnNwYWNlJTNGdGVzdCUzRHRydWUlMjZwJTI1M0RoZWxsbyUyNTIwd29ybGQ=";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should return the original url for ' with all caracteres encoded with b64' "
+    );
+  }
+  {
+    //  combined "b64" encode to hex
+    const actual =
+      "6148523063484d6c4d30456c4d6b596c4d6b5a755a576876626d6c344c6e4e7759574e6c4a544e476447567a6443557a524852796457556c4d6a5a774a5449314d30526f5a577873627955794e544977643239796247513d";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should return the original url for 'combined \"b64\" encode to' "
+    );
+  }
+
+  {
+    //  combined "hex" encode to "Escape ASCII hex"
+    const actual =
+      "\x36\x31\x34\x38\x35\x32\x33\x30\x36\x33\x34\x38\x34\x64\x36\x63\x34\x64\x33\x30\x34\x35\x36\x63\x34\x64\x36\x62\x35\x39\x36\x63\x34\x64\x36\x62\x35\x61\x37\x35\x35\x61\x35\x37\x36\x38\x37\x36\x36\x32\x36\x64\x36\x63\x33\x34\x34\x63\x36\x65\x34\x65\x37\x37\x35\x39\x35\x37\x34\x65\x36\x63\x34\x61\x35\x34\x34\x65\x34\x37\x36\x34\x34\x37\x35\x36\x37\x61\x36\x34\x34\x33\x35\x35\x37\x61\x35\x32\x34\x38\x35\x32\x37\x39\x36\x34\x35\x37\x35\x35\x36\x63\x34\x64\x36\x61\x35\x61\x37\x37\x34\x61\x35\x34\x34\x39\x33\x31\x34\x64\x33\x30\x35\x32\x36\x66\x35\x61\x35\x37\x37\x38\x37\x33\x36\x32\x37\x39\x35\x35\x37\x39\x34\x65\x35\x34\x34\x39\x37\x37\x36\x34\x33\x32\x33\x39\x37\x39\x36\x32\x34\x37\x35\x31\x33\x64";
+    assertEqual(
+      NDS.decodeAnyToPlaintext(actual),
+      originalUrl,
+      "Should return the original url for 'combined \"Escape ASCII hex\" encode to' "
+    );
+  }
+  // Print summary
+  console.log("\n=== Test Summary ===");
+  console.log(`Tests passed: ${passedTests}`);
+  console.log(`Tests failed: ${failedTests}`);
+
+  if (failedTests > 0) {
+    console.log("\nFailed tests:");
+    failedDetails.forEach((name, i) => {
+      console.log(`${i + 1}. ${name}`);
+    });
+    process.exit(1);
+  }
+}
+
+// Run all tests
+runTests();
