@@ -28,7 +28,7 @@ function runTest() {
       "Should decode hex string correctly (specific method)"
     );
     assertEqual(
-      NDS.decodeAnyToPlaintext(rawHexInput),
+      NDS.decodeAnyToPlaintext(rawHexInput).val(),
       expected,
       "Should decode hex string correctly (auto-detect)"
     );
@@ -44,7 +44,7 @@ function runTest() {
       "Should decode rot13 correctly (specific method)"
     );
     assertEqual(
-      NDS.decodeAnyToPlaintext(rot13Input),
+      NDS.decodeAnyToPlaintext(rot13Input).val(),
       expected,
       "Should decode rot13 correctly (auto-detect)"
     );
@@ -56,7 +56,7 @@ function runTest() {
     const expected = "https://app.chariow.com/auth/login?test";
 
     assertEqual(
-      NDS.decodeAnyToPlaintext(doubleB64),
+      NDS.decodeAnyToPlaintext(doubleB64).val(),
       expected,
       "Should decode double-nested base64"
     );
@@ -68,7 +68,7 @@ function runTest() {
     const expected = "https://app.chariow.com/auth/login?test=";
 
     assertEqual(
-      NDS.decodeAnyToPlaintext(hexInUrl),
+      NDS.decodeAnyToPlaintext(hexInUrl).val(),
       expected,
       "Should decode hex within URL encoding"
     );
@@ -81,7 +81,7 @@ function runTest() {
     const expected = "test";
 
     assertEqual(
-      NDS.decodeAnyToPlaintext(tripleNested),
+      NDS.decodeAnyToPlaintext(tripleNested).val(),
       expected,
       "Should decode triple-nested encodings"
     );
@@ -95,7 +95,7 @@ function runTest() {
       "https://app.chariow.com/stores?test=https://app.chariow.com/auth/login?test&&test2=https://app.chariow.com/auth/login?tes";
 
     assertEqual(
-      NDS.decodeAnyToPlaintext(urlWithComplexEnc2),
+      NDS.decodeAnyToPlaintext(urlWithComplexEnc2).val(),
       expected,
       "Should handle urlWithComplexEnc2 correctly"
     );
