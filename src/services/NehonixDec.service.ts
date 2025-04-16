@@ -130,7 +130,7 @@ class NDS {
           "unknown";
 
         return {
-          val: decodedURL,
+          val: () => decodedURL,
           encodingType: paramEncoding,
           confidence: 0.85,
         };
@@ -152,7 +152,7 @@ class NDS {
         }
 
         return {
-          val: decodedValue,
+          val: () => decodedValue,
           encodingType: detection.mostLikely,
           confidence: detection.confidence,
           nestedTypes: detection.nestedTypes,
@@ -218,7 +218,7 @@ class NDS {
                 if (printableRatio > 0.7) {
                   decodedValue = input.replace(value, decodedParam);
                   return {
-                    val: decodedValue,
+                    val: () => decodedValue,
                     encodingType: "rawHexadecimal",
                     confidence: 0.8,
                   };
@@ -248,7 +248,7 @@ class NDS {
     }
 
     return {
-      val: decodedValue,
+      val: () => decodedValue,
       encodingType: detection.mostLikely,
       confidence: detection.confidence,
     };
@@ -920,11 +920,13 @@ class NDS {
    * @param maxIterations Maximum number of decoding iterations to prevent infinite loops
    * @returns Fully decoded plaintext
    */
-  static decodeAnyToPlaintext(input: string, maxIterations = 10): string {
+  static decodeAnyToPlaintext(input: string, maxIterations = 10): DecodeResult {
     this.throwError = false;
     let result = input;
     let lastResult = "";
     let iterations = 0;
+    let confidence = 0;
+    let encodingType: ENC_TYPE | "UNKNOWN" | "plainText" = "UNKNOWN";
 
     // Try decoding as a whole string first (for non-URL cases like Base64 or hex)
     while (iterations < maxIterations && result !== lastResult) {
@@ -940,6 +942,8 @@ class NDS {
       if (detection.confidence > 0.5) {
         try {
           let decoded: string;
+          encodingType = detection.mostLikely;
+          confidence = detection.confidence;
           switch (detection.mostLikely) {
             case "base64":
               let base64Input = result;
@@ -1000,7 +1004,11 @@ class NDS {
       result = handleRes || result;
     }
 
-    return result;
+    return {
+      confidence,
+      encodingType,
+      val: () => result,
+    };
   }
 
   private static handleUriParameters(uri: string, maxIterations: number) {
@@ -1052,7 +1060,7 @@ class NDS {
                   decodedValue = NDS.decodeAnyToPlaintext(
                     decodedValue,
                     maxIterations - 1
-                  );
+                  ).val();
                 }
                 break;
               case "percentEncoding":
@@ -1206,7 +1214,7 @@ class NDS {
 
         if (!modified && decoded === value) {
           try {
-            decoded = NDS.decodeAnyToPlaintext(value, 3);
+            decoded = NDS.decodeAnyToPlaintext(value, 3).val();
             if (decoded !== value) {
               modified = true;
             }
@@ -1264,7 +1272,7 @@ class NDS {
           if (preprocessed !== input) {
             // For "any" encoding, continue with normal decoding flow
             if (encodingType === "any") {
-              return NDS.decodeAnyToPlaintext(preprocessed, 5);
+              return NDS.decodeAnyToPlaintext(preprocessed, 5).val();
             }
           }
         }
@@ -1311,7 +1319,7 @@ class NDS {
         case "rawHexadecimal":
           return NDS.decodeRawHex(input);
         case "any":
-          return NDS.decodeAnyToPlaintext(input);
+          return NDS.decodeAnyToPlaintext(input).val();
         default:
           if (opt.throwError) {
             throw new Error(`Unsupported encoding type: ${encodingType}`);

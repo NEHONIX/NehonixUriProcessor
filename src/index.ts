@@ -134,8 +134,10 @@ class NehonixURIProcessor {
    * console.log(nested); // https://nehonix.space
    * ```
    */
-  static autoDetectAndDecode(input: string, maxIterations = 10) {
-    return dec.decodeAnyToPlaintext(input, maxIterations);
+  static autoDetectAndDecode(
+    ...props: Parameters<typeof dec.decodeAnyToPlaintext>
+  ) {
+    return dec.decodeAnyToPlaintext(...props);
   }
 
   /**

@@ -149,7 +149,7 @@ export interface DecodeResult {
   /**
    * The decoded string value.
    */
-  val: string;
+  val: () => string;
   /**
    * The detected encoding type of the input string.
    */
