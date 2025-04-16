@@ -131,10 +131,15 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
 
       // Domain validation
       const hostParts = urlObj.hostname.split(".");
-      if (hostParts.length < 2 || hostParts.some((part) => part === "")) {
+      if (
+        (hostParts.length < 2 || hostParts.some((part) => part === "")) &&
+        !(options.allowLocalhost && urlObj.hostname === "localhost")
+      ) {
         result.validationDetails.domain = {
           isValid: false,
-          message: "Invalid domain structure",
+          type: "INV_DOMAIN_ERR",
+          error: "Invalid domain structure",
+          message: `Expected 'valid hostname' but received "${urlObj.hostname}"`,
           hostname: urlObj.hostname,
         };
         result.isValid = false;
@@ -142,7 +147,11 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       } else {
         result.validationDetails.domain = {
           isValid: true,
-          message: "Domain structure is valid",
+          type: "INV_DOMAIN_ERR",
+          message:
+            options.allowLocalhost && urlObj.hostname === "localhost"
+              ? "Localhost is allowed"
+              : "Domain structure is valid",
           hostname: urlObj.hostname,
         };
       }

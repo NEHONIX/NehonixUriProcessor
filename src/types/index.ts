@@ -464,6 +464,13 @@ export interface UrlValidationOptions {
    * @default false
    */
   rejectDuplicatedValues?: boolean;
+
+  /**
+   * If `true`, allows localhost URLs (e.g., http://localhost:8080).
+   * These would otherwise be rejected due to domain validation rules.
+   * @default false
+   */
+  allowLocalhost?: boolean;
 }
 
 /**
@@ -544,6 +551,8 @@ export interface UrlCheckResult {
       message?: string;
       /** The hostname extracted from the URL. */
       hostname?: string;
+      error?: string;
+      type?: "INV_DOMAIN_ERR" | "INV_STRUCTURE" | "ERR_UNKNOWN";
     };
 
     /**

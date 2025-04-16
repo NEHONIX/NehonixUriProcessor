@@ -158,104 +158,42 @@ class NehonixURIProcessor {
   }
 
   /**
-   * Checks whether a string is a valid URI.
+   * Validates a URL string according to specified options.
    *
-   * Delegates to `NehonixCoreUtils.isValidUrl` to validate the input string against a comprehensive URI pattern using
-   * the native `URL` API. Supports optional protocols (http/https), domains, ports, paths, and query parameters.
-   * Enforces configurable validation rules, including protocol requirements, top-level domain restrictions, query
-   * parameter uniqueness, and proper encoding of special characters. Rejects unencoded spaces in query parameters,
-   * requiring percent-encoding (e.g., `%20`).
+   * This method uses `checkUrl` to perform a comprehensive validation and returns a boolean indicating whether the URL
+   * is valid based on the provided options. It supports validation of protocols, domains, TLDs, query parameters, and
+   * encoding, with additional support for localhost when enabled.
    *
-   * @param url - The string to test for URI validity (e.g., `https://example.com?test=true`).
-   * @param [options] - Optional configuration for validation.
-   * @param [options.strictMode=false] - If `true`, requires a leading slash before query parameters (e.g., `/?query`).
-   *                                    If `false`, allows query parameters without a leading slash (e.g., `?query`).
-   * @param [options.allowUnicodeEscapes=true] - If `true`, allows Unicode escape sequences (e.g., `\u0068`) in query
-   *                                            parameters. If `false`, rejects such sequences.
-   * @param [options.rejectDuplicateParams=true] - If `true`, rejects URIs with duplicate query parameter keys
-   * @param [options.rejectDuplicatedValues=false] - If `true`, rejects URIs with duplicate query parameter values
-   *                                              (e.g., `?p1=a&p1=b`). If `false`, allows duplicates.
-   * @param [options.httpsOnly=false] - If `true`, only allows `https://` URLs (rejects `http://`). If `false`, allows
-   *                                   both `http://` and `https://` URLs.
-   * @param [options.maxUrlLength=2048] - Maximum allowed length for the entire URL. Set to 0 to disable length checking.
-   * @param [options.allowedTLDs=[]] - List of allowed top-level domains (e.g., `['com', 'org', 'net']`). If empty,
-   *                                   all TLDs are allowed.
-   * @param [options.allowedProtocols=['http', 'https']] - List of allowed protocols (e.g., `['http', 'https']`).
-   *                                                      Only enforced if `requireProtocol` is `true`.
-   * @param [options.requireProtocol=false] - If `true`, requires an explicit protocol in the URL (e.g., `https://`).
-   *                                         If `false`, adds `https://` to URLs without a protocol.
-   * @param [options.requirePathOrQuery=false] - If `true`, requires a path or query string (rejects bare domains like
-   *                                            `example.com`). If `false`, allows bare domains.
-   * @param [options.strictParamEncoding=false] - If `true`, validates that query parameter keys and values are properly
-   *                                             URI-encoded (e.g., no invalid percent-encoding). If `false`, performs
-   *                                             basic validation.
-   * @returns `true` if the string is a valid URI according to the specified options, `false` otherwise.
+   * @param url - The URL string to validate (e.g., `https://nehonix.space?test=true`).
+   * @param [options] - Optional configuration for validation rules.
+   * @param [options.strictMode=false] - If `true`, requires a leading slash before query parameters.
+   * @param [options.allowUnicodeEscapes=true] - If `true`, allows Unicode escape sequences in query parameters.
+   * @param [options.rejectDuplicateParams=true] - If `true`, rejects URIs with duplicate query parameter keys.
+   * @param [options.rejectDuplicatedValues=false] - If `true`, rejects URIs with duplicate query parameter values.
+   * @param [options.httpsOnly=false] - If `true`, only allows `https://` URLs.
+   * @param [options.maxUrlLength=2048] - Maximum allowed length for the entire URL.
+   * @param [options.allowedTLDs=[]] - List of allowed top-level domains.
+   * @param [options.allowedProtocols=['http', 'https']] - List of allowed protocols.
+   * @param [options.requireProtocol=false] - If `true`, requires an explicit protocol in the URL.
+   * @param [options.requirePathOrQuery=false] - If `true`, requires a path or query string.
+   * @param [options.strictParamEncoding=false] - If `true`, validates proper URI encoding of query parameters.
+   * @param [options.allowLocalhost=false] - If `true`, allows 'localhost' as a valid hostname.
+   * @returns `true` if the URL is valid according to the specified options, `false` otherwise.
    * @example
    * ```typescript
-   * // Valid URI
-   * const isValid = NehonixURIProcessor.isValidUri("https://example.com?test=true");
+   * const isValid = NehonixURIProcessor.isValidUrl("https://nehonix.space?test=true");
    * console.log(isValid); // true
    *
-   * // Invalid URI with unencoded spaces
-   * const isValidSpaces = NehonixURIProcessor.isValidUri(
-   *   "https://nehonix.space?ok=thank to nehonix"
-   * );
-   * console.log(isValidSpaces); // false
+   * const isLocalhostValid = NehonixURIProcessor.isValidUrl("http://localhost:8080", { allowLocalhost: true });
+   * console.log(isLocalhostValid); // true
    *
-   * // Invalid URI with duplicate parameters
-   * const isValidDuplicate = NehonixURIProcessor.isValidUri(
-   *   "https://nehonix.space?p2=a&p2=b"
-   * );
-   * console.log(isValidDuplicate); // false
-   *
-   * // Valid URI with encoded spaces
-   * const isValidEncoded = NehonixURIProcessor.isValidUri(
-   *   "https://nehonix.space?ok=thank%20to%20nehonix"
-   * );
-   * console.log(isValidEncoded); // true
-   *
-   * // Valid URI with duplicates allowed
-   * const isValidAllowDuplicate = NehonixURIProcessor.isValidUri(
-   *   "https://nehonix.space?p2=a&p2=b",
-   *   { rejectDuplicateParams: false }
-   * );
-   * console.log(isValidAllowDuplicate); // true
-   *
-   * // Valid URI with Unicode escapes
-   * const isValidUnicode = NehonixURIProcessor.isValidUri(
-   *   "https://nehonix.space?test=true&p2=\\u0068\\u0065\\u006c\\u006c\\u006f"
-   * );
-   * console.log(isValidUnicode); // true
-   *
-   * // Invalid URI with HTTP when httpsOnly is true
-   * const isValidHttps = NehonixURIProcessor.isValidUri(
-   *   "http://example.com",
-   *   { httpsOnly: true }
-   * );
-   * console.log(isValidHttps); // false
-   *
-   * // Invalid URI with disallowed TLD
-   * const isValidTLD = NehonixURIProcessor.isValidUri(
-   *   "https://example.xyz",
-   *   { allowedTLDs: ['com', 'org'] }
-   * );
-   * console.log(isValidTLD); // false
-   *
-   * // Invalid URI without protocol when required
-   * const isValidNoProtocol = NehonixURIProcessor.isValidUri(
-   *   "example.com",
-   *   { requireProtocol: true }
-   * );
-   * console.log(isValidNoProtocol); // false
-   *
-   * // Invalid URI with strict encoding violation
-   * const isValidEncoding = NehonixURIProcessor.isValidUri(
-   *   "https://example.com?test=%25",
-   *   { strictParamEncoding: true }
-   * );
-   * console.log(isValidEncoding); // false
+   * const isLocalhostInvalid = NehonixURIProcessor.isValidUrl("http://localhost:8080");
+   * console.log(isLocalhostInvalid); // false
    * ```
+   * @see checkUrl
+   * @see UrlValidationOptions
    */
+
   static isValidUri(...props: Parameters<typeof ncu.isValidUrl>): boolean {
     return ncu.isValidUrl(...props);
   }
