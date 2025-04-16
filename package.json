@@ -3,41 +3,25 @@
   "version": "2.0.1",
   "description": "A powerful URI processor for encoding, decoding, and analyzing URI data securely.",
   "main": "dist/index.js",
+  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build",
     "test": "jest",
     "patch": "npm version patch && npm publish"
   },
-  "keywords": [
-    "nehonix",
-    "uri",
-    "encoding",
-    "decoding",
-    "parser",
-    "security",
-    "url"
-  ],
-  "author": "nehonix",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/NEHONIX/NehonixUriProcessor.git"
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
-  "bugs": {
-    "url": "https://github.com/NEHONIX/NehonixUriProcessor/issues"
-  },
-  "homepage": "https://github.com/NEHONIX/NehonixUriProcessor#readme",
-  "publishConfig": {
-    "access": "public"
-  },
-  "dependencies": {
-    "punycode": "^2.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.1",
-    "typescript": "^5.3.3"
-  }
+  "sideEffects": false
 }

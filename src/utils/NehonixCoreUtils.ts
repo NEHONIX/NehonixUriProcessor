@@ -29,6 +29,7 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
     // Check URL length if maximum is set
     if (options.maxUrlLength && url.length > options.maxUrlLength)
       if (options.maxUrlLength > 0 && url.length > options.maxUrlLength) {
+        console.log("Maximum length ERR");
         return false;
       }
 

@@ -27,7 +27,7 @@ import { ncu } from "./utils/NehonixCoreUtils";
  * console.log(variants); // { percent: "%3Cscript%3E", base64: "PHNjcmlwdD4=", ... }
  * ```
  */
-export class NehonixURIProcessor {
+class NehonixURIProcessor {
   /**
    * Generates encoding variants of a string for Web Application Firewall (WAF) bypass testing.
    *
@@ -304,5 +304,5 @@ export class NehonixURIProcessor {
   }
 }
 
-// export { NehonixURIProcessor as NURIP };
-// export default NehonixURIProcessor;
+export { NehonixURIProcessor };
+export default NehonixURIProcessor;
