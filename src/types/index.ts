@@ -421,7 +421,7 @@ export interface UrlValidationOptions {
    * Set to 0 to disable length checking.
    * @default 2048
    */
-  maxUrlLength?: number;
+  maxUrlLength?: number | "NO_LIMIT";
 
   /**
    * List of allowed top-level domains (e.g., ['com', 'org', 'net']).
@@ -504,7 +504,7 @@ export interface UrlCheckResult {
       /** The actual length of the URL in characters. */
       actualLength?: number;
       /** The maximum allowed length as specified in options. */
-      maxLength?: number;
+      maxLength?: number | "NO_LIMIT";
     };
 
     /**

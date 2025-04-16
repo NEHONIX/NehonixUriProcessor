@@ -34,7 +34,12 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
 
     // Check URL length
     if (options.maxUrlLength)
-      if (options.maxUrlLength > 0 && url.length > options.maxUrlLength) {
+      if (
+        options.maxUrlLength &&
+        typeof options.maxUrlLength === "number" &&
+        options.maxUrlLength > 0 &&
+        url.length > options.maxUrlLength
+      ) {
         result.validationDetails.length = {
           isValid: false,
           message: `URL length exceeds maximum of ${options.maxUrlLength} characters`,
