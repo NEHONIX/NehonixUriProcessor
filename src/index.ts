@@ -304,5 +304,5 @@ export class NehonixURIProcessor {
   }
 }
 
-export { NehonixURIProcessor as NURIP };
+// export { NehonixURIProcessor as NURIP };
 // export default NehonixURIProcessor;
