@@ -2,7 +2,10 @@ import { NehonixEncService } from "../services/NehonixEnc.service";
 import { URLAnalysisResult, WAFBypassVariants } from "../types";
 
 export class SecurityRules {
-  private static enc: typeof NehonixEncService = NehonixEncService;
+  private static get enc() {
+    return NehonixEncService;
+  }
+
   // =============== SECURITY UTILITIES ===============
 
   static analyzeURL(url: string): URLAnalysisResult {
