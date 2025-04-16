@@ -1,6 +1,6 @@
 {
   "name": "nehonix-uri-processor",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "A powerful URI processor for encoding, decoding, and analyzing URI data securely.",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
