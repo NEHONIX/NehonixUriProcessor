@@ -128,10 +128,10 @@ class NehonixURIProcessor {
    * @example
    * ```typescript
    * const decoded = NehonixURIProcessor.autoDetectAndDecode("https://nehonix.space?test=dHJ1ZQ==");
-   * console.log(decoded); // https://nehonix.space?test=true
+   * console.log(decoded.val()); // https://nehonix.space?test=true
    *
    * const nested = NehonixURIProcessor.autoDetectAndDecode("aHR0cHM6Ly9leGFtcGxlLmNvbQ==");
-   * console.log(nested); // https://nehonix.space
+   * console.log(nested.val()); // https://nehonix.space
    * ```
    */
   static autoDetectAndDecode(
