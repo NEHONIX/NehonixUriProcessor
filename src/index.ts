@@ -6,8 +6,8 @@ import { ncu } from "./utils/NehonixCoreUtils";
 
 /**
  * A comprehensive library for detecting, encoding, and decoding URI strings, designed for security testing and attack analysis.
- *@author nehonix
- *@since 12/04/2025
+ * @author nehonix
+ * @since 12/04/2025
  * The `NehonixURIProcessor` class provides methods to analyze URLs, generate encoding variants for Web Application Firewall (WAF) bypass testing,
  * and automatically detect and decode various URI encodings. It supports a range of encoding types, including percent-encoding, Base64, and hexadecimal,
  * making it suitable for penetration testing, vulnerability assessment, and secure data processing.
@@ -128,12 +128,12 @@ class NehonixURIProcessor {
    * @example
    * ```typescript
    * const decoded = NehonixURIProcessor.autoDetectAndDecode("https://nehonix.space?test=dHJ1ZQ==");
-    * console.log(decoded.val()); // https:/f/nehonix.space?test=true
+   * console.log(decoded.val()); // https://nehonix.space?test=true
    *
    * const nested = NehonixURIProcessor.autoDetectAndDecode("aHR0cHM6Ly9leGFtcGxlLmNvbQ==");
    * console.log(nested.val()); // https://nehonix.space
    * ```
-   */ 
+   */
   static autoDetectAndDecode(
     ...props: Parameters<typeof dec.decodeAnyToPlaintext>
   ) {
@@ -296,14 +296,137 @@ class NehonixURIProcessor {
       maxRecursionDepth,
     });
   }
+
   /**
+   * Creates a URL object from a URI string.
    *
-   * @param uri the uri to create
-   * @returns an Object of the class URL
+   * This method parses the provided URI string using the native `URL` API, returning a `URL` object that provides
+   * structured access to the URL's components (e.g., protocol, hostname, pathname, search parameters). It is useful
+   * for further URL manipulation or analysis within the `NehonixURIProcessor` ecosystem.
+   *
+   * @param uri - The URI string to parse (e.g., `https://nehonix.space?test=true`).
+   * @returns A `URL` object representing the parsed URI.
+   * @throws Throws a `TypeError` if the URI string is invalid or cannot be parsed by the `URL` constructor.
+   * @example
+   * ```typescript
+   * const urlObj = NehonixURIProcessor.createUrl("https://nehonix.space?test=true");
+   * console.log(urlObj.href); // https://nehonix.space?test=true
+   * console.log(urlObj.hostname); // nehonix.space
+   * console.log(urlObj.searchParams.get("test")); // true
+   *
+   * // Handling invalid URI
+   * try {
+   *   const invalidUrl = NehonixURIProcessor.createUrl("not-a-valid-url");
+   * } catch (error) {
+   *   console.log(error.message); // Failed to construct 'URL': Invalid URL
+   * }
+   * ```
    */
   static createUrl(uri: string): URL {
     return new URL(uri);
   }
+
+  //v2.0.6
+  /**
+   * Checks a URL string and returns detailed validation results.
+   *
+   * This method performs a comprehensive validation of a URL string against configurable rules, similar to `isValidUri`,
+   * but instead of returning a boolean, it provides an object with detailed results for each validation step. It checks
+   * aspects such as URL length, protocol, domain structure, top-level domains (TLDs), query parameters, and encoding.
+   * The returned object includes an overall validity flag and specific details about each check, making it ideal for
+   * debugging, security analysis, or detailed URL validation reporting.
+   *
+   * @param url - The URL string to check (e.g., `https://nehonix.space?test=true`).
+   * @param [options] - Optional configuration for validation rules.
+   * @param [options.strictMode=false] - If `true`, requires a leading slash before query parameters (e.g., `/?query`).
+   *                                    If `false`, allows query parameters without a leading slash (e.g., `?query`).
+   * @param [options.allowUnicodeEscapes=true] - If `true`, allows Unicode escape sequences (e.g., `\u0068`) in query
+   *                                            parameters. If `false`, rejects such sequences.
+   * @param [options.rejectDuplicateParams=true] - If `true`, rejects URIs with duplicate query parameter keys
+   *                                              (e.g., `?p1=a&p1=b`). If `false`, allows duplicates.
+   * @param [options.rejectDuplicatedValues=false] - If `true`, rejects URIs with duplicate query parameter values
+   *                                                (e.g., `?p1=a&p2=a`). If `false`, allows duplicates.
+   * @param [options.httpsOnly=false] - If `true`, only allows `https://` URLs (rejects `http://`). If `false`, allows
+   *                                   both `http://` and `https://` URLs.
+   * @param [options.maxUrlLength=2048] - Maximum allowed length for the entire URL. Set to 0 to disable length checking.
+   * @param [options.allowedTLDs=[]] - List of allowed top-level domains (e.g., `['com', 'org', 'net']`). If empty,
+   *                                   all TLDs are allowed.
+   * @param [options.allowedProtocols=['http', 'https']] - List of allowed protocols (e.g., `['http', 'https']`).
+   *                                                      Only enforced if `requireProtocol` is `true`.
+   * @param [options.requireProtocol=false] - If `true`, requires an explicit protocol in the URL (e.g., `https://`).
+   *                                         If `false`, adds `https://` to URLs without a protocol.
+   * @param [options.requirePathOrQuery=false] - If `true`, requires a path or query string (rejects bare domains like
+   *                                            `example.com`). If `false`, allows bare domains.
+   * @param [options.strictParamEncoding=false] - If `true`, validates that query parameter keys and values are properly
+   *                                             URI-encoded (e.g., no invalid percent-encoding). If `false`, performs
+   *                                             basic validation.
+   * @returns A `UrlCheckResult` object containing:
+   *          - `isValid`: A boolean indicating overall validity.
+   *          - `validationDetails`: An object with details for each validation check (e.g., length, protocol, domain),
+   *            including validity status, descriptive messages, and relevant metadata (e.g., detected protocol, invalid parameters).
+   * @throws Does not throw errors; instead, parsing errors are reported in the `validationDetails.parsing` property.
+   * @example
+   * ```typescript
+   * const result = NehonixURIProcessor.checkUrl("https://nehonix.space?test=true");
+   * console.log(result);
+   * // Output: {
+   * //   isValid: true,
+   * //   validationDetails: {
+   * //     length: { isValid: true, message: "URL length is within limits", actualLength: 29, maxLength: 2048 },
+   * //     emptyCheck: { isValid: true, message: "URL is not empty" },
+   * //     protocol: { isValid: true, message: "Protocol 'https' is valid", detectedProtocol: "https", allowedProtocols: ["http", "https"] },
+   * //     ...
+   * //   }
+   * // }
+   *
+   * // Invalid URL with unencoded spaces
+   * const invalidResult = NehonixURIProcessor.checkUrl("https://nehonix.space?test=thank you");
+   * console.log(invalidResult);
+   * // Output: {
+   * //   isValid: false,
+   * //   validationDetails: {
+   * //     length: { isValid: true, message: "URL length is within limits", actualLength: 35, maxLength: 2048 },
+   * //     emptyCheck: { isValid: true, message: "URL is not empty" },
+   * //     querySpaces: { isValid: false, message: "Query string contains unencoded spaces" },
+   * //     ...
+   * //   }
+   * // }
+   *
+   * // URL with duplicate parameters
+   * const duplicateResult = NehonixURIProcessor.checkUrl(
+   *   "https://nehonix.space?p1=a&p1=b",
+   *   { rejectDuplicateParams: true }
+   * );
+   * console.log(duplicateResult);
+   * // Output: {
+   * //   isValid: false,
+   * //   validationDetails: {
+   * //     duplicateParams: { isValid: false, message: "Duplicate query parameter keys detected", duplicatedKeys: ["p1"] },
+   * //     ...
+   * //   }
+   * // }
+   *
+   * // URL with strict encoding violation
+   * const encodingResult = NehonixURIProcessor.checkUrl(
+   *   "https://nehonix.space?test=%25",
+   *   { strictParamEncoding: true }
+   * );
+   * console.log(encodingResult);
+   * // Output: {
+   * //   isValid: false,
+   * //   validationDetails: {
+   * //     paramEncoding: { isValid: false, message: "Invalid parameter encoding detected", invalidParams: ["%25"] },
+   * //     ...
+   * //   }
+   * // }
+   * ```
+   * @see UrlCheckResult for the structure of the returned object.
+   * @see isValidUri for a boolean-based URL validation method.
+   */
+
+  static checkUrl = (
+    ...p: Parameters<typeof ncu.checkUrl>
+  ): ReturnType<typeof ncu.checkUrl> => ncu.checkUrl(...p);
 }
 
 export { NehonixURIProcessor };

@@ -465,3 +465,185 @@ export interface UrlValidationOptions {
    */
   rejectDuplicatedValues?: boolean;
 }
+
+/**
+ * Represents the detailed result of a URL validation process.
+ * This interface provides a comprehensive breakdown of the validation checks performed
+ * on a URL, including overall validity and specific details for each validation step.
+ *
+ * @interface UrlCheckResult
+ */
+export interface UrlCheckResult {
+  /**
+   * Indicates whether the URL is valid based on all validation checks.
+   * `true` if all checks pass, `false` if any check fails.
+   */
+  isValid: boolean;
+
+  /**
+   * Contains detailed results for each validation check performed on the URL.
+   * Each property corresponds to a specific validation aspect and is optional,
+   * as not all validations may be relevant depending on the provided options.
+   */
+  validationDetails: {
+    /**
+     * Validation result for the URL length check.
+     */
+    length?: {
+      /** Indicates if the URL length is within the specified limit. */
+      isValid: boolean;
+      /** Descriptive message about the length validation result. */
+      message?: string;
+      /** The actual length of the URL in characters. */
+      actualLength?: number;
+      /** The maximum allowed length as specified in options. */
+      maxLength?: number;
+    };
+
+    /**
+     * Validation result for checking if the URL is empty or contains only whitespace.
+     */
+    emptyCheck?: {
+      /** Indicates if the URL is non-empty. */
+      isValid: boolean;
+      /** Descriptive message about the empty check result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for the URL protocol check.
+     */
+    protocol?: {
+      /** Indicates if the protocol is valid and allowed. */
+      isValid: boolean;
+      /** Descriptive message about the protocol validation result. */
+      message?: string;
+      /** The detected protocol in the URL (e.g., 'http', 'https'). */
+      detectedProtocol?: string;
+      /** The list of allowed protocols specified in options. */
+      allowedProtocols?: string[];
+    };
+
+    /**
+     * Validation result for the HTTPS-only requirement.
+     */
+    httpsOnly?: {
+      /** Indicates if the URL uses HTTPS when required. */
+      isValid: boolean;
+      /** Descriptive message about the HTTPS-only validation result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for the domain structure check.
+     */
+    domain?: {
+      /** Indicates if the domain structure is valid. */
+      isValid: boolean;
+      /** Descriptive message about the domain validation result. */
+      message?: string;
+      /** The hostname extracted from the URL. */
+      hostname?: string;
+    };
+
+    /**
+     * Validation result for the top-level domain (TLD) check.
+     */
+    tld?: {
+      /** Indicates if the TLD is valid and allowed. */
+      isValid: boolean;
+      /** Descriptive message about the TLD validation result. */
+      message?: string;
+      /** The detected TLD in the URL (e.g., 'com', 'org'). */
+      detectedTld?: string;
+      /** The list of allowed TLDs specified in options. */
+      allowedTlds?: string[];
+    };
+
+    /**
+     * Validation result for the path or query string requirement.
+     */
+    pathOrQuery?: {
+      /** Indicates if the URL satisfies path or query requirements. */
+      isValid: boolean;
+      /** Descriptive message about the path/query validation result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for strict mode path requirements.
+     */
+    strictMode?: {
+      /** Indicates if the URL satisfies strict mode path requirements. */
+      isValid: boolean;
+      /** Descriptive message about the strict mode validation result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for checking unencoded spaces in the query string.
+     */
+    querySpaces?: {
+      /** Indicates if the query string is free of unencoded spaces. */
+      isValid: boolean;
+      /** Descriptive message about the query spaces validation result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for strict parameter encoding check.
+     */
+    paramEncoding?: {
+      /** Indicates if query parameters are properly encoded. */
+      isValid: boolean;
+      /** Descriptive message about the parameter encoding validation result. */
+      message?: string;
+      /** List of parameters that failed encoding validation, if any. */
+      invalidParams?: string[];
+    };
+
+    /**
+     * Validation result for duplicate query parameter keys check.
+     */
+    duplicateParams?: {
+      /** Indicates if there are no duplicate query parameter keys. */
+      isValid: boolean;
+      /** Descriptive message about the duplicate parameters validation result. */
+      message?: string;
+      /** List of query parameter keys that are duplicated, if any. */
+      duplicatedKeys?: string[];
+    };
+
+    /**
+     * Validation result for duplicate query parameter values check.
+     */
+    duplicateValues?: {
+      /** Indicates if there are no duplicate query parameter values. */
+      isValid: boolean;
+      /** Descriptive message about the duplicate values validation result. */
+      message?: string;
+      /** List of query parameter values that are duplicated, if any. */
+      duplicatedValues?: string[];
+    };
+
+    /**
+     * Validation result for Unicode escape sequences check.
+     */
+    unicodeEscapes?: {
+      /** Indicates if the URL is free of disallowed Unicode escape sequences. */
+      isValid: boolean;
+      /** Descriptive message about the Unicode escapes validation result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for URL parsing.
+     */
+    parsing?: {
+      /** Indicates if the URL was parsed successfully. */
+      isValid: boolean;
+      /** Descriptive message about the parsing validation result. */
+      message?: string;
+    };
+  };
+}
