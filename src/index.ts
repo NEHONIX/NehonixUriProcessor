@@ -133,7 +133,7 @@ class NehonixURIProcessor {
    * const nested = NehonixURIProcessor.autoDetectAndDecode("aHR0cHM6Ly9leGFtcGxlLmNvbQ==");
    * console.log(nested.val()); // https://nehonix.space
    * ```
-   */
+   */ 
   static autoDetectAndDecode(
     ...props: Parameters<typeof dec.decodeAnyToPlaintext>
   ) {
