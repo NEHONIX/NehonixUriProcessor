@@ -1,10 +1,21 @@
 import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
 import { sr } from "../rules/security.rules";
-import { UrlCheckResult, UrlValidationOptions } from "../types";
+import {
+  ComparisonRule,
+  UrlCheckResult,
+  UrlValidationOptions,
+  ValidUrlComponents,
+} from "../types";
 
 export class NehonixCoreUtils extends NehonixSharedUtils {
   // =============== ENCODING DETECTION METHODS ===============
 
+  /**
+   * Checks a URL string and returns detailed validation results.
+   * @param url The URL string to check
+   * @param options Validation options
+   * @returns UrlCheckResult object with detailed validation information
+   */
   /**
    * Checks a URL string and returns detailed validation results.
    * @param url The URL string to check
@@ -25,50 +36,57 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       requirePathOrQuery: false,
       strictParamEncoding: false,
       rejectDuplicatedValues: false,
+      debug: false,
     }
   ): UrlCheckResult {
     const result: UrlCheckResult = {
       isValid: true,
       validationDetails: {},
+      cause: "",
     };
 
     // Check URL length
-    if (options.maxUrlLength)
+    if (options.maxUrlLength) {
       if (
-        options.maxUrlLength &&
         typeof options.maxUrlLength === "number" &&
         options.maxUrlLength > 0 &&
         url.length > options.maxUrlLength
       ) {
+        const message = `URL exceeds maximum length of ${options.maxUrlLength} characters`;
+        result.cause = message;
         result.validationDetails.length = {
           isValid: false,
-          message: `URL length exceeds maximum of ${options.maxUrlLength} characters`,
+          message,
           actualLength: url.length,
           maxLength: options.maxUrlLength,
         };
         result.isValid = false;
         return result;
       } else {
+        const message = `URL length is within the allowed limit of ${options.maxUrlLength} characters`;
         result.validationDetails.length = {
           isValid: true,
-          message: "URL length is within limits",
+          message,
           actualLength: url.length,
           maxLength: options.maxUrlLength,
         };
       }
+    }
 
     // Check if URL is empty
     if (!url.trim()) {
+      const message = "URL is empty or contains only whitespace";
+      result.cause = message;
       result.validationDetails.emptyCheck = {
         isValid: false,
-        message: "URL is empty or contains only whitespace",
+        message,
       };
       result.isValid = false;
       return result;
     } else {
       result.validationDetails.emptyCheck = {
         isValid: true,
-        message: "URL is not empty",
+        message: "URL contains valid content",
       };
     }
 
@@ -79,49 +97,215 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
 
       if (!hasProtocol) {
         if (options.requireProtocol) {
+          const message =
+            "A protocol (e.g., 'http://' or 'https://') is required";
+          result.cause = message;
           result.validationDetails.protocol = {
             isValid: false,
-            message: "Protocol is required but not provided",
+            message,
             allowedProtocols: options.allowedProtocols,
           };
           result.isValid = false;
           return result;
         }
+        result.cause = "";
         parsedUrl = "https://" + url;
       }
 
       // Parse the URL
-      const urlObj = new URL(parsedUrl);
+      let urlObj: URL | null = null;
+      try {
+        urlObj = new URL(url);
+      } catch (error: any) {
+        result.validationDetails.parsing = {
+          isValid: false,
+          message: `Failed to parse URL: ${error.message}`,
+        };
+        result.isValid = false;
+        return result;
+      }
+
+      // Process custom validations
+      if (options.customValidations && options.customValidations.length > 0) {
+        const validationResults: {
+          isValid: boolean;
+          message: string;
+          rule: ComparisonRule;
+        }[] = [];
+
+        // Valid string-returning URL properties
+        const validUrlComponents: ValidUrlComponents[] = [
+          "href",
+          "origin",
+          "protocol",
+          "username",
+          "password",
+          "host",
+          "hostname",
+          "port",
+          "pathname",
+          "search",
+          "hash",
+        ];
+
+        for (const [component, operator, value] of options.customValidations) {
+          let leftValue: string | number | undefined;
+          let isValid = false;
+          let message = "";
+
+          // Validate component
+          if (component === "literal") {
+            if (options.literalValue === undefined) {
+              result.cause =
+                "'literalValue' option is required when the left value is 'literal'";
+              isValid = false;
+              message =
+                "Literal comparison failed: 'literalValue' option is required";
+            } else {
+              leftValue = options.literalValue;
+            }
+          }
+          // Add handler for fullCustomValidation components
+          else if (
+            component.startsWith("fullCustomValidation.") ||
+            component.startsWith("fcv.")
+          ) {
+            const c = component;
+            const customKey =
+              c.substring("fullCustomValidation.".length) ||
+              c.substring("fcv.".length);
+
+            if (
+              !options.fullCustomValidation ||
+              !(customKey in options.fullCustomValidation)
+            ) {
+              isValid = false;
+              message = `Custom validation failed: Property '${customKey}' not found in fullCustomValidation object`;
+            } else {
+              leftValue = options.fullCustomValidation[customKey];
+            }
+          } else if (
+            !validUrlComponents.includes(component as ValidUrlComponents)
+          ) {
+            isValid = false;
+            message = `Invalid URL component '${component}'; expected one of: ${validUrlComponents.join(
+              ", "
+            )} or a fullCustomValidation property (fullCustomValidation.[key])`;
+          } else {
+            leftValue = urlObj[component as keyof URL] as string;
+          }
+
+          // Perform comparison if leftValue is defined
+          if (leftValue !== undefined) {
+            switch (operator) {
+              case "===":
+                isValid = leftValue === value;
+                break;
+              case "==":
+                isValid = leftValue == value;
+                break;
+              case "!==":
+                isValid = leftValue !== value;
+                break;
+              case "!=":
+                isValid = leftValue != value;
+                break;
+              case "<=":
+                isValid = leftValue <= value;
+                break;
+              case ">=":
+                isValid = leftValue >= value;
+                break;
+              case "<":
+                isValid = leftValue < value;
+                break;
+              case ">":
+                isValid = leftValue > value;
+                break;
+            }
+            message = isValid
+              ? `Validation passed: ${component} ${operator} ${value}`
+              : `Validation failed: ${component} ${operator} ${value} (actual: ${
+                  leftValue || "NONE"
+                })`;
+          }
+
+          // Debug logging
+          if (options.debug) {
+            console.log(
+              `[DEBUG] Custom Validation: ${component} ${operator} ${value}`
+            );
+            console.log(
+              `[DEBUG] Left Value: ${
+                leftValue !== undefined ? leftValue : "undefined"
+              }`
+            );
+            console.log(`[DEBUG] Result: ${message}`);
+          }
+
+          validationResults.push({
+            isValid,
+            message,
+            rule: [component, operator, value],
+          });
+
+          if (!isValid) {
+            result.isValid = false;
+          }
+        }
+
+        result.validationDetails.customValidations = {
+          isValid: validationResults.every((r) => r.isValid),
+          message: validationResults.map((r) => r.message).join("; "),
+          results: validationResults,
+        };
+
+        if (!result.isValid) {
+          result.cause = "One or more custom validations failed";
+          return result;
+        }
+      }
 
       // Protocol validation
       const protocol = urlObj.protocol.replace(":", "");
-      if (options.allowedProtocols)
+      if (options.allowedProtocols) {
         if (
           options.allowedProtocols.length > 0 &&
           !options.allowedProtocols.includes(protocol)
         ) {
+          const message = `Invalid protocol detected. Expected one of (${options.allowedProtocols
+            .map((p) => `"${p}"`)
+            .join(", ")}), but received "${protocol}".`;
+          const explanationMessage =
+            "The provided protocol is not included in the list of allowed protocols. Please verify your configuration or input URL.";
+
+          result.cause = message;
           result.validationDetails.protocol = {
             isValid: false,
-            message: `Protocol '${protocol}' is not in allowed protocols`,
+            message: explanationMessage,
             detectedProtocol: protocol,
             allowedProtocols: options.allowedProtocols,
           };
           result.isValid = false;
           return result;
         } else {
+          result.cause = "";
           result.validationDetails.protocol = {
             isValid: true,
-            message: `Protocol '${protocol}' is valid`,
+            message: `Protocol '${protocol}' is allowed`,
             detectedProtocol: protocol,
             allowedProtocols: options.allowedProtocols,
           };
         }
+      }
 
       // HTTPS-only validation
       if (options.httpsOnly && protocol !== "https") {
+        const message = "Only HTTPS protocol is allowed";
+        result.cause = message;
         result.validationDetails.httpsOnly = {
           isValid: false,
-          message: "Only HTTPS protocol is allowed",
+          message,
         };
         result.isValid = false;
         return result;
@@ -130,7 +314,7 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           isValid: true,
           message: options.httpsOnly
             ? "HTTPS protocol is used"
-            : "Protocol check passed",
+            : "Protocol meets requirements",
         };
       }
 
@@ -140,11 +324,17 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         (hostParts.length < 2 || hostParts.some((part) => part === "")) &&
         !(options.allowLocalhost && urlObj.hostname === "localhost")
       ) {
+        const message = `Invalid hostname '${
+          urlObj.hostname
+        }'; expected a valid domain${
+          options.allowLocalhost ? " or 'localhost'" : ""
+        }`;
+        result.cause = message;
         result.validationDetails.domain = {
           isValid: false,
           type: "INV_DOMAIN_ERR",
           error: "Invalid domain structure",
-          message: `Expected 'valid hostname' but received "${urlObj.hostname}"`,
+          message,
           hostname: urlObj.hostname,
         };
         result.isValid = false;
@@ -155,20 +345,24 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           type: "INV_DOMAIN_ERR",
           message:
             options.allowLocalhost && urlObj.hostname === "localhost"
-              ? "Localhost is allowed"
+              ? "Localhost is valid"
               : "Domain structure is valid",
           hostname: urlObj.hostname,
         };
       }
 
       // TLD validation
-      if (options.allowedTLDs)
+      if (options.allowedTLDs) {
         if (options.allowedTLDs.length > 0) {
           const tld = hostParts[hostParts.length - 1].toLowerCase();
           if (!options.allowedTLDs.includes(tld)) {
+            const message = `TLD '${tld}' is not allowed; expected one of: ${options.allowedTLDs.join(
+              ", "
+            )}`;
+            result.cause = message;
             result.validationDetails.tld = {
               isValid: false,
-              message: `TLD '${tld}' is not in allowed TLDs`,
+              message,
               detectedTld: tld,
               allowedTlds: options.allowedTLDs,
             };
@@ -177,12 +371,13 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           } else {
             result.validationDetails.tld = {
               isValid: true,
-              message: `TLD '${tld}' is valid`,
+              message: `TLD '${tld}' is allowed`,
               detectedTld: tld,
               allowedTlds: options.allowedTLDs,
             };
           }
         }
+      }
 
       // Path/query requirement validation
       if (
@@ -190,25 +385,30 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         urlObj.pathname === "/" &&
         !urlObj.search
       ) {
+        const message = "A path or query string is required";
+        result.cause = message;
         result.validationDetails.pathOrQuery = {
           isValid: false,
-          message: "Path or query string is required",
+          message,
         };
         result.isValid = false;
         return result;
       } else {
         result.validationDetails.pathOrQuery = {
           isValid: true,
-          message: "Path/query requirement satisfied",
+          message: "Path or query requirements are met",
         };
       }
 
       // Strict mode path validation
       if (options.strictMode && urlObj.pathname === "/" && urlObj.search) {
+        const message =
+          "A leading slash is required in the path for strict mode";
+        result.cause = message;
         result.validationDetails.strictMode = {
           isValid: false,
           message:
-            "In strict mode, query parameters require a leading slash path",
+            "In strict mode, a leading slash (e.g., '/path') is required for the path",
         };
         result.isValid = false;
         return result;
@@ -216,8 +416,8 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         result.validationDetails.strictMode = {
           isValid: true,
           message: options.strictMode
-            ? "Strict mode path requirements met"
-            : "Strict mode not enabled",
+            ? "Path meets strict mode requirements"
+            : "Strict mode is not enabled",
         };
       }
 
@@ -225,14 +425,15 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       if (urlObj.search.includes(" ")) {
         result.validationDetails.querySpaces = {
           isValid: false,
-          message: "Query string contains unencoded spaces",
+          message:
+            "Query string contains unencoded spaces; encode spaces as '%20'",
         };
         result.isValid = false;
         return result;
       } else {
         result.validationDetails.querySpaces = {
           isValid: true,
-          message: "No unencoded spaces in query string",
+          message: "Query string contains no unencoded spaces",
         };
       }
 
@@ -267,7 +468,9 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         if (invalidParams.length > 0) {
           result.validationDetails.paramEncoding = {
             isValid: false,
-            message: "Invalid parameter encoding detected",
+            message: `Invalid encoding in query parameters: ${invalidParams.join(
+              ", "
+            )}`,
             invalidParams,
           };
           result.isValid = false;
@@ -275,7 +478,7 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         } else {
           result.validationDetails.paramEncoding = {
             isValid: true,
-            message: "Parameter encoding is valid",
+            message: "Query parameter encoding is valid",
           };
         }
       }
@@ -289,7 +492,9 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       ) {
         result.validationDetails.duplicateParams = {
           isValid: false,
-          message: "Duplicate query parameter keys detected",
+          message: `Duplicate query parameter keys detected: ${duplicatedState.duplicatedKeys.join(
+            ", "
+          )}`,
           duplicatedKeys: duplicatedState.duplicatedKeys,
         };
         result.isValid = false;
@@ -298,8 +503,8 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         result.validationDetails.duplicateParams = {
           isValid: true,
           message: options.rejectDuplicateParams
-            ? "No duplicate keys found"
-            : "Duplicate keys check not enabled",
+            ? "No duplicate query parameter keys found"
+            : "Duplicate keys check is not enabled",
           duplicatedKeys: duplicatedState.duplicatedKeys,
         };
       }
@@ -310,7 +515,9 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       ) {
         result.validationDetails.duplicateValues = {
           isValid: false,
-          message: "Duplicate query parameter values detected",
+          message: `Duplicate query parameter values detected: ${duplicatedState.duplicatedValues.join(
+            ", "
+          )}`,
           duplicatedValues: duplicatedState.duplicatedValues,
         };
         result.isValid = false;
@@ -319,8 +526,8 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         result.validationDetails.duplicateValues = {
           isValid: true,
           message: options.rejectDuplicatedValues
-            ? "No duplicate values found"
-            : "Duplicate values check not enabled",
+            ? "No duplicate query parameter values found"
+            : "Duplicate values check is not enabled",
           duplicatedValues: duplicatedState.duplicatedValues,
         };
       }
@@ -329,7 +536,7 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       if (!options.allowUnicodeEscapes && /\\u[\da-f]{4}/i.test(url)) {
         result.validationDetails.unicodeEscapes = {
           isValid: false,
-          message: "Unicode escape sequences are not allowed",
+          message: "Unicode escape sequences (e.g., '\\uXXXX') are not allowed",
         };
         result.isValid = false;
         return result;
@@ -337,8 +544,8 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         result.validationDetails.unicodeEscapes = {
           isValid: true,
           message: options.allowUnicodeEscapes
-            ? "Unicode escapes allowed"
-            : "No unicode escapes detected",
+            ? "Unicode escape sequences are allowed"
+            : "No unicode escape sequences detected",
         };
       }
 
@@ -352,13 +559,12 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
     } catch (error: any) {
       result.validationDetails.parsing = {
         isValid: false,
-        message: `URL parsing failed: ${error.message}`,
+        message: `Failed to parse URL: ${error.message}`,
       };
       result.isValid = false;
       return result;
     }
   }
-
   /**
    * Validates a URL string according to specified options.
    * @param url The URL string to validate

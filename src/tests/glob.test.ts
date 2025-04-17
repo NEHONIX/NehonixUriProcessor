@@ -1,8 +1,28 @@
 import { NehonixURIProcessor } from "..";
 const uri = "http://localhost:8788/api/quarantine?testUri=83";
 
-console.log(
-  NehonixURIProcessor.checkUrl(uri, {
-    strictMode: false,
-  })
-);
+// const mockUri = `http://localhost:8788/api/quarantine?testUri=83?test2&teste/pp/?test=entr&en=fr&t=hello%20world`;
+// const mockUri = `http://localhost:8788/api/quarantine?testUri=83?test2&teste/pp/?test=entr&en=fr&t=hello%20world`;
+
+const mockUri =
+  "https://nehonix.space?test=\x74\x72\x75\x65&p2=aGVsbG8gd29ybGQsIEknbSB0ZXN0aW5n&65742068692062726f2075277265207573696e6720746865206c6962&ok=thank%20to%20nehonix&test5=nehonix.space&user=\112\157\150\156\40\104\157\145";
+
+//uri checking....
+const uri_analysed = NehonixURIProcessor.checkUrl("https://google.com/api", {
+  literalValue: 7,
+  debug: true,
+  fullCustomValidation: { ta: 2 },
+  customValidations: [
+    ["hostname", "===", "google.com"],
+    ["pathname", "===", "/api"],
+    ["fcv.ta", "==", 5],
+  ],
+});
+
+// const auto_d = NehonixURIProcessor.autoDetectAndDecode(mockUri, {
+//   output: {
+//     encodeUrl: true,
+//   },
+// });
+// console.log(auto_d.val());
+console.log(uri_analysed.validationDetails.customValidations?.results);

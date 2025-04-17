@@ -56,6 +56,10 @@ console.log(urlObj.href); // https://example.com/
 
 ### Core Methods
 
+#### `checkUrl(url: string, options?: object)`
+
+Click to [see full doc](./docs/checkUrlMethod.md)!
+
 #### `isValidUri(url: string, options?: object)`
 
 Checks whether a string is a valid URI with configurable validation rules.
@@ -321,6 +325,7 @@ The library can automatically detect the following encoding types:
 ## Version
 
 2.0.0
+see the lastest version of NURP(NehonixUriProcessor): [v2.0.9](./docs/readmeV2.0.9.md)
 
 ## License
 

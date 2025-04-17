@@ -471,7 +471,91 @@ export interface UrlValidationOptions {
    * @default false
    */
   allowLocalhost?: boolean;
+  /**
+   * An array of custom validation rules to apply to the URL.
+   * Each rule specifies a URL component (e.g., 'hostname', 'pathname') or a literal string,
+   * a comparison operator, and a value to compare against. If provided, the URL is validated
+   * against each rule, and the results are reported in the UrlCheckResult.
+   * @example
+   * // Validate that the hostname is 'nehonix.space' and the pathname is '/api'
+   * const options: UrlValidationOptions = {
+   *   customValidations: [
+   *     ['hostname', '===', 'nehonix.space'],
+   *     ['pathname', '===', '/api'],
+   *     ['literal', '!=', 'nehonix.space'] // Compare a literal value (e.g., URL string)
+   *   ]
+   * };
+   */
+  customValidations?: ComparisonRule[];
+
+  /**
+   * The value to use as the left operand for 'literal' comparisons in customValidations.
+   * Required if any rule uses 'literal' as the component.
+   * @example
+   * // Compare a custom string to 'nehonix.space'
+   * literalValue: 'nehonix.space' // Used for ['literal', '==', 'nehonix.space']
+   * output: true
+   */
+  literalValue?: string | number;
+  /**
+   * If true, enables debug logging for custom validations, printing the actual values
+   * of components or literal inputs to aid in troubleshooting.
+   * @default false
+   */
+  debug?: boolean;
+
+  fullCustomValidation?: Record<string, string | number>;
 }
+
+/**
+ * A custom validation rule for URLs, defining a comparison to perform.
+ * @typedef {Array<keyof URL | 'literal', comparisonOperator, string>} customValidations
+ * @property {keyof URL | 'literal'} 0 - The URL component to compare (e.g., 'hostname', 'pathname') or 'literal' for a direct string comparison.
+ * @property {comparisonOperator} 1 - The operator to use for the comparison (e.g., '===', '==').
+ * @property {string} 2 - The value to compare against.
+ * @example
+ * // Rule to check if hostname is 'nehonix.space'
+ * const rule: customValidations = ['hostname', '===', 'nehonix.space'];
+ * @example
+ * // Rule for literal comparison
+ * const literalRule: customValidations = ['literal', '!=', 'nehonix.space'];
+ */
+export type ComparisonRule = [
+  ValidUrlComponents | custumValidUriComponent,
+  comparisonOperator,
+  string | number
+];
+
+export type ValidUrlComponents =
+  | "href"
+  | "origin"
+  | "protocol"
+  | "username"
+  | "password"
+  | "host"
+  | "hostname"
+  | "port"
+  | "pathname"
+  | "search"
+  | "hash"
+  | `fullCustomValidation.${string}`
+  | `fcv.${string}`;
+
+export type custumValidUriComponent = "literal";
+
+/**
+ * Comparison operators for custom validation rules.
+ * @type {'===' | '==' | '<=' | '>=' | '!=' | '!==' | '<' | '>'} comparisonOperator
+ */
+export type comparisonOperator =
+  | "==="
+  | "=="
+  | "<="
+  | ">="
+  | "!="
+  | "!=="
+  | "<"
+  | ">";
 
 /**
  * Represents the detailed result of a URL validation process.
@@ -488,11 +572,52 @@ export interface UrlCheckResult {
   isValid: boolean;
 
   /**
+   * Return the reason of failling
+   */
+  cause?: string;
+
+  /**
    * Contains detailed results for each validation check performed on the URL.
    * Each property corresponds to a specific validation aspect and is optional,
    * as not all validations may be relevant depending on the provided options.
    */
   validationDetails: {
+    /**
+     * Results of custom validation rules applied to the URL.
+     * @property {boolean} isValid - Whether all custom validation rules passed.
+     * @property {string} message - A summary of the validation outcomes, combining messages for each rule.
+     * @property {Array} results - Detailed results for each custom validation rule.
+     * @property {boolean} results[].isValid - Whether the specific rule passed.
+     * @property {string} results[].message - A message describing the rule's outcome (e.g., success or failure details).
+     * @property {customValidations} results[].rule - The custom validation rule that was evaluated.
+     * @example
+     * // Example result for custom validations
+     * {
+     *   isValid: true,
+     *   message: "Validation passed: hostname === nehonix.space; Validation passed: pathname === /api",
+     *   results: [
+     *     {
+     *       isValid: true,
+     *       message: "Validation passed: hostname === nehonix.space",
+     *       rule: ["hostname", "===", "nehonix.space"]
+     *     },
+     *     {
+     *       isValid: true,
+     *       message: "Validation passed: pathname === /api",
+     *       rule: ["pathname", "===", "/api"]
+     *     }
+     *   ]
+     * }
+     */
+    customValidations?: {
+      isValid: boolean;
+      message: string;
+      results: {
+        isValid: boolean;
+        message: string;
+        rule: ComparisonRule;
+      }[];
+    };
     /**
      * Validation result for the URL length check.
      */
@@ -654,5 +779,12 @@ export interface UrlCheckResult {
       /** Descriptive message about the parsing validation result. */
       message?: string;
     };
+  };
+}
+
+export interface UriHandlerInterface {
+  maxIterations?: number;
+  output?: {
+    encodeUrl?: boolean;
   };
 }
