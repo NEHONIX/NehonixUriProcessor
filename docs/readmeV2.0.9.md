@@ -35,6 +35,7 @@ npm install punycode
 ### autoDetectAndDecode
 
 **Signature**:
+
 ```typescript
 static autoDetectAndDecode(input: string, maxIterations?: number): string
 ```
@@ -43,6 +44,7 @@ static autoDetectAndDecode(input: string, maxIterations?: number): string
 Automatically detects and decodes a URI string to plaintext, handling complex and nested encodings (e.g., Base64, percent-encoding, hexadecimal). This method uses advanced detection to identify encoding types and iteratively decodes until plaintext is reached or the maximum iteration limit is met. Ideal for security testing and decoding obfuscated URIs.
 
 **Parameters**:
+
 - `input` (`string`): The URI string to decode (e.g., `https://example.com?test=dHJ1ZQ==`).
 - `maxIterations` (`number`, optional, default: `10`): Maximum decoding iterations to prevent infinite loops.
 
@@ -50,19 +52,25 @@ Automatically detects and decodes a URI string to plaintext, handling complex an
 `string` - The decoded URI in plaintext (e.g., `https://example.com?test=true`).
 
 **Example**:
+
 ```typescript
 import { NehonixURIProcessor } from "nehonix-uri-processor";
 
 // Decode a Base64-encoded query parameter
-const decoded = NehonixURIProcessor.autoDetectAndDecode("https://example.com?test=dHJ1ZQ==");
+const decoded = NehonixURIProcessor.autoDetectAndDecode(
+  "https://example.com?test=dHJ1ZQ=="
+);
 console.log(decoded); // https://example.com?test=true
 
 // Decode a nested encoding
-const nested = NehonixURIProcessor.autoDetectAndDecode("aHR0cHM6Ly9leGFtcGxlLmNvbQ==");
+const nested = NehonixURIProcessor.autoDetectAndDecode(
+  "aHR0cHM6Ly9leGFtcGxlLmNvbQ=="
+);
 console.log(nested); // https://example.com
 ```
 
 **Notes**:
+
 - Supports encoding types like `percentEncoding`, `base64`, `hex`, `unicode`, and more (see [Supported Encoding Types](#supported-encoding-types)).
 - Use `maxIterations` to control decoding depth for deeply nested encodings.
 - For detailed encoding detection, use `detectEncoding`.
@@ -70,6 +78,7 @@ console.log(nested); // https://example.com
 ### analyzeURL
 
 **Signature**:
+
 ```typescript
 static analyzeURL(url: string): { url: string; params: Record<string, { value: string; risks: string[] }> }
 ```
@@ -78,18 +87,23 @@ static analyzeURL(url: string): { url: string; params: Record<string, { value: s
 Analyzes a URL to identify potentially vulnerable query parameters. It parses the URL, extracts query parameters, and evaluates them for common security risks (e.g., SQL injection, XSS, path traversal). Useful for penetration testing and vulnerability assessment.
 
 **Parameters**:
+
 - `url` (`string`): The URL to analyze (e.g., `https://example.com?user=admin`).
 
 **Returns**:  
 An object containing:
+
 - `url` (`string`): The base URL.
 - `params` (`Record<string, { value: string; risks: string[] }>`): Query parameters with their values and associated risks (e.g., `["sql_injection", "xss"]`).
 
 **Example**:
+
 ```typescript
 import { NehonixURIProcessor } from "nehonix-uri-processor";
 
-const analysis = NehonixURIProcessor.analyzeURL("https://example.com?user=admin&pass=123");
+const analysis = NehonixURIProcessor.analyzeURL(
+  "https://example.com?user=admin&pass=123"
+);
 console.log(analysis);
 // Output:
 // {
@@ -102,12 +116,14 @@ console.log(analysis);
 ```
 
 **Notes**:
+
 - Risks are based on parameter names and values, using predefined patterns for common attack vectors.
 - Combine with `checkUrl` for comprehensive URI validation and analysis.
 
 ### checkUrl
 
 **Signature**:
+
 ```typescript
 static checkUrl(url: string, options?: UrlValidationOptions): UrlCheckResult
 ```
@@ -116,6 +132,7 @@ static checkUrl(url: string, options?: UrlValidationOptions): UrlCheckResult
 Validates a URI string against configurable rules, returning detailed results for each validation step. Supports validation of standard URL components (e.g., `hostname`, `pathname`), literal values, and custom properties via `fullCustomValidation` (aliased as `fcv`). Ideal for security testing, debugging, and detailed URI analysis.
 
 **Parameters**:
+
 - `url` (`string`): The URI string to validate (e.g., `https://example.com?test=true`).
 - `options` (`UrlValidationOptions`, optional): Configuration for validation rules. Key options include:
   - `strictMode` (`boolean`, default: `false`): Requires a leading slash before query parameters.
@@ -129,6 +146,7 @@ Validates a URI string against configurable rules, returning detailed results fo
 
 **Returns**:  
 `UrlCheckResult` - An object with:
+
 - `isValid` (`boolean`): Overall validity.
 - `validationDetails` (`object`): Results for each validation check (e.g., `protocol`, `customValidations`).
 - `cause` (`string`): Reason for failure (empty if valid).
@@ -137,6 +155,7 @@ Validates a URI string against configurable rules, returning detailed results fo
 The `fullCustomValidation` option (aliased as `fcv`) allows users to define custom properties and validate them in `customValidations` rules. Use `fullCustomValidation.<property>` or `fcv.<property>` syntax to reference properties.
 
 **Example**:
+
 ```typescript
 import { NehonixURIProcessor } from "nehonix-uri-processor";
 
@@ -146,14 +165,14 @@ const result = NehonixURIProcessor.checkUrl("https://google.com/api", {
   debug: true,
   fullCustomValidation: {
     domain: "test_domain",
-    testKey: "test"
+    testKey: "test",
   },
   customValidations: [
     ["hostname", "===", "google.com"],
     ["pathname", "===", "/api"],
     ["fullCustomValidation.domain", "===", "test_domain"],
-    ["fullCustomValidation.testKey", "===", "test"]
-  ]
+    ["fullCustomValidation.testKey", "===", "test"],
+  ],
 });
 
 console.log(result);
@@ -178,6 +197,7 @@ console.log(result);
 ```
 
 **Example with `fcv` Alias**:
+
 ```typescript
 import { NehonixURIProcessor } from "nehonix-uri-processor";
 
@@ -185,13 +205,13 @@ const result = NehonixURIProcessor.checkUrl("https://google.com/api", {
   literalValue: "7",
   debug: true,
   fullCustomValidation: {
-    ta: 2
+    ta: 2,
   },
   customValidations: [
     ["hostname", "===", "google.com"],
     ["pathname", "===", "/api"],
-    ["fcv.ta", ">=", 2]
-  ]
+    ["fcv.ta", ">=", 2],
+  ],
 });
 
 console.log(result);
@@ -215,9 +235,10 @@ console.log(result);
 ```
 
 **Notes**:
+
 - Use `debug: true` to log validation details (e.g., `[DEBUG] Left Value: test_domain`).
 - `literalValue` must be a `string`; use `fullCustomValidation` for `string | number` values.
-- See [checkUrl_method.md](#see-also) for detailed `UrlValidationOptions` and `UrlCheckResult` structures.
+- See [checkUrlMethod.md](#see-also) for detailed `UrlValidationOptions` and `UrlCheckResult` structures.
 
 ## Usage Example
 
@@ -233,7 +254,7 @@ console.log(decoded); // https://example.com?data=true
 const validation = NehonixURIProcessor.checkUrl(decoded, {
   httpsOnly: true,
   fullCustomValidation: { sessionId: "abc123" },
-  customValidations: [["fcv.sessionId", "===", "abc123"]]
+  customValidations: [["fcv.sessionId", "===", "abc123"]],
 });
 console.log(validation.isValid); // true
 
@@ -285,7 +306,7 @@ The library supports the following encoding types for `autoDetectAndDecode`, `en
 
 ## See Also
 
-- [checkUrl_method.md](docs/checkUrl_method.md) - Detailed `checkUrl` reference.
+- [checkUrlMethod.md](./checkUrlMethod.md) - Detailed `checkUrl` reference.
 - NehonixURIProcessor documentation for other methods.
 
 ## License
