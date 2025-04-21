@@ -334,7 +334,9 @@ class NDS {
       return decodeURIComponent(input);
     } catch (e: any) {
       // In case of error (invalid sequence), try to decode valid parts
-      AppLogger.warn("Error while percent-decoding, attempting partial decoding");
+      AppLogger.warn(
+        "Error while percent-decoding, attempting partial decoding"
+      );
       return input.replace(/%[0-9A-Fa-f]{2}/g, (match) => {
         try {
           return decodeURIComponent(match);

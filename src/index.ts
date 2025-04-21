@@ -46,7 +46,7 @@ class NehonixURIProcessor {
   static generateWAFBypassVariants(input: string) {
     return sr.generateWAFBypassVariants(input);
   }
- 
+
   /**
    * Analyzes a URL to identify potentially vulnerable query parameters.
    *
@@ -368,4 +368,3 @@ class NehonixURIProcessor {
 }
 
 export { NehonixURIProcessor };
-export default NehonixURIProcessor;
