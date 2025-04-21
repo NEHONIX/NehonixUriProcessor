@@ -27,6 +27,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/node": "^22.14.1",
