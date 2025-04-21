@@ -7,10 +7,13 @@ import { ncu } from "./utils/NehonixCoreUtils";
 /**
  * A comprehensive library for detecting, encoding, and decoding URI strings, designed for security testing and attack analysis.
  * @author nehonix
+ * @version 2.1.2
  * @since 12/04/2025
  * The `NehonixURIProcessor` class provides methods to analyze URLs, generate encoding variants for Web Application Firewall (WAF) bypass testing,
  * and automatically detect and decode various URI encodings. It supports a range of encoding types, including percent-encoding, Base64, and hexadecimal,
  * making it suitable for penetration testing, vulnerability assessment, and secure data processing.
+ *
+ * For detailed documentation on specific methods, see the [changelog](https://lab.nehonix.space/nehonix_viewer/_doc/NehonixUriProcessor/changelog) and method-specific guides.
  *
  * @example
  * ```typescript

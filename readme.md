@@ -322,10 +322,19 @@ The library can automatically detect the following encoding types:
 - Raw hexadecimal
 - JWT
 
+## More Information
+
+For more information about this version, please refer to the [nehonix uri processor 2.1.2](./docs/nehonix%20uri%20processor%202.1.2.md).
+
 ## Version
 
-2.0.0
-see the lastest version of NURP(NehonixUriProcessor): [v2.0.9](./docs/readmeV2.0.9.md)
+2.1.2
+
+See previous versions:
+
+- [v2.0.9](./docs/readmeV2.0.9.md)
+
+Check out the [changelog](./docs/changelog.md) for details on the latest updates.
 
 ## License
 
