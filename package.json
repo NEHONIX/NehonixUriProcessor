@@ -1,6 +1,6 @@
 {
   "name": "nehonix-uri-processor",
-  "version": "2.0.10",
+  "version": "2.0.9",
   "description": "A powerful URI processor for encoding, decoding, and analyzing URI data securely.",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -14,7 +14,9 @@
     "prepublishOnly": "npm run build",
     "prepare": "npm run build",
     "test": "jest",
-    "patch": "npm version patch && npm publish"
+    "patch": "npm version patch && npm publish",
+    "minor": "npm version minor && npm publish",
+    "major": "npm version major && npm publish"
   },
   "exports": {
     ".": {
