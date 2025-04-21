@@ -5,10 +5,8 @@ import {
   NestedEncodingResult,
   DEC_FEATURE_TYPE,
   UriHandlerInterface,
-  UrlValidationOptions,
 } from "../types";
 import punycode from "punycode";
-import chalk from "chalk";
 import { ncu, NehonixCoreUtils } from "../utils/NehonixCoreUtils";
 import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
 import NES from "./NehonixEnc.service";
@@ -17,16 +15,6 @@ import { htmlEntities } from "../utils/html.enties";
 
 class NDS {
   private static throwError: boolean = true;
-  private static default_checkurl_opt: UrlValidationOptions = {
-    allowLocalhost: true,
-    rejectDuplicatedValues: false,
-    maxUrlLength: "NO_LIMIT",
-    strictMode: false,
-    strictParamEncoding: false,
-    debug: false,
-    allowUnicodeEscapes: true,
-    rejectDuplicateParams: false,
-  };
   // private static hasBase64Pattern = NehonixCoreUtils.hasBase64Pattern;
   // // private static hasPercentEncoding = NehonixSharedUtils.hasPercentEncoding;
   // private static enc: typeof NehonixEncService = NehonixEncService;
@@ -41,31 +29,7 @@ class NDS {
   // private static hasPunycode = NehonixCoreUtils.hasPunycode;
   // private static decodeBase64 = NehonixCoreUtils.decodeB64;
   // private static decodeRawHexWithoutPrefix = NehonixCoreUtils.drwp;
-  // In your detectEncoding function or a new function
-  static detectMixedEncodings(input: string): string[] {
-    const detectedEncodings = [];
 
-    // Check for percent encoding
-    if (/%[0-9A-Fa-f]{2}/.test(input)) {
-      detectedEncodings.push("percentEncoding");
-    }
-
-    // Check for Base64 content
-    const base64Regex = /[A-Za-z0-9+/=]{4,}/g;
-    const potentialBase64 = input.match(base64Regex);
-    if (potentialBase64) {
-      for (const match of potentialBase64) {
-        if (NehonixSharedUtils.isBase64(match)) {
-          detectedEncodings.push("base64");
-          break;
-        }
-      }
-    }
-
-    // Add more checks as needed
-
-    return detectedEncodings;
-  }
   /**
    * Automatically detects and decodes a URI based on the detected encoding type
    * @param input The URI string to decode
@@ -461,8 +425,7 @@ class NDS {
     } catch (e: any) {
       throw new Error(`Punycode decoding failed: ${e.message}`);
     }
-  }
-
+  } 
   /**
    * Automatically detects the encoding type(s) of a string (URI or raw text)
    * @param input The string to analyze
@@ -471,7 +434,7 @@ class NDS {
    */
   static detectEncoding(input: string, depth = 0): EncodingDetectionResult {
     const MAX_DEPTH = 3;
-    if (depth > MAX_DEPTH || !input || input.length < 2) {
+    if (depth > MAX_DEPTH) {
       return {
         types: ["plainText"],
         mostLikely: "plainText",
@@ -481,75 +444,24 @@ class NDS {
 
     const detectionScores: Record<string, number> = {};
     const utils = NehonixSharedUtils;
-    const isValidUrl = ncu.isValidUrl(input, NDS.default_checkurl_opt);
 
-    // First, special handling for URLs
-    try {
-      if (isValidUrl) {
-        // URL parameters may have individual encodings
-        const url = new URL(input);
-        if (url.search && url.search.length > 1) {
-          // Track URL parameter encodings
-          let hasEncodedParams = false;
-
-          for (const [_, value] of new URLSearchParams(url.search)) {
-            // Check for common encodings in parameter values
-            if (/%[0-9A-Fa-f]{2}/.test(value)) {
-              detectionScores["percentEncoding"] = 0.85;
-              hasEncodedParams = true;
-            }
-            if (/^[A-Za-z0-9+\/=]{4,}$/.test(value)) {
-              detectionScores["base64"] = 0.82;
-              hasEncodedParams = true;
-            }
-            if (/^[0-9A-Fa-f]+$/.test(value) && value.length % 2 === 0) {
-              detectionScores["rawHexadecimal"] = 0.8;
-              hasEncodedParams = true;
-            }
-            if (/\\u[0-9A-Fa-f]{4}/.test(value)) {
-              detectionScores["unicode"] = 0.85;
-              hasEncodedParams = true;
-            }
-            if (/\\x[0-9A-Fa-f]{2}/.test(value)) {
-              detectionScores["jsEscape"] = 0.83;
-              hasEncodedParams = true;
-            }
-          }
-
-          if (hasEncodedParams) {
-            detectionScores["url"] = 0.9; // High confidence this is a URL with encoded params
-          }
-        }
-      }
-    } catch (e) {
-      // URL parsing failed, continue with normal detection
-    }
-
-    // Standard encoding detection checks
     const detectionChecks: {
       type: ENC_TYPE;
       fn: (s: string) => boolean;
       score: number;
-      minLength?: number; // Minimum input length for this encoding
     }[] = [
       { type: "doublepercent", fn: utils.isDoublePercent, score: 0.95 },
       { type: "percentEncoding", fn: utils.isPercentEncoding, score: 0.9 },
-      { type: "base64", fn: utils.isBase64, score: 0.9, minLength: 4 },
-      {
-        type: "urlSafeBase64",
-        fn: utils.isUrlSafeBase64,
-        score: 0.93,
-        minLength: 4,
-      },
-      { type: "base32", fn: utils.isBase32, score: 0.88, minLength: 8 },
+      { type: "base64", fn: utils.isBase64, score: 0.9 },
+      { type: "urlSafeBase64", fn: utils.isUrlSafeBase64, score: 0.93 },
+      { type: "base32", fn: utils.isBase32, score: 0.88 },
       { type: "asciihex", fn: utils.isAsciiHex, score: 0.85 },
       { type: "asciioct", fn: utils.isAsciiOct, score: 0.85 },
-      { type: "hex", fn: utils.isHex, score: 0.8, minLength: 6 },
+      { type: "hex", fn: utils.isHex, score: 0.8 },
       {
         type: "rawHexadecimal",
-        fn: utils.hasRawHexString,
+        fn: NehonixSharedUtils.hasRawHexString,
         score: 0.85,
-        minLength: 4,
       },
       { type: "unicode", fn: utils.isUnicode, score: 0.8 },
       { type: "htmlEntity", fn: utils.isHtmlEntity, score: 0.8 },
@@ -560,46 +472,38 @@ class NDS {
       { type: "utf7", fn: utils.isUtf7, score: 0.75 },
       { type: "jsEscape", fn: utils.isJsEscape, score: 0.8 },
       { type: "cssEscape", fn: utils.isCssEscape, score: 0.78 },
-      { type: "jwt", fn: utils.hasJWTFormat, score: 0.95, minLength: 15 },
+      { type: "jwt", fn: NehonixSharedUtils.hasJWTFormat, score: 0.95 },
     ];
 
-    for (const { type, fn, score, minLength } of detectionChecks) {
-      // Skip checks if input is too short for this encoding
-      if (minLength && input.length < minLength) continue;
-
+    for (const { type, fn, score } of detectionChecks) {
       try {
         if (fn(input)) {
           detectionScores[type] = score;
-
-          // Try to verify by decoding and checking result
-          try {
-            const decoded = NDS.decodeSingle(input, type);
-            console.log(chalk.greenBright("decoded res: ", decoded));
-            if (decoded && decoded !== input) {
-              // Calculate how "sensible" the decoded result is
-              const printableChars = decoded.replace(
-                /[^\x20-\x7E]/g,
-                ""
-              ).length;
-              const printableRatio = printableChars / decoded.length;
-
-              if (printableRatio > 0.8) {
-                // Boost confidence for successful decoding
-                detectionScores[type] += 0.05;
-              } else if (printableRatio < 0.5) {
-                // Reduce confidence for gibberish output
-                detectionScores[type] -= 0.1;
-              }
-            }
-          } catch (_) {
-            // Failed to decode, reduce confidence slightly
-            detectionScores[type] -= 0.1;
-          }
         }
-      } catch (e) {
-        // Skip failed detection checks
+      } catch {
+        // Ignore faulty detection
       }
     }
+
+    // Special case: check for base64 in URL parameters
+    if (input.includes("?") && input.includes("=")) {
+      try {
+        const url = new URL(input);
+        const params = new URLSearchParams(url.search);
+        for (const [, value] of params.entries()) {
+          if (NehonixCoreUtils.hasBase64Pattern(value)) {
+            detectionScores["base64"] = Math.max(
+              detectionScores["base64"] ?? 0,
+              0.9
+            );
+            break;
+          }
+        }
+      } catch {
+        // Ignore if URL parse fails
+      }
+    }
+
     // Try recursive nested encoding detection if we're still shallow
     if (depth < MAX_DEPTH) {
       const nested = NDS.detectNestedEncoding(input, depth + 1);
@@ -634,6 +538,56 @@ class NDS {
     return result;
   }
 
+  /**
+   * Decodes a raw hexadecimal string (without prefixes)
+   * @param input The hexadecimal string to decode
+   * @returns The decoded string
+   */
+  static decodeRawHex(input: string): string {
+    // For URL parameters with equals sign
+    if (input.includes("=")) {
+      const parts = input.split("=");
+      const prefix = parts.slice(0, parts.length - 1).join("=") + "=";
+      const hexString = parts[parts.length - 1];
+
+      // Check if valid hex
+      if (!/^[0-9A-Fa-f]+$/.test(hexString) || hexString.length % 2 !== 0) {
+        return input; // Not a valid hex string, return as is
+      }
+
+      return prefix + NehonixSharedUtils.drwp(hexString);
+    }
+    // For URL with path segments or query parameters without equals
+    else if (input.includes("?") || input.includes("/")) {
+      const regex = /([?\/])([0-9A-Fa-f]+)(?=[?\/]|$)/g;
+      return input.replace(regex, (match, delimiter, hexPart) => {
+        if (!/^[0-9A-Fa-f]+$/.test(hexPart) || hexPart.length % 2 !== 0) {
+          return match; // Not a valid hex string, return as is
+        }
+
+        try {
+          return delimiter + NehonixSharedUtils.drwp(hexPart);
+        } catch {
+          return match;
+        }
+      });
+    }
+    // For raw hex string
+    else {
+      // Attempt to decode the entire string as hex
+      if (!/^[0-9A-Fa-f]+$/.test(input) || input.length % 2 !== 0) {
+        return input; // Not a valid hex string, return as is
+      }
+
+      try {
+        return NehonixSharedUtils.drwp(input);
+      } catch {
+        return input;
+      }
+    }
+  }
+
+  // 3. Nested encoding detection
   private static detectNestedEncoding(
     input: string,
     depth = 0
@@ -786,66 +740,36 @@ class NDS {
    * Decodes JavaScript escape sequences
    */
   static decodeJsEscape(input: string): string {
-    if (!input.includes("\\")) return input;
-
-    try {
-      // Handle various JavaScript escape sequences
-      return input.replace(
-        /\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|[0-7]{1,3}|.)/g,
-        (match, escape) => {
-          if (escape.startsWith("x")) {
-            // Hex escape \xFF
-            return String.fromCharCode(parseInt(escape.substring(1), 16));
-          } else if (escape.startsWith("u")) {
-            // Unicode escape \uFFFF
-            return String.fromCharCode(parseInt(escape.substring(1), 16));
-          } else if (/^[0-7]+$/.test(escape)) {
-            // Octal escape \000
-            return String.fromCharCode(parseInt(escape, 8));
-          } else {
-            // Single character escapes like \n, \t, etc.
-            switch (escape) {
-              case "n":
-                return "\n";
-              case "t":
-                return "\t";
-              case "r":
-                return "\r";
-              case "b":
-                return "\b";
-              case "f":
-                return "\f";
-              case "v":
-                return "\v";
-              case "0":
-                return "\0";
-              default:
-                return escape; // For \", \', \\, etc.
-            }
-          }
-        }
-      );
-    } catch (e) {
-      console.warn("JS escape decode error:", e);
-      return input;
-    }
-  }
-  static decodeCharacterEscapes(input: string): string {
-    // Handle JavaScript/C-style character escapes: \x74\x72\x75\x65
-    return input.replace(
-      /\\x([0-9A-Fa-f]{2})|\\([0-7]{1,3})|\\u([0-9A-Fa-f]{4})/g,
-      (match, hex, octal, unicode) => {
-        if (hex) {
-          return String.fromCharCode(parseInt(hex, 16));
-        } else if (octal) {
-          return String.fromCharCode(parseInt(octal, 8));
-        } else if (unicode) {
-          return String.fromCharCode(parseInt(unicode, 16));
-        }
-        return match;
-      }
+    return (
+      input
+        // Handle \xXX hex escapes
+        .replace(/\\x([0-9A-Fa-f]{2})/g, (_, hex) =>
+          String.fromCharCode(parseInt(hex, 16))
+        )
+        // Handle \uXXXX unicode escapes
+        .replace(/\\u([0-9A-Fa-f]{4})/g, (_, hex) =>
+          String.fromCharCode(parseInt(hex, 16))
+        )
+        // Handle \u{XXXXX} unicode escapes (ES6)
+        .replace(/\\u\{([0-9A-Fa-f]+)\}/g, (_, hex) =>
+          String.fromCharCode(parseInt(hex, 16))
+        )
+        // Handle simple escapes
+        .replace(/\\([nrt'"`\\])/g, (_, char) => {
+          const escapeMap: Record<string, string> = {
+            n: "\n",
+            r: "\r",
+            t: "\t",
+            "'": "'",
+            '"': '"',
+            "`": "`",
+            "\\": "\\",
+          };
+          return escapeMap[char] || char;
+        })
     );
   }
+
   /**
    * Decodes CSS escape sequences
    */
@@ -1000,7 +924,9 @@ class NDS {
   static decodeAnyToPlaintext(
     input: string,
     opt: UriHandlerInterface = {
-      output: { encodeUrl: false },
+      output: {
+        encodeUrl: false,
+      },
     }
   ): DecodeResult {
     this.throwError = false;
@@ -1010,41 +936,14 @@ class NDS {
     let confidence = 0;
     let encodingType: ENC_TYPE | "UNKNOWN_TYPE" | "plainText" = "UNKNOWN_TYPE";
     const maxIterations = opt.maxIterations || 10;
-    const decodingHistory: Array<{
-      result: string;
-      type: string;
-      confidence: number;
-    }> = [];
 
-    // Smart initial handling for URLs
-    const isUrl = ncu.isValidUrl(result, NDS.default_checkurl_opt);
-    console.log(chalk.red("is url: ", isUrl));
-    if (isUrl) {
-      // Handle URL parameters first as a special case
-      const paramProcessed = NDS.handleUriParameters(
-        result,
-        maxIterations,
-        opt
-      );
-      if (paramProcessed !== result) {
-        result = paramProcessed;
-        decodingHistory.push({
-          result,
-          type: "urlParameters",
-          confidence: 0.9,
-        });
-      }
-    }
-
-    // Now proceed with general decoding
+    // Try decoding as a whole string first (for non-URL cases like Base64 or hex)
     while (iterations < maxIterations && result !== lastResult) {
       lastResult = result;
       const detection = NDS.detectEncoding(result);
-      console.log(chalk.greenBright("detected type: ", detection.mostLikely));
-      // Stop if we're confident it's plain text
-      if (detection.mostLikely === "plainText" && detection.confidence > 0.85) {
-        confidence = detection.confidence;
-        encodingType = "plainText";
+
+      // If plaintext with high confidence, stop
+      if (detection.mostLikely === "plainText" && detection.confidence > 0.8) {
         break;
       }
 
@@ -1054,75 +953,165 @@ class NDS {
           let decoded: string;
           encodingType = detection.mostLikely;
           confidence = detection.confidence;
+          switch (detection.mostLikely) {
+            case "base64":
+              let base64Input = result;
+              while (base64Input.length % 4 !== 0) {
+                base64Input += "=";
+              }
+              base64Input = base64Input.replace(/-/g, "+").replace(/_/g, "/");
+              decoded = NehonixSharedUtils.decodeB64(base64Input);
+              break;
+            case "hex":
+            case "rawHexadecimal":
+              if (/^[0-9A-Fa-f]+$/.test(result) && result.length % 2 === 0) {
+                decoded = NDS.decodeRawHex(result);
+              } else {
+                decoded = result;
+              }
+              break;
+            case "asciihex":
+              decoded = NDS.decodeAsciiHex(result);
+              break;
+            default:
+              decoded = NDS.decode({
+                input: result,
+                encodingType: detection.mostLikely as ENC_TYPE,
+              });
+          }
 
-          // Use our single decoder method
-          decoded = NDS.decodeSingle(result, detection.mostLikely as ENC_TYPE);
-
-          // Validate decoded result quality
+          // Validate decoded result
           const printableChars = decoded.replace(/[^\x20-\x7E]/g, "").length;
-          const totalChars = decoded.length || 1; // Avoid division by zero
-          const printableRatio = printableChars / totalChars;
+          const printableRatio = printableChars / decoded.length;
 
-          // Only accept results that make sense
           if (
             decoded !== result &&
             decoded.length > 0 &&
+            (decoded.length > result.length * 0.5 || printableRatio > 0.9) &&
             printableRatio > 0.7
           ) {
-            decodingHistory.push({
-              result: decoded,
-              type: detection.mostLikely,
-              confidence: detection.confidence,
-            });
             result = decoded;
           } else {
-            // Our decoding didn't improve anything meaningful
-            break;
+            break; // Stop if decoding doesn't produce a valid result
           }
         } catch (e) {
-          console.warn(`Error in auto-decode: ${e}`);
+          console.warn(`Error decoding ${result}: ${e}`);
           break;
         }
       } else {
-        // Not enough confidence to decode automatically
+        // Handle URLs with query parameters separately
+        if (result.includes("?") && result.includes("=")) {
+          result = NDS.handleUriParameters(
+            result,
+            maxIterations - iterations,
+            opt
+          );
+          const printableChars = result.replace(/[^\x20-\x7E]/g, "").length;
+          const printableRatio = printableChars / result.length;
+          if (printableRatio < 0.7) {
+            result = input; // Revert if decoding produces garbage
+          } else {
+            // Detect encoding type after parameter handling
+            const paramDetection = NDS.detectEncoding(result);
+            encodingType = paramDetection.mostLikely;
+            confidence = paramDetection.confidence;
+          }
+        }
         break;
       }
 
       iterations++;
     }
 
-    // Final validation - check if we have valid/useful results
-    const finalPrintableRatio =
-      result.replace(/[^\x20-\x7E]/g, "").length / (result.length || 1);
+    // Special handling for nested URL-like structures in parameters
+    if (result.includes("?") && result.includes("=")) {
+      const [baseUrl, queryString] = result.split("?");
+      if (queryString) {
+        const params = queryString.split("&");
+        let modified = false;
+        const decodedParams = params.map((param) => {
+          const [key, value] = param.split("=", 2) || [param, ""];
+          if (!value) return param;
 
-    // If result is mostly non-printable, roll back to best result or original
-    if (finalPrintableRatio < 0.65 && decodingHistory.length > 0) {
-      const bestResult = decodingHistory
-        .filter((h) => {
-          const ratio =
-            h.result.replace(/[^\x20-\x7E]/g, "").length /
-            (h.result.length || 1);
-          return ratio > 0.7;
-        })
-        .sort((a, b) => b.confidence - a.confidence)[0];
+          let decodedValue = value;
 
-      if (bestResult) {
-        result = bestResult.result;
-        confidence = bestResult.confidence;
-        encodingType = bestResult.type as any;
-      } else {
-        // Revert to original if no good result
-        result = input;
-        confidence = 0.5;
-        encodingType = "UNKNOWN_TYPE";
+          // Check for nested URL-like structure
+          if (value.includes("?") || value.includes("/")) {
+            const nestedResult = NDS.decodeAnyToPlaintext(value, {
+              maxIterations: maxIterations - iterations - 1,
+            });
+            decodedValue = nestedResult.val();
+
+            // Handle percent-encoding in nested results
+            if (decodedValue.includes("%")) {
+              const percentDetection = NDS.detectEncoding(decodedValue);
+              if (
+                percentDetection.mostLikely === "percentEncoding" &&
+                percentDetection.confidence > 0.6
+              ) {
+                decodedValue = NDS.decodePercentEncoding(decodedValue);
+              }
+            }
+
+            const printableChars = decodedValue.replace(
+              /[^\x20-\x7E]/g,
+              ""
+            ).length;
+            const printableRatio = printableChars / decodedValue.length;
+            if (printableRatio < 0.7) {
+              decodedValue = value; // Revert if garbage
+            } else {
+              modified = true;
+            }
+          } else if (value.includes("%")) {
+            // Direct percent-encoding handling
+            const percentDetection = NDS.detectEncoding(value);
+            if (
+              percentDetection.mostLikely === "percentEncoding" &&
+              percentDetection.confidence > 0.6
+            ) {
+              decodedValue = NDS.decodePercentEncoding(value);
+              const printableChars = decodedValue.replace(
+                /[^\x20-\x7E]/g,
+                ""
+              ).length;
+              const printableRatio = printableChars / decodedValue.length;
+              if (printableRatio >= 0.7) {
+                modified = true;
+              } else {
+                decodedValue = value;
+              }
+            }
+          }
+
+          return `${key}=${decodedValue}`;
+        });
+
+        if (modified) {
+          result = `${baseUrl}?${decodedParams.join("&")}`;
+          const finalDetection = NDS.detectEncoding(result);
+          encodingType = finalDetection.mostLikely;
+          confidence = finalDetection.confidence;
+        }
       }
+    }
+
+    const isValidUri = ncu.isValidUrl(result, {
+      requirePathOrQuery: false,
+      rejectDuplicatedValues: false,
+      rejectDuplicateParams: false,
+      strictMode: false,
+      allowLocalhost: true,
+      maxUrlLength: "NO_LIMIT",
+    });
+    if (isValidUri) {
+      result = NDS.handleUriParameters(result, maxIterations, opt);
     }
 
     return {
       confidence,
       encodingType,
       val: () => result,
-      decodingHistory,
     };
   }
 
@@ -1133,158 +1122,152 @@ class NDS {
   ) {
     let result = uri;
     try {
-      // Use URL constructor for better parsing
-      const parsedUrl = new URL(uri);
-      const baseUrl = `${parsedUrl.protocol}//${parsedUrl.host}${parsedUrl.pathname}`;
-      const queryParams = new URLSearchParams(parsedUrl.search);
+      const analysedUri = sr.analyzeURL(result);
+      const queryString = analysedUri.parameters;
+      const baseUrl = analysedUri.baseURL;
+      console.log("baseUrl: ", baseUrl);
+      if (!queryString) return result;
 
-      if (queryParams.toString() === "") return result;
-
+      // Split parameters, preserving encoded '&' (%26)
+      // const params = queryString.split(/(?<!%26)&(?!%26)/);
+      const params = Object.entries(queryString);
       let modified = false;
       const decodedParams: string[] = [];
 
-      // Process each parameter
-      for (const [key, value] of queryParams.entries()) {
-        if (!value || value.length < 2) {
-          decodedParams.push(`${key}=${value}`);
+      for (const [key, value] of params) {
+        if (!value) {
+          decodedParams.push(value);
           continue;
         }
-
-        // First try auto-detection for better accuracy
+        console.log("decodedParams: ", decodedParams);
+        // Detect encoding for the parameter value
         const detection = NDS.detectEncoding(value);
         let decodedValue = value;
 
-        // Add this special case for character escapes
-        if (
-          value.includes("\\x") ||
-          value.includes("\\u") ||
-          value.includes("\\0")
-        ) {
-          try {
-            const unescaped = NDS.decodeCharacterEscapes(value);
-            if (unescaped !== value) {
-              decodedValue = unescaped;
-              modified = true;
-              continue;
-            }
-          } catch {
-            // Failed to decode escapes, continue with normal processing
-          }
-        }
         if (
           detection.confidence > 0.6 &&
           detection.mostLikely !== "plainText"
         ) {
           try {
-            // Apply the detected encoding method
-            decodedValue = NDS.decodeSingle(
-              value,
-              detection.mostLikely as ENC_TYPE
-            );
+            switch (detection.mostLikely) {
+              case "base64":
+                let base64Input = value;
+                while (base64Input.length % 4 !== 0) {
+                  base64Input += "=";
+                }
+                base64Input = base64Input.replace(/-/g, "+").replace(/_/g, "/");
+                decodedValue = NehonixSharedUtils.decodeB64(base64Input);
+                // Handle Base64 values containing '&' (e.g., 'true&')
+                if (decodedValue.includes("&")) {
+                  decodedValue = decodedValue.split("&")[0];
+                }
+                // Recursively decode if needed
+                if (
+                  NehonixCoreUtils.hasBase64Pattern(decodedValue) ||
+                  decodedValue.includes("%")
+                ) {
+                  decodedValue = NDS.decodeAnyToPlaintext(decodedValue, {
+                    maxIterations: maxIterations - 1,
+                  }).val();
+                }
+                break;
+              case "percentEncoding":
+                decodedValue = NDS.decodePercentEncoding(value);
+                break;
+              case "doublepercent":
+                decodedValue = NDS.decodeDoublePercentEncoding(value);
+                break;
+              case "rawHexadecimal":
+                if (/^[0-9A-Fa-f]+$/.test(value) && value.length % 2 === 0) {
+                  decodedValue = NDS.decodeRawHex(value);
+                }
+                break;
+              case "asciihex":
+                NDS.decodeAsciiHex(value);
 
-            // Verify the quality of decoded result
+              case "hex":
+                decodedValue = NDS.decodeHex(value);
+                break;
+              case "unicode":
+                decodedValue = NDS.decodeUnicode(value);
+                break;
+              case "htmlEntity":
+                decodedValue = NDS.decodeHTMLEntities(value);
+                break;
+              case "punycode":
+                decodedValue = NDS.decodePunycode(value);
+                break;
+              case "jwt":
+                decodedValue = NDS.decodeJWT(value);
+                break;
+              case "urlSafeBase64":
+                return NDS.decodeUrlSafeBase64(value);
+              case "base32":
+                return NDS.decodeBase32(value);
+              case "decimalHtmlEntity":
+                return NDS.decodeDecimalHtmlEntity(value);
+              case "rot13":
+                return NDS.decodeRot13(value);
+              case "asciioct":
+                return NDS.decodeAsciiOct(value);
+              case "jsEscape":
+                return NDS.decodeJsEscape(value);
+              case "cssEscape":
+                return NDS.decodeCssEscape(value);
+              case "utf7":
+                return NDS.decodeUtf7(value);
+              case "quotedPrintable":
+                return NDS.decodeQuotedPrintable(value);
+              default:
+                decodedValue = NDS.decode({
+                  input: value,
+                  encodingType: detection.mostLikely as ENC_TYPE,
+                });
+            }
+
+            // Validate decoded value
             const printableChars = decodedValue.replace(
               /[^\x20-\x7E]/g,
               ""
             ).length;
             const printableRatio = printableChars / decodedValue.length;
 
-            // Check if result makes sense and has enough printable characters
-            if (printableRatio < 0.7 || decodedValue.length < 1) {
-              decodedValue = value; // Revert if garbage
+            if (printableRatio < 0.7) {
+              decodedValue = value; // Revert if decoding produces garbage
             } else {
               modified = true;
-
-              // Handle nested encodings recursively (with depth protection)
-              if (
-                decodedValue.includes("%") ||
-                NehonixCoreUtils.hasBase64Pattern(decodedValue)
-              ) {
-                const nestedResult = NDS.decodeAnyToPlaintext(decodedValue, {
-                  maxIterations: maxIterations - 1,
-                });
-
-                if (nestedResult.confidence > 0.7) {
-                  decodedValue = nestedResult.val();
-                  modified = true;
-                }
-              }
             }
           } catch (e) {
-            console.warn(`Parameter decode error (${key}=${value}):`, e);
+            console.warn(`Failed to decode parameter ${key}=${value}: ${e}`);
+            decodedValue = value;
+          }
+        } else if (value.includes("%")) {
+          // Fallback to percent-decoding
+          try {
+            decodedValue = NDS.decodePercentEncoding(value);
+            if (decodedValue !== value) {
+              modified = true;
+            }
+          } catch {
+            decodedValue = value;
           }
         }
 
         decodedParams.push(`${key}=${decodedValue}`);
       }
 
-      // Only rebuild URL if changes were made
+      // Reconstruct URL if modified
       if (modified) {
         result = `${baseUrl}?${decodedParams.join("&")}`;
       }
     } catch (e) {
-      console.warn("URL parameter processing error:", e);
+      console.warn("Error processing URL parameters:", e);
     }
-
-    return opt.output?.encodeUrl ? encodeURI(result) : result;
-  }
-
-  static decodeSingle(input: string, encodingType: ENC_TYPE): string {
-    try {
-      switch (encodingType) {
-        case "percentEncoding":
-        case "url":
-          return NDS.decodePercentEncoding(input);
-        case "doublepercent":
-          return NDS.decodeDoublePercentEncoding(input);
-        case "base64":
-          let base64Input = input;
-          // Fix padding
-          while (base64Input.length % 4 !== 0) {
-            base64Input += "=";
-          }
-          // Fix URL-safe variants
-          base64Input = base64Input.replace(/-/g, "+").replace(/_/g, "/");
-          return NehonixSharedUtils.decodeB64(base64Input);
-        case "urlSafeBase64":
-          return NDS.decodeUrlSafeBase64(input);
-        case "base32":
-          return NDS.decodeBase32(input);
-        case "hex":
-          return NDS.decodeHex(input);
-        case "rawHexadecimal":
-          return NDS.decodeRawHex(input);
-        case "unicode":
-          return NDS.decodeUnicode(input);
-        case "htmlEntity":
-          return NDS.decodeHTMLEntities(input);
-        case "decimalHtmlEntity":
-          return NDS.decodeDecimalHtmlEntity(input);
-        case "punycode":
-          return NDS.decodePunycode(input);
-        case "rot13":
-          return NDS.decodeRot13(input);
-        case "asciihex":
-          return NDS.decodeAsciiHex(input);
-        case "asciioct":
-          return NDS.decodeAsciiOct(input);
-        case "jsEscape":
-          return NDS.decodeJsEscape(input);
-        case "cssEscape":
-          return NDS.decodeCssEscape(input);
-        case "utf7":
-          return NDS.decodeUtf7(input);
-        case "quotedPrintable":
-          return NDS.decodeQuotedPrintable(input);
-        case "jwt":
-          return NDS.decodeJWT(input);
-        default:
-          return input;
-      }
-    } catch (e) {
-      console.warn(`Single decode error (${encodingType}):`, e);
-      return input;
-    }
+    const res = opt.output?.encodeUrl ? new URL(result).href : result;
+    console.log("res: ", res);
+    console.log("result: ", result);
+    console.log("is enc ?: ", opt.output?.encodeUrl);
+    return res;
   }
 
   /**
@@ -1293,7 +1276,13 @@ class NDS {
    * @returns URL with decoded parameters
    */
   static decodeUrlParameters(url: string): string {
-    const checkUri = ncu.checkUrl(url, NDS.default_checkurl_opt);
+    const checkUri = ncu.checkUrl(url, {
+      allowLocalhost: true,
+      rejectDuplicatedValues: false,
+      maxUrlLength: "NO_LIMIT",
+      strictMode: false,
+      strictParamEncoding: false,
+    });
     if (!checkUri.isValid) {
       checkUri.cause && console.warn(checkUri.cause);
       return url;
@@ -1369,109 +1358,6 @@ class NDS {
       return url;
     }
   }
-
-  static decodeMixedContent(input: string): string {
-    // Check if input has both percent-encoded and Base64 parts
-    let result = input;
-
-    // First, handle percent encoding
-    if (input.includes("%")) {
-      result = NDS.decodePercentEncoding(result);
-    }
-
-    // Then, look for Base64 patterns and decode them
-    const base64Pattern = /[A-Za-z0-9+/=]{4,}/g;
-    const potentialBase64Matches = result.match(base64Pattern);
-
-    if (potentialBase64Matches) {
-      for (const match of potentialBase64Matches) {
-        // Only try to decode if it's a valid Base64 string
-        if (NehonixSharedUtils.isBase64(match)) {
-          try {
-            const decoded = NehonixSharedUtils.decodeB64(match);
-            // Only replace if the decoded string looks reasonable
-            const printableChars = decoded.replace(
-              /[^\x20-\x7E\t\r\n]/g,
-              ""
-            ).length;
-            if (printableChars / decoded.length > 0.7) {
-              result = result.replace(match, decoded);
-            }
-          } catch {
-            // Failed to decode, leave as is
-          }
-        }
-      }
-    }
-
-    return result;
-  }
-
-  static detectAndHandleRawHexUrl(input: string): string {
-    // Check if input matches a hex pattern for a URL
-    if (/^[0-9A-Fa-f]+$/.test(input) && input.length % 2 === 0) {
-      try {
-        const decoded = NDS.decodeRawHex(input);
-        // Check if the decoded result looks like a URL
-        if (/^https?:\/\/|^http:\/\/|^ftp:\/\/|www\./i.test(decoded)) {
-          return decoded;
-        }
-      } catch {
-        // Not a valid hex URL
-      }
-    }
-    return input;
-  }
-
-  /**
-   * Decodes a raw hexadecimal string (without prefixes)
-   * @param input The hexadecimal string to decode
-   * @returns The decoded string
-   */
-  static decodeRawHex(input: string): string {
-    // For URL parameters with equals sign
-    if (input.includes("=")) {
-      const parts = input.split("=");
-      const prefix = parts.slice(0, parts.length - 1).join("=") + "=";
-      const hexString = parts[parts.length - 1];
-
-      // Check if valid hex
-      if (!/^[0-9A-Fa-f]+$/.test(hexString) || hexString.length % 2 !== 0) {
-        return input; // Not a valid hex string, return as is
-      }
-
-      return prefix + NehonixSharedUtils.drwp(hexString);
-    }
-    // For URL with path segments or query parameters without equals
-    else if (input.includes("?") || input.includes("/")) {
-      const regex = /([?\/])([0-9A-Fa-f]+)(?=[?\/]|$)/g;
-      return input.replace(regex, (match, delimiter, hexPart) => {
-        if (!/^[0-9A-Fa-f]+$/.test(hexPart) || hexPart.length % 2 !== 0) {
-          return match; // Not a valid hex string, return as is
-        }
-
-        try {
-          return delimiter + NehonixSharedUtils.drwp(hexPart);
-        } catch {
-          return match;
-        }
-      });
-    }
-    // For raw hex string
-    else {
-      // Attempt to decode the entire string as hex
-      if (!/^[0-9A-Fa-f]+$/.test(input) || input.length % 2 !== 0) {
-        return input; // Not a valid hex string, return as is
-      }
-
-      try {
-        return NehonixSharedUtils.drwp(input);
-      } catch {
-        return input;
-      }
-    }
-  }
-
   /**
    * Main decode method with improved error handling
    */
@@ -1497,35 +1383,28 @@ class NDS {
     }
 
     try {
-      // Special case for "any" encoding
-      if (encodingType === "any") {
-        return NDS.decodeAnyToPlaintext(input, {
-          maxIterations: 5,
-        }).val();
-      }
-
       // Special case for URLs - handle parameter decoding
       if (input.includes("://") && input.includes("?")) {
         // For URLs with parameters, pre-process to decode parameters individually
-        if (encodingType === "url" || encodingType === "percentEncoding") {
+        if (
+          encodingType === "any" ||
+          encodingType === "url" ||
+          encodingType === "percentEncoding"
+        ) {
           const preprocessed = NDS.decodeUrlParameters(input);
 
-          // If preprocessing made changes, return that result
+          // If preprocessing made changes, continue with normal decoding flow
           if (preprocessed !== input) {
-            return preprocessed;
+            // For "any" encoding, continue with normal decoding flow
+            if (encodingType === "any") {
+              return NDS.decodeAnyToPlaintext(preprocessed, {
+                maxIterations: 5,
+              }).val();
+            }
           }
         }
       }
 
-      // Try to handle special case: mixed encoding types
-      if (
-        (input.includes("%") && /[A-Za-z0-9+/=]{4,}/.test(input)) ||
-        (input.includes("\\x") && /[A-Za-z0-9+/=]{4,}/.test(input))
-      ) {
-        return NDS.decodeMixedContent(input);
-      }
-
-      // Regular handling for specific encoding types
       switch (encodingType) {
         case "percentEncoding":
         case "url":
@@ -1566,6 +1445,8 @@ class NDS {
           return NDS.decodeJWT(input);
         case "rawHexadecimal":
           return NDS.decodeRawHex(input);
+        case "any":
+          return NDS.decodeAnyToPlaintext(input).val();
         default:
           if (opt.throwError) {
             throw new Error(`Unsupported encoding type: ${encodingType}`);
@@ -1585,3 +1466,4 @@ class NDS {
 
 export { NDS as NehonixDecService };
 export default NDS;
+ 

@@ -218,44 +218,52 @@ class NehonixCommonUtils {
    * Improved Base64 detection
    * @param s The string to check
    */
-  static isBase64(s: string): boolean {
-    // Base64 must have valid length (multiple of 4 when padded)
-    if (!s || s.length < 8) return false;
+  static isBase64(input: string): boolean {
+    // Base64 can be padded with = at the end
+    const base64Regex = /^[A-Za-z0-9+/=_-]*$/;
 
-    // Check for known Base64 patterns
-    const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+    // Check basic pattern
+    if (!base64Regex.test(input)) return false;
 
-    // Check if strict pattern matches (with padding)
-    const strictMatch = base64Pattern.test(s) && s.length % 4 === 0;
+    // Check length - must be divisible by 4 or could be made so with padding
+    const paddedLength = input.endsWith("=")
+      ? input.length
+      : input.length + ((4 - (input.length % 4)) % 4);
+    if (paddedLength % 4 !== 0) return false;
 
-    // If not strict match, check for unpadded base64
-    if (!strictMatch) {
-      const unpadded = s.length % 4;
-      if (unpadded !== 0) {
-        const checkString = s + "=".repeat(4 - unpadded);
-        if (!base64Pattern.test(checkString)) return false;
-      } else {
-        if (!base64Pattern.test(s)) return false;
-      }
+    // Try to decode it to verify
+    try {
+      const decoded = Buffer.from(
+        input.replace(/-/g, "+").replace(/_/g, "/"),
+        "base64"
+      ).toString();
+      // Check if the decoded result makes sense
+      const printableChars = decoded.replace(/[^\x20-\x7E\t\r\n]/g, "").length;
+      return printableChars / decoded.length > 0.7;
+    } catch {
+      return false;
     }
-
-    // Check for entropy - Base64 encoded data usually has high entropy
-    const charCount: Record<string, number> = {};
-    for (const char of s) {
-      charCount[char] = (charCount[char] || 0) + 1;
-    }
-
-    // Calculate normalized entropy (0-1)
-    const normalizedEntropy =
-      Object.values(charCount).reduce((entropy: number, count) => {
-        const prob = (count as number) / s.length;
-        return entropy - prob * Math.log2(prob);
-      }, 0) / Math.log2(Math.min(s.length, 64));
-
-    // Base64 encoded data typically has high entropy
-    return normalizedEntropy > 0.75;
   }
 
+  static decodeBase64(input: string): string {
+    // Fix padding and URL-safe chars
+    let normalizedInput = input;
+
+    // Replace URL-safe chars
+    normalizedInput = normalizedInput.replace(/-/g, "+").replace(/_/g, "/");
+
+    // Add padding if needed
+    while (normalizedInput.length % 4 !== 0) {
+      normalizedInput += "=";
+    }
+
+    try {
+      // Use Buffer for more robust Base64 decoding
+      return Buffer.from(normalizedInput, "base64").toString();
+    } catch (e: any) {
+      throw new Error(`Base64 decode error: ${e.message}`);
+    }
+  }
   /**
    * Base32 detection
    * @param s The string to check
@@ -402,6 +410,11 @@ class NehonixCommonUtils {
 
     return false;
   }
+
+  /**
+   * Improved raw hexadecimal string detection
+   * @param s The string to check
+   */
 
   /**
    * Improved raw hexadecimal string detection

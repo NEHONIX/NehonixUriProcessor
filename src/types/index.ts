@@ -27,7 +27,8 @@ export type ENC_TYPE =
   | "decimalHtmlEntity" // Decimal HTML entity encoding (&#123; format)
   //new
   | "rawHexadecimal"
-  | "jwt";
+  | "jwt"
+  | "url";
 
 export type DEC_FEATURE_TYPE = "url" | "any";
 /**
@@ -165,6 +166,7 @@ export interface DecodeResult {
   original?: string;
   attemptedDecode?: string;
   attemptedVal?: string | undefined;
+  decodingHistory?: { result: string; type: string; confidence: number }[];
 }
 
 /**
