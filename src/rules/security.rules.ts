@@ -1,3 +1,4 @@
+import { AppLogger } from "../common/AppLogger";
 import { NehonixEncService } from "../services/NehonixEnc.service";
 import { URLAnalysisResult, WAFBypassVariants } from "../types";
 
@@ -48,7 +49,7 @@ export class SecurityRules {
         potentialVulnerabilities: vulnerabilities,
       };
     } catch (e: any) {
-      console.error("Error while analyzing URL:", e);
+      AppLogger.error("Error while analyzing URL:", e);
       return {
         baseURL: url,
         parameters: {},

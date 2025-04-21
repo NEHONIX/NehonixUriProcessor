@@ -2,6 +2,7 @@ import { ENC_TYPE } from "../types";
 import punycode from "punycode";
 import { NehonixCoreUtils as NCU } from "../utils/NehonixCoreUtils";
 import { htmlEntities } from "../utils/html.enties";
+import { AppLogger } from "../common/AppLogger";
 class NES {
   // private static NCU: typeof NehonixCoreUtils = NehonixCoreUtils;
   // private static decodeBase64 = NES.NCU.drwp;
@@ -14,7 +15,7 @@ class NES {
    */
   static encode(input: string, encodingType: ENC_TYPE): string {
     try {
-      console.log(`Selected type: ${encodingType}`);
+      // AppLogger.log(`Selected type: ${encodingType}`);
       switch (encodingType) {
         case "percentEncoding":
           return NES.encodePercentEncoding(input);
@@ -55,7 +56,7 @@ class NES {
           throw new Error(`Unsupported encoding type: ${encodingType}`);
       }
     } catch (e: any) {
-      console.error(`Error while encoding (${encodingType}):`, e);
+      // AppLogger.error(`Error while encoding (${encodingType}):`, e);
       throw e;
     }
   }
@@ -171,7 +172,7 @@ class NES {
         return `xn--${punycode.encode(input)}`;
       } else {
         // Alternative for browser (not implemented)
-        console.warn(
+        AppLogger.warn(
           "Punycode module not available, punycode encoding not performed"
         );
         return input;

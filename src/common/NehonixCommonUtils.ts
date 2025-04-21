@@ -1,4 +1,5 @@
 import NDS from "../services/NehonixDec.service";
+import { AppLogger } from "./AppLogger";
 
 /**
  * Shared utility methods for encoding detection and basic decoding operations
@@ -113,11 +114,11 @@ class NehonixCommonUtils {
           return atob(base64String);
         }
       } catch (e) {
-        console.warn("Base64 decoding failed, returning original input");
+        AppLogger.warn("Base64 decoding failed, returning original input");
         return input;
       }
     } catch (e: any) {
-      console.error(`Base64 decoding failed: ${e.message}`);
+      AppLogger.error(`Base64 decoding failed: ${e.message}`);
       return input; // Return original input on error instead of throwing
     }
   }

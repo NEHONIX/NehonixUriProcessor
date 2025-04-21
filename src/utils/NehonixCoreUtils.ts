@@ -1,3 +1,4 @@
+import { AppLogger } from "../common/AppLogger";
 import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
 import { sr } from "../rules/security.rules";
 import {
@@ -44,6 +45,7 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       validationDetails: {},
       cause: "",
     };
+    AppLogger.debugs_state = options.debug || false;
 
     // Check URL length
     if (options.maxUrlLength) {
@@ -232,15 +234,15 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
 
           // Debug logging
           if (options.debug) {
-            console.log(
+            AppLogger.log(
               `[DEBUG] Custom Validation: ${component} ${operator} ${value}`
             );
-            console.log(
+            AppLogger.log(
               `[DEBUG] Left Value: ${
                 leftValue !== undefined ? leftValue : "undefined"
               }`
             );
-            console.log(`[DEBUG] Result: ${message}`);
+            AppLogger.log(`[DEBUG] Result: ${message}`);
           }
 
           validationResults.push({

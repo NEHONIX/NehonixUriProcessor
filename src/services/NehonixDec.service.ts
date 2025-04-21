@@ -14,6 +14,7 @@ import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
 import NES from "./NehonixEnc.service";
 import { sr } from "../rules/security.rules";
 import { htmlEntities } from "../utils/html.enties";
+import { AppLogger } from "../common/AppLogger";
 
 class NDS {
   private static throwError: boolean = true;
@@ -142,7 +143,7 @@ class NDS {
               return `${key}=${decodedValue}`;
             }
           } catch (e) {
-            console.warn(`Failed to decode parameter ${key}: ${e}`);
+            AppLogger.warn(`Failed to decode parameter ${key}: ${e}`);
           }
         }
 
@@ -195,7 +196,7 @@ class NDS {
           nestedTypes: detection.nestedTypes,
         };
       } catch (e: any) {
-        console.error(`Error while decoding nested encodings:`, e);
+        AppLogger.error(`Error while decoding nested encodings:`, e);
       }
     }
 
@@ -272,7 +273,7 @@ class NDS {
       const printableRatio = printableChars / decodedValue.length;
 
       if (printableRatio < 0.7 && detection.mostLikely !== "plainText") {
-        console.warn(
+        AppLogger.warn(
           `Decoded value contains too many unprintable characters (${printableRatio.toFixed(
             2
           )}), reverting to original`
@@ -280,7 +281,7 @@ class NDS {
         decodedValue = input;
       }
     } catch (e: any) {
-      console.error(`Error while decoding using ${detection.mostLikely}:`, e);
+      AppLogger.error(`Error while decoding using ${detection.mostLikely}:`, e);
       decodedValue = input;
     }
 
@@ -333,7 +334,7 @@ class NDS {
       return decodeURIComponent(input);
     } catch (e: any) {
       // In case of error (invalid sequence), try to decode valid parts
-      console.warn("Error while percent-decoding, attempting partial decoding");
+      AppLogger.warn("Error while percent-decoding, attempting partial decoding");
       return input.replace(/%[0-9A-Fa-f]{2}/g, (match) => {
         try {
           return decodeURIComponent(match);
@@ -453,7 +454,7 @@ class NDS {
       } else {
         // Alternative for browser (less accurate)
         // For a complete browser implementation, include a punycode library
-        console.warn(
+        AppLogger.warn(
           "Punycode module not available, limited punycode decoding"
         );
         return input;
@@ -574,7 +575,6 @@ class NDS {
           // Try to verify by decoding and checking result
           try {
             const decoded = NDS.decodeSingle(input, type);
-            console.log(chalk.greenBright("decoded res: ", decoded));
             if (decoded && decoded !== input) {
               // Calculate how "sensible" the decoded result is
               const printableChars = decoded.replace(
@@ -826,7 +826,7 @@ class NDS {
         }
       );
     } catch (e) {
-      console.warn("JS escape decode error:", e);
+      AppLogger.warn("JS escape decode error:", e);
       return input;
     }
   }
@@ -1018,7 +1018,6 @@ class NDS {
 
     // Smart initial handling for URLs
     const isUrl = ncu.isValidUrl(result, NDS.default_checkurl_opt);
-    console.log(chalk.red("is url: ", isUrl));
     if (isUrl) {
       // Handle URL parameters first as a special case
       const paramProcessed = NDS.handleUriParameters(
@@ -1040,7 +1039,6 @@ class NDS {
     while (iterations < maxIterations && result !== lastResult) {
       lastResult = result;
       const detection = NDS.detectEncoding(result);
-      console.log(chalk.greenBright("detected type: ", detection.mostLikely));
       // Stop if we're confident it's plain text
       if (detection.mostLikely === "plainText" && detection.confidence > 0.85) {
         confidence = detection.confidence;
@@ -1080,7 +1078,7 @@ class NDS {
             break;
           }
         } catch (e) {
-          console.warn(`Error in auto-decode: ${e}`);
+          AppLogger.warn(`Error in auto-decode: ${e}`);
           break;
         }
       } else {
@@ -1211,7 +1209,7 @@ class NDS {
               }
             }
           } catch (e) {
-            console.warn(`Parameter decode error (${key}=${value}):`, e);
+            AppLogger.warn(`Parameter decode error (${key}=${value}):`, e);
           }
         }
 
@@ -1223,7 +1221,7 @@ class NDS {
         result = `${baseUrl}?${decodedParams.join("&")}`;
       }
     } catch (e) {
-      console.warn("URL parameter processing error:", e);
+      AppLogger.warn("URL parameter processing error:", e);
     }
 
     return opt.output?.encodeUrl ? encodeURI(result) : result;
@@ -1282,7 +1280,7 @@ class NDS {
           return input;
       }
     } catch (e) {
-      console.warn(`Single decode error (${encodingType}):`, e);
+      AppLogger.warn(`Single decode error (${encodingType}):`, e);
       return input;
     }
   }
@@ -1295,7 +1293,7 @@ class NDS {
   static decodeUrlParameters(url: string): string {
     const checkUri = ncu.checkUrl(url, NDS.default_checkurl_opt);
     if (!checkUri.isValid) {
-      checkUri.cause && console.warn(checkUri.cause);
+      checkUri.cause && AppLogger.warn(checkUri.cause);
       return url;
     }
     if (!url.includes("?")) return url;
@@ -1365,7 +1363,7 @@ class NDS {
       const separator = queryString.includes("&&") ? "&&" : "&";
       return modified ? `${baseUrl}?${decodedParams.join(separator)}` : url;
     } catch (e) {
-      console.warn("Error decoding URL parameters:", e);
+      AppLogger.warn("Error decoding URL parameters:", e);
       return url;
     }
   }
@@ -1492,7 +1490,7 @@ class NDS {
 
     // Add recursion protection
     if (maxRecursionDepth <= 0) {
-      console.warn("Maximum recursion depth reached in decode");
+      AppLogger.warn("Maximum recursion depth reached in decode");
       return input;
     }
 
@@ -1574,7 +1572,7 @@ class NDS {
           }
       }
     } catch (e: any) {
-      console.error(`Error while decoding (${encodingType}):`, e);
+      AppLogger.error(`Error while decoding (${encodingType}):`, e);
       if (opt.throwError) {
         throw e;
       }
