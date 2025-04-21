@@ -5,6 +5,8 @@
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "type": "module",
+  "author": "Nehonix",
   "files": [
     "dist"
   ],
@@ -32,7 +34,8 @@
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/node": "^22.14.1",
     "rollup": "^4.40.0",
-    "rollup-plugin-dts": "^6.2.1"
+    "rollup-plugin-dts": "^6.2.1",
+    "tslib": "^2.8.1"
   },
   "dependencies": {
     "chalk": "^5.4.1"
