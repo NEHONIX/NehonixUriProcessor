@@ -1,6 +1,20 @@
 # NehonixURIProcessor
 
 A comprehensive TypeScript library for detecting, decoding, and encoding various URI encoding schemes. This utility is designed for security testing, web application penetration testing, and analyzing potential attacks, with powerful auto-detection and decoding capabilities.
+See full documentation at [lab.nehonix.space](https://lab.nehonix.space)
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Overview](#overview)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+  - [Core Methods](#core-methods)
+    - [`checkUrl(url: string, options?: object)`](#checkurlurl-string-options-object)
+    - [`isValidUri(url: string, options?: object)`](#isvaliduriurl-string-options-object)
+    - [`createUrl(uri: string)`](#createurluri-string)
+    - [`detectEncoding(input: string, depth?: number)`](#detectencodinginput-string-depth-number)
 
 ## Overview
 
