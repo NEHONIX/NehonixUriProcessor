@@ -6,9 +6,20 @@
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "type": "module",
-  "author": "Nehonix",
+  "author": "Nehonix nehonix@proton.me",
   "files": [
     "dist"
+  ],
+  "homepage": "https://lab.nehonix.space",
+  "keywords": [
+    "uri",
+    "url",
+    "validation",
+    "decoding",
+    "security",
+    "typescript",
+    "webdev",
+    "pentesting"
   ],
   "scripts": {
     "build": "rollup -c",
@@ -36,6 +47,10 @@
     "rollup": "^4.40.0",
     "rollup-plugin-dts": "^6.2.1",
     "tslib": "^2.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nehonix/nehonixUriProcessor.git"
   },
   "license": "MIT",
   "dependencies": {
