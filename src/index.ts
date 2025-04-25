@@ -454,6 +454,10 @@ export const __safeEncode__ = NehonixSafetyLayer.__safeEncode__;
 export { NehonixURIProcessor as __processor__ };
 export { NehonixShieldProvider } from "./utils/provider/REACT_UTIL";
 export { useNehonixShield } from "./utils/provider/REACT_HOOK";
+export {
+  nehonixShieldMiddleware,
+  scanRequest,
+} from "./utils/provider/express.middleware";
 export const decodeB64 = (input: string) =>
   NDS.decode({
     input,
