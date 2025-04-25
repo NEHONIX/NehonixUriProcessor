@@ -7,7 +7,7 @@ import {
   UriHandlerInterface,
   UrlValidationOptions,
 } from "../types";
-import punycode from "punycode";
+import punycode from "node:punycode";
 import chalk from "chalk";
 import { ncu, NehonixCoreUtils } from "../utils/NehonixCoreUtils";
 import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
@@ -1011,7 +1011,7 @@ class NDS {
     let iterations = 0;
     let confidence = 0;
     let encodingType: ENC_TYPE | "UNKNOWN_TYPE" | "plainText" = "UNKNOWN_TYPE";
-    const maxIterations = opt.maxIterations || 10;
+    const maxIterations = opt.maxIterations || 12;
     const decodingHistory: Array<{
       result: string;
       type: string;
@@ -1292,8 +1292,8 @@ class NDS {
    * @param url The URL string to process
    * @returns URL with decoded parameters
    */
-  static decodeUrlParameters(url: string): string {
-    const checkUri = ncu.checkUrl(url, NDS.default_checkurl_opt);
+  static decodeUrlParameters(url: string) {
+    const checkUri =  ncu.checkUrl(url, NDS.default_checkurl_opt);
     if (!checkUri.isValid) {
       checkUri.cause && AppLogger.warn(checkUri.cause);
       return url;
@@ -1580,6 +1580,29 @@ class NDS {
       }
       return input; // Return original input on error
     }
+  }
+
+  /**
+   * Asynchronously decodes any encoded text to plaintext
+   * @param input The encoded string to decode
+   * @param opt Optional configuration for the decoding process
+   * @returns A Promise that resolves to the DecodeResult containing the decoded string
+   */
+  static asyncDecodeAnyToPlainText(
+    input: string,
+    opt: UriHandlerInterface = {
+      output: { encodeUrl: false },
+    }
+  ): Promise<DecodeResult> {
+    return new Promise((resolve, reject) => {
+      try {
+        const result = NDS.decodeAnyToPlaintext(input, opt);
+        resolve(result);
+        // return result;
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 }
 

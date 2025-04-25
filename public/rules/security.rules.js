@@ -1,76 +1,60 @@
-import { AppLogger } from "../common/AppLogger";
-import {
-  DetectedPattern,
-  MaliciousPatternOptions,
-} from "../services/MaliciousPatterns.service";
-import { NehonixEncService } from "../services/NehonixEnc.service";
-import NSS from "../services/NehonixSecurity.service";
-import { URLAnalysisResult, WAFBypassVariants } from "../types";
-import { MaliciousComponentType as malicious_component_type } from "../types/v2.2.0";
-
+import { AppLogger } from "../common/AppLogger.js";
+import { NehonixEncService } from "../services/NehonixEnc.service.js";
 export class SecurityRules {
-  private static get enc() {
+  static get enc() {
     return NehonixEncService;
   }
-
   // =============== SECURITY UTILITIES ===============
-
-  static analyzeMaliciousPatterns(
-    url: string,
-    options?: MaliciousPatternOptions
-  ) {
-    const maliciousResult = NSS.analyzeUrl(url, options);
-    return maliciousResult;
-  }
-
-  static analyzeURL(
-    ...p: Parameters<typeof SecurityRules.analyzeMaliciousPatterns>
-  ): URLAnalysisResult {
-    const [url, options] = p;
-    const vulnerabilities: string[] = [];
-    const vulnerabilitieDetails: DetectedPattern[] = [];
-
+  static analyzeURL(url) {
+    const vulnerabilities = [];
     try {
       const urlObj = new URL(url);
       const params = new URLSearchParams(urlObj.search);
-      const paramMap: { [key: string]: string } = {};
-
+      const paramMap = {};
       // Extract parameters
       params.forEach((value, key) => {
         paramMap[key] = value;
-
-        const c = SecurityRules.analyzeMaliciousPatterns(value, options);
-        if (c.isMalicious) {
-          c.detectedPatterns.forEach((pattern) => {
-            vulnerabilities.push(pattern.description);
-          });
-          vulnerabilitieDetails.push(...c.detectedPatterns);
+        // Detect potential vulnerabilities
+        if (value.includes("<") || value.includes(">")) {
+          vulnerabilities.push(`Possible XSS in parameter "${key}"`);
+        }
+        if (value.includes("'") || value.includes('"')) {
+          vulnerabilities.push(`Possible SQLi in parameter "${key}"`);
+        }
+        if (
+          value.toLowerCase().includes("union") &&
+          value.toLowerCase().includes("select")
+        ) {
+          vulnerabilities.push(
+            `Suspicion of SQLi (UNION) in parameter "${key}"`
+          );
+        }
+        if (value.includes("../") || value.includes("..\\")) {
+          vulnerabilities.push(
+            `Possible LFI/Path Traversal in parameter "${key}"`
+          );
         }
       });
-
       return {
         baseURL: `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`,
         parameters: paramMap,
         potentialVulnerabilities: vulnerabilities,
-        vulnerabilitieDetails: vulnerabilitieDetails,
       };
-    } catch (e: any) {
+    } catch (e) {
       AppLogger.error("Error while analyzing URL:", e);
       return {
         baseURL: url,
         parameters: {},
         potentialVulnerabilities: ["Invalid or malformed URL"],
-        vulnerabilitieDetails,
       };
     }
   }
-
   /**
    * Generates encoding variants of a string for WAF bypass testing
    * @param input The string to encode
    * @returns An object containing different encoding variants
    */
-  static generateWAFBypassVariants(input: string): WAFBypassVariants {
+  static generateWAFBypassVariants(input) {
     return {
       percentEncoding: SecurityRules.enc.encodePercentEncoding(input),
       doublePercentEncoding:
@@ -82,11 +66,10 @@ export class SecurityRules {
       htmlEntityVariant: SecurityRules.enc.encodeHTMLEntities(input),
     };
   }
-
   /**
    * Generates mixed encoding (different types of encoding combined)
    */
-  private static generateMixedEncoding(input: string): string {
+  static generateMixedEncoding(input) {
     let result = "";
     for (let i = 0; i < input.length; i++) {
       const char = input[i];
@@ -106,12 +89,11 @@ export class SecurityRules {
     }
     return result;
   }
-
   /**
    * Generates a string with alternating upper and lower case
    * Useful for bypassing certain filters
    */
-  private static generateAlternatingCase(input: string): string {
+  static generateAlternatingCase(input) {
     let result = "";
     for (let i = 0; i < input.length; i++) {
       const char = input[i];
@@ -120,5 +102,5 @@ export class SecurityRules {
     return result;
   }
 }
-
 export { SecurityRules as sr };
+//# sourceMappingURL=security.rules.js.map

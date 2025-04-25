@@ -1,0 +1,1687 @@
+import { AppLogger } from "../common/AppLogger";
+
+/**
+ * Interface defining detection result with detailed information
+ */
+export interface MaliciousPatternResult {
+  isMalicious: boolean;
+  detectedPatterns: DetectedPattern[];
+  score: number;
+  confidence: "low" | "medium" | "high";
+  recommendation: string;
+  contextAnalysis?: ContextAnalysisResult; // New field
+}
+
+/**
+ * New interface for contextual analysis results
+ */
+export interface ContextAnalysisResult {
+  relatedPatterns: RelatedPatternGroup[];
+  entropyScore: number;
+  anomalyScore: number;
+  encodingLayers: number;
+}
+
+/**
+ * Interface for related pattern groups
+ */
+export interface RelatedPatternGroup {
+  patterns: MaliciousPatternType[];
+  description: string;
+  riskMultiplier: number;
+}
+
+/**
+ * Interface defining a detected malicious pattern
+ */
+export interface DetectedPattern {
+  type: MaliciousPatternType;
+  pattern: string;
+  location: string;
+  severity: "low" | "medium" | "high";
+  confidence: "low" | "medium" | "high";
+  description: string;
+  matchedValue?: string;
+  contextScore?: number; // New field for context-based scoring
+}
+
+/**
+ * Enum defining various malicious pattern types
+ */
+export enum MaliciousPatternType {
+  SQL_INJECTION = "sql_injection",
+  XSS = "cross_site_scripting",
+  COMMAND_INJECTION = "command_injection",
+  PATH_TRAVERSAL = "path_traversal",
+  OPEN_REDIRECT = "open_redirect",
+  SSRF = "server_side_request_forgery",
+  CRLF_INJECTION = "crlf_injection",
+  ENCODED_PAYLOAD = "encoded_payload",
+  SERIALIZATION = "serialization_payload",
+  TEMPLATE_INJECTION = "template_injection",
+  SUSPICIOUS_PARAMETER = "suspicious_parameter",
+  DATA_URI = "data_uri",
+  SUSPICIOUS_IP = "suspicious_ip",
+  SUSPICIOUS_TLD = "suspicious_tld",
+  SUSPICIOUS_DOMAIN = "suspicious_domain",
+  PROTOCOL_CONFUSION = "protocol_confusion",
+  HOMOGRAPH_ATTACK = "homograph_attack", // NEW: Domain spoofing using similar-looking chars
+  MULTI_ENCODING = "multi_encoding", // NEW: Multiple encoding layers
+  UNICODE_EVASION = "unicode_evasion", // NEW: Unicode character abuse
+  FRAGMENT_PAYLOAD = "fragment_payload", // NEW: Payload split across parameters
+  HEADER_INJECTION = "header_injection", // NEW: HTTP header injection
+  NOSQL_INJECTION = "nosql_injection", // NEW: NoSQL injection patterns
+  GRAPHQL_INJECTION = "graphql_injection", // NEW: GraphQL injection
+  DOM_BASED_ATTACK = "dom_based_attack", // NEW: DOM-based attacks
+  FILE_INCLUSION = "file_inclusion", // NEW: Remote/Local file inclusion
+}
+
+/**
+ * Interface for malicious pattern detection options
+ */
+export interface MaliciousPatternOptions {
+  /**
+   * Minimum score required to mark input as malicious (default: 50)
+   */
+  minScore?: number;
+  /**
+   * Enable verbose logging for debugging
+   */
+  debug?: boolean;
+  /**
+   * List of pattern types to ignore
+   */
+  ignorePatterns?: MaliciousPatternType[];
+  /**
+   * Adjust sensitivity for detections (0.1-2.0)
+   * Lower values mean less sensitive, higher values mean more sensitive
+   */
+  sensitivity?: number;
+  /**
+   * Custom patterns to include in detection
+   */
+  customPatterns?: Array<{
+    pattern: RegExp;
+    type: MaliciousPatternType;
+    severity: "low" | "medium" | "high";
+    description: string;
+  }>;
+  /**
+   * Enable contextual analysis for improved detection
+   */
+  enableContextualAnalysis?: boolean;
+  /**
+   * Enable entropy analysis for obfuscated payloads
+   */
+  enableEntropyAnalysis?: boolean;
+  /**
+   * Enable statistical analysis
+   */
+  enableStatisticalAnalysis?: boolean;
+  /**
+   * Component-specific sensitivity multipliers
+   */
+  componentSensitivity?: {
+    protocol?: number;
+    hostname?: number;
+    path?: number;
+    query?: number;
+    fragment?: number;
+  };
+  /**
+   * Character set to focus on for pattern matching (default: latin)
+   */
+  characterSet?: "latin" | "unicode" | "all";
+}
+
+/**
+ * Enhanced service for detecting various malicious patterns in URLs and general input
+ * NehonixNMPS => NMPS
+ *
+ */
+export class NMPS {
+  // Default detection options
+  private static readonly DEFAULT_OPTIONS: MaliciousPatternOptions = {
+    minScore: 50,
+    debug: false,
+    sensitivity: 1.0,
+    ignorePatterns: [],
+    customPatterns: [],
+    enableContextualAnalysis: true,
+    enableEntropyAnalysis: true,
+    enableStatisticalAnalysis: false,
+    componentSensitivity: {
+      protocol: 1.0,
+      hostname: 1.2,
+      path: 1.0,
+      query: 1.5,
+      fragment: 0.8,
+    },
+    characterSet: "latin",
+  };
+
+  private static options: MaliciousPatternOptions = NMPS.DEFAULT_OPTIONS;
+
+  constructor(options?: Partial<MaliciousPatternOptions>) {
+    NMPS.options = { ...NMPS.DEFAULT_OPTIONS, ...options };
+  }
+
+  // Severity score multipliers
+  private static readonly SEVERITY_MULTIPLIERS = {
+    low: 1,
+    medium: 2,
+    high: 3,
+  };
+
+  // Related pattern groups for contextual analysis
+  private static readonly RELATED_PATTERNS: RelatedPatternGroup[] = [
+    {
+      patterns: [
+        MaliciousPatternType.SQL_INJECTION,
+        MaliciousPatternType.ENCODED_PAYLOAD,
+      ],
+      description: "Encoded SQL injection attempt",
+      riskMultiplier: 1.5,
+    },
+    {
+      patterns: [MaliciousPatternType.XSS, MaliciousPatternType.DATA_URI],
+      description: "XSS using data URI scheme",
+      riskMultiplier: 1.6,
+    },
+    {
+      patterns: [
+        MaliciousPatternType.COMMAND_INJECTION,
+        MaliciousPatternType.ENCODED_PAYLOAD,
+      ],
+      description: "Encoded command injection attempt",
+      riskMultiplier: 1.8,
+    },
+    {
+      patterns: [
+        MaliciousPatternType.OPEN_REDIRECT,
+        MaliciousPatternType.SUSPICIOUS_DOMAIN,
+      ],
+      description: "Open redirect to suspicious domain",
+      riskMultiplier: 1.7,
+    },
+    {
+      patterns: [
+        MaliciousPatternType.PATH_TRAVERSAL,
+        MaliciousPatternType.FILE_INCLUSION,
+      ],
+      description: "Directory traversal with file inclusion",
+      riskMultiplier: 1.9,
+    },
+    {
+      patterns: [
+        MaliciousPatternType.XSS,
+        MaliciousPatternType.UNICODE_EVASION,
+      ],
+      description: "XSS using Unicode evasion techniques",
+      riskMultiplier: 1.8,
+    },
+    {
+      patterns: [MaliciousPatternType.SSRF, MaliciousPatternType.SUSPICIOUS_IP],
+      description: "SSRF targeting internal network",
+      riskMultiplier: 1.9,
+    },
+  ];
+
+  // Common character distribution in normal URLs (for statistical analysis)
+  private static readonly NORMAL_CHAR_DISTRIBUTION = {
+    a: 0.082,
+    b: 0.015,
+    c: 0.028,
+    d: 0.043,
+    e: 0.127,
+    f: 0.022,
+    g: 0.02,
+    h: 0.061,
+    i: 0.07,
+    j: 0.002,
+    k: 0.008,
+    l: 0.04,
+    m: 0.024,
+    n: 0.067,
+    o: 0.075,
+    p: 0.019,
+    q: 0.001,
+    r: 0.06,
+    s: 0.063,
+    t: 0.091,
+    u: 0.028,
+    v: 0.01,
+    w: 0.024,
+    x: 0.002,
+    y: 0.02,
+    z: 0.001,
+    "0": 0.005,
+    "1": 0.004,
+    "2": 0.003,
+    "3": 0.002,
+    "4": 0.002,
+    "5": 0.002,
+    "6": 0.002,
+    "7": 0.002,
+    "8": 0.002,
+    "9": 0.002,
+    "/": 0.015,
+    ".": 0.01,
+    "-": 0.005,
+    _: 0.003,
+    "?": 0.001,
+    "&": 0.001,
+    "=": 0.003,
+    "+": 0.001,
+    "%": 0.001,
+    "#": 0.001,
+  };
+
+  // Pattern definitions for various attack vectors
+  private static readonly PATTERNS = {
+    // SQL Injection patterns (enhanced)
+    [MaliciousPatternType.SQL_INJECTION]: [
+      {
+        pattern:
+          /('|"|;|\b)(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|EXEC|UNION|CREATE|WHERE)\b.*?(=|<|>)/i,
+        severity: "high",
+        description: "SQL query syntax detected in URL",
+      },
+      {
+        pattern:
+          /(\b|\d)OR(\b|\d).*?=.*?--|(\b|\d)AND(\b|\d).*?=.*?--|.*?=.*?--|(\b|\d)UNION(\b|\d).*?SELECT/i,
+        severity: "high",
+        description: "SQL logical operators pattern detected",
+      },
+      {
+        pattern: /\/\*.*?\*\/|--|#|\bSLEEP\(|\bBENCHMARK\(/i,
+        severity: "medium",
+        description: "SQL comment or time-delay function detected",
+      },
+      {
+        pattern: /\bWAITFOR\b.*?DELAY|pg_sleep|sys\.dbms_lock\.sleep/i,
+        severity: "medium",
+        description: "SQL time-delay function detected",
+      },
+      {
+        pattern: /CONVERT\(.*USING|CAST\(.*AS|CHAR\(\d+\)/i,
+        severity: "medium",
+        description: "SQL type conversion function detected",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /ORDER\s+BY\s+\d+(?:\s*,\s*\d+)*/i,
+        severity: "medium",
+        description:
+          "SQL ORDER BY clause potentially used for column enumeration",
+      },
+      {
+        pattern: /GROUP\s+BY\s+\d+(?:\s*,\s*\d+)*/i,
+        severity: "medium",
+        description:
+          "SQL GROUP BY clause potentially used for column enumeration",
+      },
+      {
+        pattern: /HAVING\s+\d+=\d+/i,
+        severity: "medium",
+        description: "SQL HAVING clause potentially used for blind injection",
+      },
+      {
+        pattern: /CASE\s+WHEN\s+.*?\s+THEN\s+.*?\s+ELSE\s+.*?\s+END/i,
+        severity: "high",
+        description: "SQL CASE statement potentially used for blind injection",
+      },
+      {
+        pattern: /@@version|@@servername|@@language|sqlite_version\(\)/i,
+        severity: "high",
+        description: "SQL server variable or version detection attempt",
+      },
+    ],
+
+    // XSS (Cross-Site Scripting) patterns (enhanced)
+    [MaliciousPatternType.XSS]: [
+      {
+        pattern: /<script[\s\S]*?>[\s\S]*?<\/script>|<script[\s\S]*?\/>/i,
+        severity: "high",
+        description: "Script tag detected in URL",
+      },
+      {
+        pattern: /javascript:|vbscript:|livescript:/i,
+        severity: "high",
+        description: "JavaScript protocol handler detected",
+      },
+      {
+        pattern: /on(load|error|click|mouseover|focus|blur)=["']?[^"']*["']?/i,
+        severity: "high",
+        description: "Event handler attribute detected",
+      },
+      {
+        pattern:
+          /(?:<[^>]*\s)(href|src|data|action)\s*=\s*["']?(javascript:|data:text\/html)/i,
+        severity: "high",
+        description: "Malicious attribute with protocol handler",
+      },
+      {
+        pattern:
+          /<(img|iframe|embed|object|svg)[\s\S]*?(onerror|onload)[\s\S]*?>/i,
+        severity: "high",
+        description: "Dangerous tag with event handler",
+      },
+      {
+        pattern:
+          /alert\(|confirm\(|prompt\(|eval\(|Function\(|setTimeout\(|setInterval\(/i,
+        severity: "medium",
+        description: "JavaScript function that may be used for XSS",
+      },
+      {
+        pattern:
+          /document\.cookie|document\.write|document\.location|window\.location|localStorage|sessionStorage/i,
+        severity: "medium",
+        description: "JavaScript API that may be used for XSS",
+      },
+      {
+        pattern: /&#x?\d+;|&[a-zA-Z]+;/g,
+        severity: "low",
+        description:
+          "HTML entity encoding detected, may be attempting to bypass filters",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /<svg[\s\S]*?on\w+[\s\S]*?>/i,
+        severity: "high",
+        description: "SVG with event handler for XSS",
+      },
+      {
+        pattern: /<style[\s\S]*?expression[\s\S]*?>/i,
+        severity: "high",
+        description: "CSS expression potentially used for XSS",
+      },
+      {
+        pattern: /expression\s*\(\s*[\w\W]+?\s*\)/i,
+        severity: "high",
+        description: "CSS expression potentially used for XSS",
+      },
+      {
+        pattern: /<meta[\s\S]*?http-equiv[\s\S]*?refresh[\s\S]*?>/i,
+        severity: "high",
+        description: "Meta refresh tag potentially used for redirect or XSS",
+      },
+      {
+        pattern: /<form[\s\S]*?action[\s\S]*?javascript[\s\S]*?>/i,
+        severity: "high",
+        description: "Form with JavaScript action for XSS",
+      },
+      {
+        pattern: /\\\w{2,4}[a-fA-F0-9]{2,6}/i,
+        severity: "medium",
+        description:
+          "JavaScript unicode escapes potentially used for XSS bypass",
+      },
+    ],
+
+    // Command Injection patterns (existing + enhanced)
+    [MaliciousPatternType.COMMAND_INJECTION]: [
+      {
+        pattern:
+          /;.*?(ping|wget|curl|telnet|nc|netcat|nslookup|dig|host|traceroute)/i,
+        severity: "high",
+        description: "Command injection with networking commands",
+      },
+      {
+        pattern:
+          /[;&|`]\s*cat\s|[;&|`]\s*echo\s|[;&|`]\s*rm\s|[;&|`]\s*cp\s|[;&|`]\s*mv\s/i,
+        severity: "high",
+        description: "Command injection with file manipulation commands",
+      },
+      {
+        pattern: /\$\(\s*.*?\s*\)|\`\s*.*?\s*\`/,
+        severity: "high",
+        description: "Command substitution syntax detected",
+      },
+      {
+        pattern:
+          /[;&|]\s*(whoami|id|uname|ifconfig|ipconfig|net\s+user|net\s+localgroup)/i,
+        severity: "high",
+        description: "Command injection with system information commands",
+      },
+      {
+        pattern: /\|\||\|&|&&|;\s*\(/,
+        severity: "medium",
+        description: "Command chaining operators detected",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /\$\{IFS\}|\$IFS\$/,
+        severity: "high",
+        description:
+          "Command injection using IFS variable for space obfuscation",
+      },
+      {
+        pattern: /\\\d{1,3}\\\d{1,3}\\\d{1,3}/,
+        severity: "high",
+        description: "Command injection using octal character encoding",
+      },
+      {
+        pattern: /\$\{.*?:-.*?\}/,
+        severity: "high",
+        description: "Command injection using bash variable substitution",
+      },
+      {
+        pattern: /python\s+-c|ruby\s+-e|perl\s+-e|php\s+-r/i,
+        severity: "high",
+        description: "Command injection using interpreted language one-liner",
+      },
+      {
+        pattern: /env\s+[A-Za-z0-9_]+=[^\s]+\s+[a-zA-Z0-9_]+/i,
+        severity: "high",
+        description: "Command injection using environment variable",
+      },
+    ],
+
+    // NoSQL Injection patterns (NEW)
+    [MaliciousPatternType.NOSQL_INJECTION]: [
+      {
+        pattern: /\{\s*\$where\s*:\s*['"].*?['"]\s*\}/i,
+        severity: "high",
+        description: "MongoDB $where operator injection",
+      },
+      {
+        pattern: /\{\s*\$regex\s*:\s*['"].*?['"]\s*\}/i,
+        severity: "high",
+        description: "MongoDB $regex operator injection",
+      },
+      {
+        pattern: /\{\s*\$ne\s*:|MongoDB\.prototype|tojson|ObjectId/i,
+        severity: "high",
+        description: "MongoDB operator or object manipulation",
+      },
+      {
+        pattern: /\$\s*\[\s*\$\s*eq\s*\]/i,
+        severity: "high",
+        description: "MongoDB equivalent operator injection",
+      },
+      {
+        pattern: /\[\s*\$\s*gt\s*\]|\[\s*\$\s*lt\s*\]/i,
+        severity: "high",
+        description: "MongoDB comparison operator injection",
+      },
+    ],
+
+    // GraphQL Injection patterns (NEW)
+    [MaliciousPatternType.GRAPHQL_INJECTION]: [
+      {
+        pattern: /\{\s*__schema\s*\{/i,
+        severity: "high",
+        description: "GraphQL introspection query",
+      },
+      {
+        pattern: /\{\s*__type\s*\(/i,
+        severity: "high",
+        description: "GraphQL type introspection query",
+      },
+      {
+        pattern: /query\s*\{\s*__typename\s*\}/i,
+        severity: "medium",
+        description: "GraphQL typename introspection",
+      },
+      {
+        pattern: /mutation\s*\{/i,
+        severity: "medium",
+        description: "GraphQL mutation operation",
+      },
+      {
+        pattern: /fragments\s*\{|\.\.\.\s*on\s+/i,
+        severity: "low",
+        description: "GraphQL fragment usage",
+      },
+    ],
+
+    // Path Traversal patterns (enhanced)
+    [MaliciousPatternType.PATH_TRAVERSAL]: [
+      {
+        pattern: /\.\.%2f|\.\.\/|\.\.\\|%2e%2e%2f|%252e%252e%252f/i,
+        severity: "high",
+        description: "Directory traversal pattern detected",
+      },
+      {
+        pattern:
+          /\/etc\/passwd|\/etc\/shadow|\/proc\/self\/environ|c:\\boot\.ini|c:\\windows\\system32/i,
+        severity: "high",
+        description: "Access attempt to sensitive system files",
+      },
+      {
+        pattern: /\/\.\.\/|\\\.\.\\|%5c\.\.%5c|%2f\.\.%2f/i,
+        severity: "medium",
+        description: "Encoded directory traversal pattern",
+      },
+      {
+        pattern:
+          /\/var\/www\/|\/usr\/local\/|\/home\/\w+\/|c:\\inetpub\\wwwroot/i,
+        severity: "medium",
+        description: "Access attempt to common web server directories",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /%c0%ae%c0%ae\//i,
+        severity: "high",
+        description: "Unicode normalized directory traversal attempt",
+      },
+      {
+        pattern: /\/\.\.;\/|\/\.\.%09\//i,
+        severity: "high",
+        description: "Directory traversal with filter bypass",
+      },
+      {
+        pattern: /\/\.\.%00\/|\/\.\.%u0000\//i,
+        severity: "high",
+        description: "Directory traversal with null byte injection",
+      },
+      {
+        pattern: /file:\/\/\/|jar:file:\/\/\//i,
+        severity: "high",
+        description: "File protocol usage in URL",
+      },
+    ],
+
+    // File Inclusion patterns (NEW)
+    [MaliciousPatternType.FILE_INCLUSION]: [
+      {
+        pattern:
+          /[?&](file|document|path|folder|root|dir|include|require)=(?:https?|ftp|php|zlib|data|ogg|phar):\/\//i,
+        severity: "high",
+        description: "Remote file inclusion attempt",
+      },
+      {
+        pattern:
+          /[?&](file|document|path|folder|root|dir|include|require)=\/\//i,
+        severity: "high",
+        description: "Protocol-relative file inclusion attempt",
+      },
+      {
+        pattern: /php:\/\/filter\/convert\.base64-(en|de)code/i,
+        severity: "high",
+        description: "PHP filter wrapper for code disclosure",
+      },
+      {
+        pattern: /zip:\/\/|phar:\/\/|compress\.zlib:\/\/|compress\.bzip2:\/\//i,
+        severity: "high",
+        description: "PHP wrapper potential for file inclusion",
+      },
+      {
+        pattern: /php:\/\/(input|stdin|memory|temp|expect)/i,
+        severity: "high",
+        description: "PHP stream wrapper potential for code execution",
+      },
+    ],
+
+    // DOM Based Attack patterns (NEW)
+    [MaliciousPatternType.DOM_BASED_ATTACK]: [
+      {
+        pattern: /location\.(href|hash|search|pathname).*?=/i,
+        severity: "medium",
+        description: "DOM location manipulation",
+      },
+      {
+        pattern:
+          /document\.write\(.*?(location|window\.name|document\.URL|document\.referrer)/i,
+        severity: "high",
+        description: "DOM based XSS vector",
+      },
+      {
+        pattern:
+          /eval\(.*?(location|window\.name|document\.URL|document\.referrer)/i,
+        severity: "high",
+        description: "DOM based code execution vector",
+      },
+      {
+        pattern:
+          /innerHTML|outerHTML|insertAdjacentHTML|document\.execCommand\('insertHTML/i,
+        severity: "medium",
+        description: "DOM HTML manipulation function",
+      },
+      {
+        pattern: /postMessage\(.*?\*.*?\)/i,
+        severity: "medium",
+        description: "Cross-origin postMessage with wildcard target",
+      },
+    ],
+
+    // Open Redirect patterns (existing + enhanced)
+    [MaliciousPatternType.OPEN_REDIRECT]: [
+      {
+        pattern:
+          /[?&](url|redirect|return|returnUrl|next|goto|to|link|location|redir|redirect_uri|redirect_url)=https?:\/\/(?!(?:[\w-]+\.)*?example\.com)/i,
+        severity: "high",
+        description: "Potential open redirect via redirect parameter",
+      },
+      {
+        pattern:
+          /[?&](url|redirect|return|returnUrl|next|goto|to|link|location|redir|redirect_uri|redirect_url)=(\/\/|\%2F\%2F)/i,
+        severity: "high",
+        description: "Protocol-relative URL in redirect parameter",
+      },
+      {
+        pattern:
+          /[?&](url|redirect|return|returnUrl|next|goto|to|link|location|redir|redirect_uri|redirect_url)=(javascript|data):/i,
+        severity: "high",
+        description: "JavaScript or data protocol in redirect parameter",
+      },
+      // NEW PATTERNS
+      {
+        pattern:
+          /[?&](url|redirect|return|returnUrl|next|goto|to|link|location|redir|redirect_uri)=.*?(@|\%40)/i,
+        severity: "high",
+        description: "Redirect with potential user information in URL",
+      },
+      {
+        pattern:
+          /[?&](url|redirect|return|returnUrl|next|goto|to|link|location|redir|redirect_uri)=.*?\.(php|asp|aspx|jsp)/i,
+        severity: "medium",
+        description: "Redirect to dynamic page",
+      },
+      {
+        pattern:
+          /[?&](url|redirect|return|returnUrl|next|goto|to|link|location|redir|redirect_uri)=https?%3A%2F%2F/i,
+        severity: "high",
+        description: "URL-encoded protocol in redirect parameter",
+      },
+    ],
+
+    // Server-Side Request Forgery patterns (enhanced)
+    [MaliciousPatternType.SSRF]: [
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file|reference|ref)=https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)/i,
+        severity: "high",
+        description: "URL parameter pointing to localhost",
+      },
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file|reference|ref)=https?:\/\/(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?/i,
+        severity: "medium",
+        description: "URL parameter pointing to an IP address",
+      },
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file|reference|ref)=(file|dict|gopher|ldap|tftp|ftp):\/\//i,
+        severity: "high",
+        description: "URL parameter with unusual protocol",
+      },
+      // NEW PATTERNS
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file)=https?:\/\/(?:10|172\.(?:1[6-9]|2\d|3[01])|192\.168)\.(?:\d{1,3})\.(?:\d{1,3})/i,
+        severity: "high",
+        description: "URL parameter pointing to private IP range",
+      },
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file)=https?:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:internal|local|localhost|lan|corp|private|home|intranet)/i,
+        severity: "high",
+        description: "URL parameter pointing to internal domain",
+      },
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file)=(?:http|https):\/\/(?:\d+(?:\.\d+){0,3})$/i,
+        severity: "high",
+        description: "URL parameter with decimal IP address",
+      },
+      {
+        pattern:
+          /[?&](url|uri|endpoint|source|path|dest|destination|redirect|fetch|site|html|file)=(?:http|https):\/\/(?:0x[a-f0-9]{2}(?:\.0x[a-f0-9]{2}){0,3})$/i,
+        severity: "high",
+        description: "URL parameter with hexadecimal IP address",
+      },
+    ],
+
+    // CRLF Injection patterns (enhanced)
+    [MaliciousPatternType.CRLF_INJECTION]: [
+      {
+        pattern: /%0D%0A|%0A%0D|%0D|%0A|\\r\\n|\\n\\r|\\r|\\n/i,
+        severity: "medium",
+        description: "CRLF characters detected in URL",
+      },
+      {
+        pattern: /%0D%0ALocation:|%0D%0ASet-Cookie:|%0D%0AContent-Type:/i,
+        severity: "high",
+        description: "CRLF injection attempt with HTTP header",
+      },
+      // NEW PATTERNS
+      {
+        pattern:
+          /%0D%0A(?:X-XSS-Protection:|X-Frame-Options:|Content-Security-Policy:|X-Content-Type-Options:)/i,
+        severity: "high",
+        description: "CRLF injection attempt targeting security headers",
+      },
+      {
+        pattern:
+          /%0D%0AContent-Length:|%0D%0ATransfer-Encoding:|%0D%0AContent-Encoding:/i,
+        severity: "high",
+        description: "CRLF injection attempt ",
+      },
+    ],
+
+    // HTTP Header Injection patterns (NEW)
+    [MaliciousPatternType.HEADER_INJECTION]: [
+      {
+        pattern:
+          /\r\n(?:Host:|Connection:|User-Agent:|Referer:|Accept:|Cookie:)/i,
+        severity: "high",
+        description: "HTTP header injection attempt",
+      },
+      {
+        pattern:
+          /\\r\\n(?:Host:|Connection:|User-Agent:|Referer:|Accept:|Cookie:)/i,
+        severity: "high",
+        description: "Escaped HTTP header injection attempt",
+      },
+      {
+        pattern:
+          /%0D%0A(?:Host:|Connection:|User-Agent:|Referer:|Accept:|Cookie:)/i,
+        severity: "high",
+        description: "URL-encoded HTTP header injection attempt",
+      },
+      {
+        pattern: /%E5%98%8D%E5%98%8A/i,
+        severity: "high",
+        description: "Unicode CRLF encoded as UTF-8 for header injection",
+      },
+    ],
+
+    // Encoded Payload patterns (enhanced)
+    [MaliciousPatternType.ENCODED_PAYLOAD]: [
+      {
+        pattern: /%[0-9a-f]{2}|&#x[0-9a-f]+;|&#\d+;/i,
+        severity: "low",
+        description: "URL-encoded or HTML-encoded characters",
+      },
+      {
+        pattern: /\\x[0-9a-f]{2}|\\u[0-9a-f]{4}/i,
+        severity: "medium",
+        description: "String with hex or unicode escape sequences",
+      },
+      {
+        pattern:
+          /base64[+\/=A-Za-z0-9]{8,}|eyJ[\w-]+={0,2}\.eyJ[\w-]+={0,2}\./i,
+        severity: "medium",
+        description: "Potential Base64-encoded or JWT payload",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /=[a-zA-Z0-9+\/]{20,}(?:={0,2}(?:&|$))/i,
+        severity: "medium",
+        description: "Suspicious Base64-encoded parameter value",
+      },
+      {
+        pattern:
+          /%(?:25)+(?:2[6-9A-F]|3[0-9A-F]|4[1-9A-F]|5[0-9A]|6[1-9A-F]|7[0-9A])/i,
+        severity: "high",
+        description: "Double (or more) URL encoding detected",
+      },
+      {
+        pattern: /(?:%[0-9a-f]{2}){8,}/i,
+        severity: "medium",
+        description: "Long sequence of percent-encoded characters",
+      },
+    ],
+
+    // Multi-Encoding patterns (NEW)
+    [MaliciousPatternType.MULTI_ENCODING]: [
+      {
+        pattern: /%(?:25)+20|%(?:25)+3[cCdD]|%(?:25)+3[eE]/i,
+        severity: "high",
+        description: "Multiple layers of URL encoding",
+      },
+      {
+        pattern: /%u00(?:25)%u00(?:[2-7][0-9a-fA-F])/i,
+        severity: "high",
+        description: "Mixed Unicode and percent encoding",
+      },
+      {
+        pattern: /&#x(?:25)+(?:3[0-9]|[46][1-9a-fA-F]|[57][0-9aA]);/i,
+        severity: "high",
+        description: "HTML hex encoding of already encoded content",
+      },
+      {
+        pattern: /\\\d{1,3}\\\d{1,3}\\\d{1,3}/i,
+        severity: "medium",
+        description: "Octal encoding sequence",
+      },
+    ],
+
+    // Unicode Evasion patterns (NEW)
+    [MaliciousPatternType.UNICODE_EVASION]: [
+      {
+        pattern: /(?:\xc0\xae|\xc1\x9c|\xc1\xa0|\xc1\xb5|\xc2\xad|\xcc\xb5)/i,
+        severity: "high",
+        description: "Unicode control characters for filter evasion",
+      },
+      {
+        pattern: /%E0%80%AE|%E2%80%8F|%E2%80%AA|%E2%80%AB|%E2%80%AC/i,
+        severity: "high",
+        description: "Bidirectional Unicode control characters",
+      },
+      {
+        pattern: /\p{Cf}|\p{Cc}|\p{Cs}/u,
+        severity: "medium",
+        description: "Unicode formatting or control characters",
+      },
+      {
+        pattern: /\u200e|\u200f|\u061c|\u2066|\u2067|\u2068|\u2069/u,
+        severity: "medium",
+        description: "Unicode directionality control characters",
+      },
+    ],
+
+    // Homograph Attack patterns (NEW)
+    [MaliciousPatternType.HOMOGRAPH_ATTACK]: [
+      {
+        pattern: /xn--/i,
+        severity: "medium",
+        description: "Punycode domain potentially used for homograph attack",
+      },
+      {
+        pattern:
+          /[\u0430\u0435\u043E\u0440\u0441\u0443\u0445\u0455\u0501\u051c\u0586]/u,
+        severity: "high",
+        description: "Cyrillic characters visually similar to Latin",
+      },
+      {
+        pattern:
+          /[\u03c1\u03f5\u0251\u03a1\u0391\u0392\u0395\u0397\u0399\u039a\u039c\u039d\u03a3\u03a4\u03a7\u03a9\u0411\u0412\u0415]/u,
+        severity: "high",
+        description: "Greek characters visually similar to Latin",
+      },
+      {
+        pattern: /[\u05d5\u05db\u05dd\u05df\u05e1\u05e2]/u,
+        severity: "high",
+        description: "Hebrew characters visually similar to Latin",
+      },
+    ],
+
+    // Fragment Payload patterns (NEW)
+    [MaliciousPatternType.FRAGMENT_PAYLOAD]: [
+      {
+        pattern: /[?&][^=&]*?=[^=&]*?[?&][^=&]*?=[^=&]*?#[a-zA-Z0-9+\/=]+/i,
+        severity: "high",
+        description: "Multiple parameters with fragment payload",
+      },
+      {
+        pattern: /#.*?[<>"']/i,
+        severity: "high",
+        description: "Fragment containing HTML special characters",
+      },
+      {
+        pattern: /#.*?(?:%3c|%3e|%22|%27|%60)/i,
+        severity: "high",
+        description: "Fragment containing URL-encoded HTML special characters",
+      },
+      {
+        pattern: /#.*?\(\s*['"`][^'"`]*?['"`]\s*(?:\+|,)\s*['"`][^'"`]*?['"`]/i,
+        severity: "high",
+        description: "Fragment with potential code concatenation",
+      },
+    ],
+
+    // Serialization Payload patterns (enhanced)
+    [MaliciousPatternType.SERIALIZATION]: [
+      {
+        pattern: /O:[0-9]+:"[^"]+":[0-9]+:{.*?}/i,
+        severity: "high",
+        description: "PHP serialized object detected",
+      },
+      {
+        pattern: /rO0[A-Za-z0-9+/=]+/,
+        severity: "high",
+        description: "Base64-encoded serialized data detected",
+      },
+      {
+        pattern: /AC\\ed\\|H\\xac\\xed/,
+        severity: "high",
+        description: "Java serialization marker detected",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /\{"rce":.+"gadget":.*\}/i,
+        severity: "high",
+        description: "JSON with suspicious RCE/gadget fields",
+      },
+      {
+        pattern: /\{.*"json\.net.*":.*\}/i,
+        severity: "high",
+        description: "Potential JSON.NET serialization exploit",
+      },
+      {
+        pattern: /\$type.*Assembly/i,
+        severity: "high",
+        description: "JSON with type and assembly references",
+      },
+    ],
+
+    // Template Injection patterns (enhanced)
+    [MaliciousPatternType.TEMPLATE_INJECTION]: [
+      {
+        pattern: /\{\{\s*(constructor|__proto__|prototype)\s*\}\}/i,
+        severity: "high",
+        description:
+          "Potential template injection with object prototype access",
+      },
+      {
+        pattern:
+          /\{\{\s*(self|request|url|url_for|lipsum|get_flashed_messages|config)\s*\}\}/i,
+        severity: "high",
+        description: "Flask/Jinja2 template injection attempt",
+      },
+      {
+        pattern: /\$\{.*?(getRuntime|exec|getClass|forName|ClassLoader)\}/i,
+        severity: "high",
+        description: "Potential EL injection with Java reflection",
+      },
+      {
+        pattern: /\{\{.*?(system|exec|popen|subprocess|os)\./i,
+        severity: "high",
+        description: "Template injection with system command execution",
+      },
+      // NEW PATTERNS
+      {
+        pattern:
+          /\$\{.*?(T\(java\.lang\.Runtime\)|new\s+java\.lang\.ProcessBuilder|new\s+java\.net\.URLClassLoader)\}/i,
+        severity: "high",
+        description: "Spring Expression Language injection attempt",
+      },
+      {
+        pattern:
+          /\{\{.*?(range|eq|ne|lt|le|gt|ge|call|html|js|urlquery)\s+.*?\}\}/i,
+        severity: "high",
+        description: "Go template injection attempt",
+      },
+      {
+        pattern: /\{\{[\s\S]*?\|[\s\S]*?\}\}/i,
+        severity: "medium",
+        description: "Angular/Handlebars template filter usage",
+      },
+      {
+        pattern: /<#.*?assign.*?>|<#.*?if.*?>|<#.*?list.*?>/i,
+        severity: "high",
+        description: "FreeMarker template injection attempt",
+      },
+    ],
+
+    // Suspicious Parameters (enhanced)
+    [MaliciousPatternType.SUSPICIOUS_PARAMETER]: [
+      {
+        pattern:
+          /[?&](debug|test|admin|backdoor|root|shell|hack|vulnerable|exploit|setup|install|config|setup)=/i,
+        severity: "medium",
+        description: "Suspicious parameter name detected",
+      },
+      {
+        pattern:
+          /[?&](_|cmd|exec|command|execute|ping|query|jump|code|process|run|shell|system|passthru)=/i,
+        severity: "high",
+        description: "Parameter name suggesting command execution",
+      },
+      {
+        pattern:
+          /[?&](daemon|upload|file|document|folder|root|path|pg|style|php_path|document_root)=/i,
+        severity: "medium",
+        description: "Parameter name suggesting file operations",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /[?&](sql|db|query|select|insert|update|delete|where)=/i,
+        severity: "medium",
+        description: "Parameter name suggesting database operations",
+      },
+      {
+        pattern: /[?&](callback|jsonp|function|method|action|handler)=/i,
+        severity: "medium",
+        description: "Parameter name suggesting function callbacks",
+      },
+      {
+        pattern: /[?&](token|auth|jwt|apikey|key|secret|password|pass|pwd)=/i,
+        severity: "low",
+        description: "Parameter name suggesting credential/key handling",
+      },
+    ],
+
+    // Data URI scheme (enhanced)
+    [MaliciousPatternType.DATA_URI]: [
+      {
+        pattern: /data:(?!image\/(?:png|gif|jpeg|jpg|webp))/i,
+        severity: "high",
+        description: "Data URI scheme with non-image MIME type",
+      },
+      {
+        pattern: /data:text\/html/i,
+        severity: "high",
+        description: "Data URI with HTML content type",
+      },
+      {
+        pattern: /data:application\/(?:javascript|x-javascript)/i,
+        severity: "high",
+        description: "Data URI with JavaScript content type",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /data:text\/csv/i,
+        severity: "medium",
+        description: "Data URI with CSV content type (potential CSV injection)",
+      },
+      {
+        pattern: /data:[^,]*?;base64,[a-zA-Z0-9+/]{100,}={0,2}/i,
+        severity: "medium",
+        description: "Long base64 encoded data URI",
+      },
+      {
+        pattern: /data:[^,]*?,<[a-z]+/i,
+        severity: "high",
+        description: "Data URI with unencoded HTML content",
+      },
+    ],
+
+    // Suspicious IP addresses (enhanced)
+    [MaliciousPatternType.SUSPICIOUS_IP]: [
+      {
+        pattern:
+          /https?:\/\/(?:10\.|172\.(?:1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.|0\.0\.0\.0|169\.254\.|224\.|ff[0-9a-f]:)/i,
+        severity: "high",
+        description: "URL contains private or reserved IP address",
+      },
+      {
+        pattern: /https?:\/\/\d+(?:\.\d+){0,2}(?:\.\d+)?\//i,
+        severity: "medium",
+        description: "URL with numeric representation (decimal, hex, octal)",
+      },
+      {
+        pattern: /https?:\/\/0x[a-f0-9]+/i,
+        severity: "high",
+        description: "URL with hexadecimal IP address",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /https?:\/\/[0-9]{1,12}(?:\:|\/)/i,
+        severity: "high",
+        description: "URL with decimal integer IP address representation",
+      },
+      {
+        pattern: /https?:\/\/(?:127\.)00+\.00*\.00*1/i,
+        severity: "high",
+        description: "URL with zero-padded localhost IP",
+      },
+      {
+        pattern: /https?:\/\/(?:0{1,4}\.){3}0{1,4}/i,
+        severity: "high",
+        description:
+          "URL with all-zero IP potentially targeting internal resources",
+      },
+    ],
+
+    // Suspicious TLDs (enhanced)
+    [MaliciousPatternType.SUSPICIOUS_TLD]: [
+      {
+        pattern:
+          /\.(xyz|top|click|gq|tk|ml|ga|cf|pw|country|stream|download|xin|racing|men|loan|accountant|faith|review|date|science|win|party)$/i,
+        severity: "medium",
+        description:
+          "Domain with suspicious TLD commonly associated with malicious sites",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /\.(zip|mov|mp4|epub|png|jpg|jpeg|gif|pdf|exe|dmg|doc)$/i,
+        severity: "medium",
+        description: "Domain with file extension TLD",
+      },
+      {
+        pattern:
+          /\.(fit|icu|pro|app|dev|tech|space|online|website|site|fun|uno)$/i,
+        severity: "low",
+        description: "Domain with newer TLD (lower risk)",
+      },
+      {
+        pattern: /\.(ru|cn|su|to|cc|ws|info|biz)$/i,
+        severity: "low",
+        description:
+          "Domain with TLD historically associated with higher abuse rates",
+      },
+    ],
+
+    // Suspicious domains (enhanced)
+    [MaliciousPatternType.SUSPICIOUS_DOMAIN]: [
+      {
+        pattern:
+          /(?:paypal|apple|microsoft|google|facebook|twitter|instagram|amazon|netflix|gmail|yahoo|outlook|hotmail)[-_.](account|secure|login|signin|auth|verify|verify-account|verification|password|reset|service)[-_.](?!com$|net$|org$)/i,
+        severity: "high",
+        description: "Potential phishing domain mimicking a trusted brand",
+      },
+      {
+        pattern: /bank|login|signin|auth|account|secure|password|credential/i,
+        severity: "low",
+        description:
+          "Domain contains terms often associated with phishing sites",
+      },
+      {
+        pattern: /[-_]{3,}|[0-9]{5,}|(?:[a-zA-Z])\/1\{4,}/i,
+        severity: "low",
+        description: "Domain with suspicious character patterns",
+      },
+      // NEW PATTERNS
+      {
+        pattern:
+          /secure-?(?:verification|payment|account|login|banking|access|service|session|check|auth)/i,
+        severity: "medium",
+        description: "Domain suggesting secure service (potential phishing)",
+      },
+      {
+        pattern:
+          /account-?(?:verify|confirm|update|secure|service|login|support|help)/i,
+        severity: "medium",
+        description:
+          "Domain suggesting account verification (potential phishing)",
+      },
+      {
+        pattern:
+          /(?:ai-?|automated-?|smart-?|quick-?)(?:support|service|help|verify|verification)/i,
+        severity: "medium",
+        description: "Domain suggesting automated service (potential phishing)",
+      },
+    ],
+
+    // Protocol confusion (enhanced)
+    [MaliciousPatternType.PROTOCOL_CONFUSION]: [
+      {
+        pattern: /https?%3a\/\//i,
+        severity: "medium",
+        description: "URL-encoded protocol scheme",
+      },
+      {
+        pattern: /\/\/\/+/i,
+        severity: "medium",
+        description: "Multiple consecutive slashes in path",
+      },
+      {
+        pattern: /https?:\\\/\\\//i,
+        severity: "medium",
+        description: "Escaped URL slashes",
+      },
+      // NEW PATTERNS
+      {
+        pattern: /[?&]url=(?:\/\\|\\\/)/i,
+        severity: "high",
+        description: "Mixed slash types in URL parameter",
+      },
+      {
+        pattern: /https?:\/\/[^\/]+@/i,
+        severity: "high",
+        description: "URL with credentials/username notation",
+      },
+      {
+        pattern: /https?:\/\/[^\/]*?%2f[^\/]*?\./i,
+        severity: "high",
+        description: "URL with encoded slash in domain part",
+      },
+    ],
+  };
+
+  /**
+   * Main method to analyze input for malicious patterns
+   * @param input The input string to analyze (URL, text, etc.)
+   * @param component The component of the input being analyzed (e.g., 'query', 'path')
+   * @returns MaliciousPatternResult containing detection details
+   */
+  public analyzePartterns(
+    input: string,
+    component: string = "input"
+  ): MaliciousPatternResult {
+    if (!input || typeof input !== "string") {
+      return NMPS.createResult(false, [], 0, "low", "Invalid input");
+    }
+    const normalizedInput = NMPS.normalizeInput(input);
+    const detectedPatterns = NMPS.detectPatterns(normalizedInput, component);
+    const score = NMPS.calculateScore(detectedPatterns, component);
+    const contextAnalysis = NMPS.options.enableContextualAnalysis
+      ? NMPS.performContextualAnalysis(detectedPatterns, normalizedInput)
+      : undefined;
+    const isMalicious = score >= (NMPS.options.minScore || 50);
+    const confidence = NMPS.determineConfidence(score, detectedPatterns);
+    const recommendation = NMPS.generateRecommendation(
+      isMalicious,
+      detectedPatterns,
+      score
+    );
+
+    if (NMPS.options.debug) {
+      AppLogger.debug(`Analysis for ${component}:`, {
+        input,
+        normalizedInput,
+        detectedPatterns,
+        score,
+        isMalicious,
+        confidence,
+        contextAnalysis,
+      });
+    }
+
+    return NMPS.createResult(
+      isMalicious,
+      detectedPatterns,
+      score,
+      confidence,
+      recommendation,
+      contextAnalysis
+    );
+  }
+
+  /**
+   * Normalizes input by decoding URL encodings and handling character sets
+   * @param input The raw input string
+   * @returns Normalized string
+   */
+  private static normalizeInput(input: string): string {
+    let normalized = input;
+    let encodingLayers = 0;
+
+    // Decode multiple layers of URL encoding
+    while (/%[0-9a-f]{2}/i.test(normalized)) {
+      try {
+        const decoded = decodeURIComponent(normalized);
+        if (decoded === normalized) break;
+        normalized = decoded;
+        encodingLayers++;
+      } catch (e) {
+        break;
+      }
+    }
+
+    // Handle character set normalization
+    if (this.options.characterSet === "latin") {
+      normalized = normalized.replace(/[^\x00-\x7F]/g, "");
+    } else if (this.options.characterSet === "unicode") {
+      normalized = normalized.normalize("NFKC");
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Detects malicious patterns in the input
+   * @param input Normalized input string
+   * @param component Component being analyzed
+   * @returns Array of detected patterns
+   */
+  private static detectPatterns(
+    input: string,
+    component: string
+  ): DetectedPattern[] {
+    const detectedPatterns: DetectedPattern[] = [];
+    const ignorePatterns = this.options.ignorePatterns || [];
+    const sensitivity = this.options.sensitivity || 1.0;
+    const componentMultiplier =
+      this.options.componentSensitivity?.[
+        component as keyof MaliciousPatternOptions["componentSensitivity"]
+      ] || 1.0;
+
+    // Check predefined patterns
+    for (const [type, patterns] of Object.entries(NMPS.PATTERNS)) {
+      if (ignorePatterns.includes(type as MaliciousPatternType)) continue;
+
+      for (const { pattern, severity, description } of patterns) {
+        const matches = input.match(pattern);
+        if (matches) {
+          matches.forEach((match) => {
+            const confidence = this.calculatePatternConfidence(
+              match,
+              input,
+              sensitivity
+            );
+            const contextScore = this.options.enableContextualAnalysis
+              ? this.calculateContextScore(
+                  type as MaliciousPatternType,
+                  match,
+                  input
+                )
+              : undefined;
+
+            detectedPatterns.push({
+              type: type as MaliciousPatternType,
+              pattern: pattern.source,
+              location: component,
+              severity: severity as "low" | "medium" | "high",
+              confidence,
+              description,
+              matchedValue: match,
+              contextScore,
+            });
+          });
+        }
+      }
+    }
+
+    // Check custom patterns
+    this.options.customPatterns?.forEach(
+      ({ pattern, type, severity, description }) => {
+        if (ignorePatterns.includes(type)) return;
+        const matches = input.match(pattern);
+        if (matches) {
+          matches.forEach((match) => {
+            const confidence = this.calculatePatternConfidence(
+              match,
+              input,
+              sensitivity
+            );
+            detectedPatterns.push({
+              type,
+              pattern: pattern.source,
+              location: component,
+              severity,
+              confidence,
+              description,
+              matchedValue: match,
+            });
+          });
+        }
+      }
+    );
+
+    return detectedPatterns.map((pattern) => ({
+      ...pattern,
+      contextScore: pattern.contextScore
+        ? pattern.contextScore * componentMultiplier
+        : undefined,
+    }));
+  }
+
+  /**
+   * Calculates confidence for a detected pattern
+   * @param match The matched string
+   * @param input The full input string
+   * @param sensitivity Sensitivity factor
+   * @returns Confidence level
+   */
+  private static calculatePatternConfidence(
+    match: string,
+    input: string,
+    sensitivity: number
+  ): "low" | "medium" | "high" {
+    const matchRatio = match.length / input.length;
+    const baseConfidence = Math.min(matchRatio * 100 * sensitivity, 100);
+
+    if (baseConfidence >= 80) return "high";
+    if (baseConfidence >= 50) return "medium";
+    return "low";
+  }
+
+  /**
+   * Calculates context-based score for a pattern
+   * @param type Pattern type
+   * @param match Matched string
+   * @param input Full input
+   * @returns Context score
+   */
+  private static calculateContextScore(
+    type: MaliciousPatternType,
+    match: string,
+    input: string
+  ): number {
+    let score = 0;
+    const relatedGroups = NMPS.RELATED_PATTERNS.filter((group) =>
+      group.patterns.includes(type)
+    );
+
+    relatedGroups.forEach((group) => {
+      group.patterns.forEach((relatedType) => {
+        if (relatedType !== type) {
+          const patterns = NMPS.PATTERNS[relatedType] || [];
+          patterns.forEach(({ pattern }) => {
+            if (input.match(pattern)) {
+              score += 10 * group.riskMultiplier;
+            }
+          });
+        }
+      });
+    });
+
+    return Math.min(score, 100);
+  }
+
+  /**
+   * Calculates the overall score for detected patterns
+   * @param patterns Detected patterns
+   * @param component Component being analyzed
+   * @returns Total score
+   */
+  private static calculateScore(
+    patterns: DetectedPattern[],
+    component: string
+  ): number {
+    let score = 0;
+    const componentMultiplier =
+      this.options.componentSensitivity?.[
+        component as keyof MaliciousPatternOptions["componentSensitivity"]
+      ] || 1.0;
+
+    patterns.forEach((pattern) => {
+      const severityMultiplier = NMPS.SEVERITY_MULTIPLIERS[pattern.severity];
+      const baseScore = severityMultiplier * 10;
+      const confidenceMultiplier = { low: 0.5, medium: 1, high: 1.5 }[
+        pattern.confidence
+      ];
+      const contextScore = pattern.contextScore || 0;
+      score +=
+        (baseScore + contextScore) * confidenceMultiplier * componentMultiplier;
+    });
+
+    if (this.options.enableEntropyAnalysis) {
+      score += this.calculateEntropyScore(
+        patterns.map((p) => p.matchedValue || "")
+      );
+    }
+
+    if (this.options.enableStatisticalAnalysis) {
+      score += this.calculateStatisticalScore(
+        patterns.map((p) => p.matchedValue || "")
+      );
+    }
+
+    return Math.min(Math.round(score), 100);
+  }
+
+  /**
+   * Calculates entropy score for obfuscated payloads
+   * @param inputs Array of matched values
+   * @returns Entropy score
+   */
+  private static calculateEntropyScore(inputs: string[]): number {
+    const combinedInput = inputs.join("");
+    if (!combinedInput) return 0;
+
+    const charCount: { [char: string]: number } = {};
+    for (const char of combinedInput) {
+      charCount[char] = (charCount[char] || 0) + 1;
+    }
+
+    let entropy = 0;
+    const length = combinedInput.length;
+    for (const count of Object.values(charCount)) {
+      const p = count / length;
+      entropy -= p * Math.log2(p);
+    }
+
+    // Normalize entropy to contribute to score (0-20 range)
+    return Math.min(Math.round(entropy * 2.5), 20);
+  }
+
+  /**
+   * Calculates statistical anomaly score based on character distribution
+   * @param inputs Array of matched values
+   * @returns Statistical score
+   */
+  private static calculateStatisticalScore(inputs: string[]): number {
+    const combinedInput = inputs.join("").toLowerCase();
+    if (!combinedInput) return 0;
+
+    const charCount: { [char: string]: number } = {};
+    let totalChars = 0;
+
+    for (const char of combinedInput) {
+      if (char in NMPS.NORMAL_CHAR_DISTRIBUTION) {
+        charCount[char] = (charCount[char] || 0) + 1;
+        totalChars++;
+      }
+    }
+
+    let anomalyScore = 0;
+    for (const [char, count] of Object.entries(charCount)) {
+      const observed = count / totalChars;
+      const expected =
+        NMPS.NORMAL_CHAR_DISTRIBUTION[
+          char as keyof typeof NMPS.NORMAL_CHAR_DISTRIBUTION
+        ] || 0.001;
+      anomalyScore += Math.abs(observed - expected) * 100;
+    }
+
+    return Math.min(Math.round(anomalyScore), 20);
+  }
+
+  /**
+   * Performs contextual analysis to identify related patterns and anomalies
+   * @param patterns Detected patterns
+   * @param input Normalized input
+   * @returns Contextual analysis result
+   */
+  private static performContextualAnalysis(
+    patterns: DetectedPattern[],
+    input: string
+  ): ContextAnalysisResult {
+    const relatedPatterns = NMPS.RELATED_PATTERNS.filter((group) =>
+      patterns.some((p) => group.patterns.includes(p.type))
+    );
+
+    const entropyScore = this.calculateEntropyScore(
+      patterns.map((p) => p.matchedValue || "")
+    );
+    const anomalyScore = this.options.enableStatisticalAnalysis
+      ? this.calculateStatisticalScore(
+          patterns.map((p) => p.matchedValue || "")
+        )
+      : 0;
+    const encodingLayers = this.detectEncodingLayers(input);
+
+    return {
+      relatedPatterns,
+      entropyScore,
+      anomalyScore,
+      encodingLayers,
+    };
+  }
+
+  /**
+   * Detects the number of encoding layers in the input
+   * @param input Input string
+   * @returns Number of encoding layers
+   */
+  private static detectEncodingLayers(input: string): number {
+    let layers = 0;
+    let current = input;
+
+    while (/%[0-9a-f]{2}/i.test(current)) {
+      try {
+        const decoded = decodeURIComponent(current);
+        if (decoded === current) break;
+        current = decoded;
+        layers++;
+      } catch (e) {
+        break;
+      }
+    }
+
+    if (/\\x[0-9a-f]{2}|\\u[0-9a-f]{4}/i.test(input)) {
+      layers++;
+    }
+
+    return layers;
+  }
+
+  /**
+   * Determines confidence level based on score and patterns
+   * @param score Total score
+   * @param patterns Detected patterns
+   * @returns Confidence level
+   */
+  private static determineConfidence(
+    score: number,
+    patterns: DetectedPattern[]
+  ): "low" | "medium" | "high" {
+    if (
+      score >= 80 ||
+      patterns.some((p) => p.confidence === "high" && p.severity === "high")
+    ) {
+      return "high";
+    }
+    if (
+      score >= 50 ||
+      patterns.some((p) => p.confidence === "medium" && p.severity === "medium")
+    ) {
+      return "medium";
+    }
+    return "low";
+  }
+
+  /**
+   * Generates a recommendation based on analysis results
+   * @param isMalicious Whether the input is malicious
+   * @param patterns Detected patterns
+   * @param score Total score
+   * @returns Recommendation string
+   */
+  private static generateRecommendation(
+    isMalicious: boolean,
+    patterns: DetectedPattern[],
+    score: number
+  ): string {
+    if (!isMalicious) {
+      return "Input appears safe, but continue monitoring for suspicious activity.";
+    }
+
+    const highSeverityPatterns = patterns.filter((p) => p.severity === "high");
+    if (highSeverityPatterns.length > 0) {
+      return `Block or sanitize input immediately.検出された高重大度パターン: ${highSeverityPatterns
+        .map((p) => p.type)
+        .join(", ")}.`;
+    }
+
+    if (score >= 70) {
+      return "入力のサニタイズを行い、さらなるレビューのためにログに記録してください。複数の疑わしいパターンが検出されました。";
+    }
+
+    return "手動で入力をレビューし、サニタイズを検討してください。疑わしいパターンが検出されました。";
+  }
+
+  /**
+   * Creates a MaliciousPatternResult object
+   * @param isMalicious Whether the input is malicious
+   * @param detectedPatterns Detected patterns
+   * @param score Total score
+   * @param confidence Confidence level
+   * @param recommendation Recommendation
+   * @param contextAnalysis Contextual analysis result
+   * @returns MaliciousPatternResult
+   */
+  private static createResult(
+    isMalicious: boolean,
+    detectedPatterns: DetectedPattern[],
+    score: number,
+    confidence: "low" | "medium" | "high",
+    recommendation: string,
+    contextAnalysis?: ContextAnalysisResult
+  ): MaliciousPatternResult {
+    return {
+      isMalicious,
+      detectedPatterns,
+      score,
+      confidence,
+      recommendation,
+      contextAnalysis,
+    };
+  }
+}

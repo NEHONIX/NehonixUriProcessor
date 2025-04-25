@@ -1,12 +1,8 @@
 import { AppLogger } from "../common/AppLogger";
 import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
 import { sr } from "../rules/security.rules";
-import { MaliciousPatternOptions } from "../services/MaliciousPatterns.service";
-import NSS from "../services/NehonixSecurity.service";
+import { NSS } from "../services/NehonixSecurity.service";
 import {
-  AsyncUrlCheckResult,
-  AsyncUrlValidationOptFeature,
-  AsyncUrlValidationOptions,
   ComparisonRule,
   UrlCheckResult,
   UrlValidationOptions,
@@ -15,22 +11,7 @@ import {
 
 export class NehonixCoreUtils extends NehonixSharedUtils {
   // =============== ENCODING DETECTION METHODS ===============
-  private static defautltValidationOpt: UrlValidationOptions = {
-    strictMode: false,
-    allowUnicodeEscapes: true,
-    rejectDuplicateParams: true,
-    httpsOnly: false,
-    maxUrlLength: 2048,
-    allowedTLDs: [],
-    allowedProtocols: ["http", "https"],
-    requireProtocol: false,
-    requirePathOrQuery: false,
-    strictParamEncoding: false,
-    rejectDuplicatedValues: false,
-    debug: false,
-    allowInternationalChars: false,
-    literalValue: "@this",
-  };
+
   /**
    * Checks a URL string and returns detailed validation results.
    * @param url The URL string to check
@@ -45,7 +26,21 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
    */
   static checkUrl(
     url: string,
-    options: UrlValidationOptions = this.defautltValidationOpt
+    options: UrlValidationOptions = {
+      strictMode: false,
+      allowUnicodeEscapes: true,
+      rejectDuplicateParams: true,
+      httpsOnly: false,
+      maxUrlLength: 2048,
+      allowedTLDs: [],
+      allowedProtocols: ["http", "https"],
+      requireProtocol: false,
+      requirePathOrQuery: false,
+      strictParamEncoding: false,
+      rejectDuplicatedValues: false,
+      debug: false,
+      detectMaliciousPatterns: false,
+    }
   ): UrlCheckResult {
     const result: UrlCheckResult = {
       isValid: true,
@@ -80,6 +75,26 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           maxLength: options.maxUrlLength,
         };
       }
+    }
+
+    //check if contains potentials ...
+
+    // Check for malicious patterns if requested
+    if (options?.detectMaliciousPatterns) {
+      const c = !NSS.containsMaliciousPatterns(url);
+      const message = "URL contains malicious patterns";
+      result.cause = message;
+      result.validationDetails.MaliciousPatterns = {
+        isValid: false,
+        message,
+      };
+      result.isValid = false;
+      return result;
+    } else {
+      result.validationDetails.emptyCheck = {
+        isValid: true,
+        message: "No malicious patterns detected in URL",
+      };
     }
 
     // Check if URL is empty
@@ -170,8 +185,6 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
               isValid = false;
               message =
                 "Literal comparison failed: 'literalValue' option is required";
-            } else if (options.literalValue === "@this") {
-              leftValue = url;
             } else {
               leftValue = options.literalValue;
             }
@@ -566,30 +579,6 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         message: "URL parsed successfully",
       };
 
-      // International character handling
-      if (!options.allowInternationalChars) {
-        // Check if URL contains non-ASCII characters
-        const hasNonAsciiChars = /[^\x00-\x7F]/.test(urlObj.href);
-        // Also check if the domain is punycode
-        const hasPunycodeDomain = urlObj.hostname.startsWith("xn--");
-
-        if (hasNonAsciiChars || hasPunycodeDomain) {
-          result.validationDetails.internationalChars = {
-            isValid: false,
-            message: "International characters are not allowed",
-            containsNonAscii: hasNonAsciiChars,
-            containsPunycode: hasPunycodeDomain,
-          };
-          result.isValid = false;
-          return result;
-        } else {
-          result.validationDetails.internationalChars = {
-            isValid: true,
-            message: "No international characters detected",
-          };
-        }
-      }
-
       return result;
     } catch (error: any) {
       result.validationDetails.parsing = {
@@ -600,7 +589,6 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       return result;
     }
   }
-
   /**
    * Validates a URL string according to specified options.
    * @param url The URL string to validate
@@ -609,109 +597,23 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
    */
   static isValidUrl(
     url: string,
-    options: UrlValidationOptions = this.defautltValidationOpt
-  ): boolean {
-    const checkUri = this.checkUrl(url, options);
-    return checkUri.isValid;
-  }
-
-  static async asyncIsUrlValid(
-    ...args: Parameters<typeof this.asyncCheckUrl>
-  ): Promise<boolean> {
-    const checkUri = await this.asyncCheckUrl(...args);
-    return checkUri.isValid;
-  }
-
-  static async asyncCheckUrl(
-    url: string,
-    options: AsyncUrlValidationOptions = this.defautltValidationOpt
-  ): Promise<AsyncUrlCheckResult> {
-    const features: Array<keyof AsyncUrlValidationOptFeature> = [];
-
-    let result: AsyncUrlCheckResult = {
-      isValid: true,
-      validationDetails: {},
-      cause: "",
-    };
-
-    result = this.checkUrl(url, options);
-
-    if (options.detectMaliciousPatterns) {
-      try {
-        const maliciousPatternOptions: MaliciousPatternOptions = {
-          debug: options.debug,
-          sensitivity: options.maliciousPatternSensitivity || 1.0,
-          minScore: options.maliciousPatternMinScore || 50,
-          ignorePatterns: options.ignoreMaliciousPatternTypes || [],
-          customPatterns: options.customMaliciousPatterns || [],
-        };
-
-        const maliciousResult = await NehonixCoreUtils.analyzeMaliciousPatterns(
-          url,
-          maliciousPatternOptions
-        );
-
-        result.validationDetails.maliciousPatterns = {
-          isValid: !maliciousResult.isMalicious,
-          message: maliciousResult.isMalicious
-            ? `Malicious patterns detected. Score: ${maliciousResult.score}, Confidence: ${maliciousResult.confidence}`
-            : "No malicious patterns detected",
-          detectedPatterns: maliciousResult.detectedPatterns,
-          score: maliciousResult.score,
-          confidence: maliciousResult.confidence,
-          recommendation: maliciousResult.recommendation,
-        };
-
-        if (maliciousResult.isMalicious) {
-          result.isValid = false;
-          result.cause = "URL contains malicious patterns";
-          return result;
-        }
-      } catch (error: any) {
-        // Log error but don't block the URL if detection fails
-        if (options.debug) {
-          AppLogger.log(
-            `[DEBUG] Error in malicious pattern detection: ${error.message}`
-          );
-        }
-
-        result.validationDetails.maliciousPatterns = {
-          isValid: true, // Don't fail validation if detection itself fails
-          message: `Error in malicious pattern detection: ${error.message}`,
-          error: error.message,
-        };
-      }
+    options: UrlValidationOptions = {
+      strictMode: false,
+      allowUnicodeEscapes: true,
+      rejectDuplicateParams: true,
+      httpsOnly: false,
+      maxUrlLength: 2048,
+      allowedTLDs: [],
+      allowedProtocols: ["http", "https"],
+      requireProtocol: false,
+      requirePathOrQuery: false,
+      strictParamEncoding: false,
+      detectMaliciousPatterns: false,
     }
+  ): boolean {
+    const check = this.checkUrl(url, options);
 
-    return result;
-  }
-
-  /**
-   * Analyzes a URL for potential security threats
-   * @param url The URL to analyze
-   * @param options Detection options
-   * @returns Detailed analysis of security threats
-   */
-  static analyzeMaliciousPatterns(
-    url: string,
-    options: MaliciousPatternOptions = {}
-  ) {
-    const maliciousResult = NSS.analyzeUrl(url, options);
-    return maliciousResult;
-  }
-
-  /**
-   * Quick check if a URL contains malicious patterns
-   * @param url The URL to check
-   * @param options Detection options
-   * @returns Boolean indicating if URL contains malicious patterns
-   */
-  static async hasMaliciousPatterns(
-    url: string,
-    options: MaliciousPatternOptions = {}
-  ): Promise<boolean> {
-    const x = await NehonixCoreUtils.analyzeMaliciousPatterns(url, options);
-    return x.isMalicious;
+    return check.isValid;
   }
 
   private static detectDuplicatedValues(uri: string) {

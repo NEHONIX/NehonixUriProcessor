@@ -1,0 +1,25 @@
+import { AppLogger } from "../common/AppLogger";
+import { MaliciousComponentType } from "../types/v2.2.0";
+import { PARTTERNS } from "../utils/attacks_parttens";
+import {
+  MaliciousPatternResult,
+  DetectedPattern,
+  MaliciousPatternType,
+  MaliciousPatternOptions,
+  ContextAnalysisResult,
+  RelatedPatternGroup,
+} from "./MaliciousPatterns.service";
+import { NSS } from "./NehonixSecurity.service";
+import NDS from "./NehonixDec.service";
+
+/**
+ * NehonixSecurityBooster (NSB) - Advanced security analysis service
+ * Extends NSS capabilities with enhanced detection algorithms, behavioral analysis,
+ * and machine learning-based pattern recognition.
+ */
+export class NSB {
+  // Cache for previously analyzed URLs to improve performance
+  private static analysisCache: Map<string, MaliciousPatternResult> = new Map();
+  private static cacheMaxSize: number = 1000;
+  private static behavioralPatterns: Map<string, number> = new Map();
+}

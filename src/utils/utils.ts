@@ -1,3 +1,5 @@
+import { __processor__ } from "..";
+
 export function ensureBase64Padding(input: string): string {
   const padding = input.length % 4;
   return padding === 0 ? input : input + "=".repeat(4 - padding);

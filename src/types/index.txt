@@ -1,9 +1,4 @@
 import { NehonixURIProcessor } from "..";
-import {
-  DetectedPattern,
-  MaliciousPatternOptions,
-  MaliciousPatternType,
-} from "../services/MaliciousPatterns.service";
 
 /**
  * Supported encoding types. This enumeration defines all the encoding schemes
@@ -108,10 +103,6 @@ export interface URLAnalysisResult {
    * An array of strings describing potential security vulnerabilities found in the URL.
    */
   potentialVulnerabilities: string[];
-  vulnerabilitieDetails?: DetectedPattern[];
-  /**
-   * An array of strings describing potential security vulnerabilities found in the URL.
-   */
 }
 
 /**
@@ -506,33 +497,18 @@ export interface UrlValidationOptions {
    * // Compare a custom string to 'nehonix.space'
    * literalValue: 'nehonix.space' // Used for ['literal', '==', 'nehonix.space']
    * output: true
-   * With "@this" option, use the URL string itself as the left operand for comparisons.
-   * @example
-   * input = "https://google.com"
-   * literalValue: '@this' // Used for ['literal', '==', 'nehonix.space']
-   * output: false
    */
-  literalValue?: "@this" | string | number;
+  literalValue?: string | number;
   /**
    * If true, enables debug logging for custom validations, printing the actual values
    * of components or literal inputs to aid in troubleshooting.
    * @default false
    */
   debug?: boolean;
+
   fullCustomValidation?: Record<string, string | number>;
-  allowInternationalChars?: boolean;
+  detectMaliciousPatterns?: boolean
 }
-
-export type AsyncUrlValidationOptions = UrlValidationOptions &
-  AsyncUrlValidationOptFeature;
-
-export type AsyncUrlValidationOptFeature = {
-  detectMaliciousPatterns?: boolean;
-  maliciousPatternSensitivity?: number;
-  maliciousPatternMinScore?: number;
-  ignoreMaliciousPatternTypes?: MaliciousPatternType[];
-  customMaliciousPatterns?: MaliciousPatternOptions["customPatterns"];
-};
 
 /**
  * A custom validation rule for URLs, defining a comparison to perform.
@@ -663,6 +639,16 @@ export interface UrlCheckResult {
      * Validation result for checking if the URL is empty or contains only whitespace.
      */
     emptyCheck?: {
+      /** Indicates if the URL is non-empty. */
+      isValid: boolean;
+      /** Descriptive message about the empty check result. */
+      message?: string;
+    };
+
+    /**
+     * Validation result for checking if the URL is empty or contains only whitespace.
+     */
+    MaliciousPatterns?: {
       /** Indicates if the URL is non-empty. */
       isValid: boolean;
       /** Descriptive message about the empty check result. */
@@ -806,32 +792,8 @@ export interface UrlCheckResult {
       /** Descriptive message about the parsing validation result. */
       message?: string;
     };
-
-    internationalChars?: {
-      isValid: boolean;
-      message: string;
-      containsNonAscii?: boolean;
-      containsPunycode?: boolean;
-    };
   };
 }
-
-// AsyncUrlCheckResult - extend UrlCheckResult with modified validationDetails
-export type AsyncUrlCheckResult = Omit<UrlCheckResult, "validationDetails"> & {
-  validationDetails: UrlCheckResult["validationDetails"] &
-    AsyncUrlCheckResComponent;
-};
-export type AsyncUrlCheckResComponent = {
-  maliciousPatterns?: {
-    isValid?: boolean;
-    message?: string;
-    error?: string;
-    detectedPatterns?: DetectedPattern[];
-    score?: number;
-    confidence?: string;
-    recommendation?: string;
-  };
-};
 
 export interface UriHandlerInterface {
   maxIterations?: number;

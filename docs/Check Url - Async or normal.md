@@ -1,110 +1,13 @@
-# NehonixURIProcessor
-
-A comprehensive TypeScript library for detecting, decoding, and encoding various URI encoding schemes. This utility is designed for security testing, web application penetration testing, and analyzing potential attacks, with powerful auto-detection and decoding capabilities.
-
-**Version**: 2.2.0  
-**License**: MIT  
-**Documentation**: [lab.nehonix.space](https://lab.nehonix.space/nehonix_viewer/_doc/NehonixUriProcessor/readme)
-
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Overview](#overview)
-- [Installation](#installation)
-- [Usage](#usage)
-- [API Reference](#api-reference)
-  - [Core Methods](#core-methods)
-    - [`checkUrl(url: string, options?: object)`](#checkurlurl-string-options-object)
-    - [`asyncCheckUrl(url: string, options?: object)`](#asynccheckurlurl-string-options-object)
-    - [`isValidUri(url: string, options?: object)`](#isvaliduriurl-string-options-object)
-    - [`asyncIsUrlValid(url: string, options?: object)`](#asyncisurlvalidurl-string-options-object)
-    - [`createUrl(uri: string)`](#createurluri-string)
-    - [`detectEncoding(input: string, depth?: number)`](#detectencodinginput-string-depth-number)
-    - [`autoDetectAndDecode(input: string, maxIterations?: number)`](#autodetectanddecodeinput-string-maxiterations-number)
-    - [`asyncAutoDetectAndDecode(input: string, maxIterations?: number, useWorker?: boolean)`](#asyncautodetectanddecodeinput-string-maxiterations-number-useworker-boolean)
-    - [`scanUrl(url: string)`](#scanurlurl-string)
-    - [`sanitizeInput(input: string, options?: object)`](#sanitizeinputinput-string-options-object)
-    - [`needsDeepScan(input: string)`](#needsdeepscaninput-string)
-    - [`detectMaliciousPatterns(input: string, options?: MaliciousPatternOptions)`](#detectmaliciouspatternsinput-string-options-maliciouspatternoptions)
-  - [Framework Integrations](#framework-integrations)
-    - [Express Middleware](#express-middleware)
-    - [React Hook](#react-hook)
-- [Supported Encoding Types](#supported-encoding-types)
-- [Detection Capabilities](#detection-capabilities)
-- [Security Testing Features](#security-testing-features)
-- [More Information](#more-information)
-- [License](#license)
-
-## Introduction
-
-`NehonixURIProcessor` is a powerful TypeScript library for developers and security professionals. It provides advanced tools for URI validation, encoding/decoding, and security analysis. For convenience, you can import it as `__processor__` to shorten the name (both are the same):
-
-```typescript
-import { NehonixURIProcessor } from "nehonix-uri-processor";
-` OR`;
-import { __processor__ } from "nehonix-uri-processor";
-```
+# NehonixURIProcessor: checkUrl and asyncCheckUrl Methods
 
 ## Overview
 
-The `NehonixURIProcessor` class offers:
+The `checkUrl` and `asyncCheckUrl` methods in the `NehonixURIProcessor` library validate URI strings against configurable rules, making them ideal for security testing, web application penetration testing, and URI analysis. Both methods support validation of standard URL components (e.g., `hostname`, `pathname`), literal values, and custom properties via the `fullCustomValidation` option. The key difference is that `checkUrl` operates synchronously, while `asyncCheckUrl` is asynchronous and includes malicious pattern detection, with results accessible via `validationDetails.maliciousPatterns`.
 
-- **URI Validation**: Validate URIs with customizable rules and malicious pattern detection.
-- **Auto-Detection and Decoding**: Decode complex URI encodings using `autoDetectAndDecode` or `asyncAutoDetectAndDecode`.
-- **Encoding/Decoding**: Support for multiple encoding schemes (e.g., Base64, percent encoding, JWT).
-- **Security Analysis**: Analyze URLs for vulnerabilities and generate WAF bypass variants.
-- **Framework Integration**: Seamless integration with Express and React.
-- **Internationalized URIs**: Handle non-ASCII characters with punycode support.
+**Version**: 2.2.0  
+**License**: MIT
 
-## Installation
-
-Install the library and its dependency:
-
-```bash
-npm install nehonix-uri-processor punycode
-```
-
-## Usage
-
-Below are examples showcasing key features:
-
-```typescript
-import {
-  NehonixURIProcessor as __processor__,
-  MaliciousPatternType,
-} from "nehonix-uri-processor";
-
-async function main() {
-  // Validate a URI with malicious pattern detection
-  const result = await __processor__.asyncCheckUrl(
-    "https://example.com?user=admin' OR '1'='1",
-    {
-      detectMaliciousPatterns: true,
-      customMaliciousPatterns: [MaliciousPatternType.ANOMALY],
-      maliciousPatternSensitivity: 1.0,
-      maliciousPatternMinScore: 50,
-    }
-  );
-  console.log(result.isValid); // false (detects SQL injection attempt)
-
-  // Decode a complex URI
-  const decoded = await __processor__.asyncAutoDetectAndDecode(
-    "https://example.com?data=SGVsbG8gV29ybGQ="
-  );
-  console.log(decoded); // https://example.com?data=Hello World
-
-  // Check if deep scanning is needed
-  const needsScan = __processor__.needsDeepScan(
-    "https://example.com?user=<script>"
-  );
-  console.log(needsScan); // booelan
-}
-main();
-```
-
-## API Reference
-
-### Core Methods
+## Method Signatures
 
 ### checkUrl
 
@@ -441,7 +344,7 @@ Both `checkUrl` and `asyncCheckUrl` validate URIs, but their execution models an
 
 ### Validating with checkUrl
 
-````typescript
+```typescript
 import { __processor__ } from "nehonix-uri-processor";
 
 const result = __processor__.checkUrl("https://google.com/api", {
@@ -457,269 +360,132 @@ const result = __processor__.checkUrl("https://google.com/api", {
   ],
 });
 
+console.log(result);
+/* Output:
+{
+  isValid: false,
+  validationDetails: {
+    emptyCheck: { isValid: true, message: "URL contains valid content" },
+    parsing: { isValid: true, message: "URL parsed successfully" },
+    customValidations: {
+      isValid: false,
+      message: "Validation passed: hostname === google.com; Validation passed: pathname === /api; Validation failed: literal === nehonix.space; Validation passed: fcv.domain === test_domain; Validation passed: fcv.version >= 1.0",
+      results: [
+        { isValid: true, message: "Validation passed: hostname === google.com", rule: ["hostname", "===", "google.com"] },
+        { isValid: true, message: "Validation passed: pathname === /api", rule: ["pathname", "===", "/api"] },
+        { isValid: false, message: "Validation failed: literal === nehonix.space", rule: ["literal", "===", "nehonix.space"] },
+        { isValid: true, message: "Validation passed: fcv.domain === test_domain", rule: ["fcv.domain", "===", "test_domain"] },
+        { isValid: true, message: "Validation passed: fcv.version >= 1.0", rule: ["fcv.version", ">=", 1.0] }
+      ]
+    },
+    // ...other validation details
+  },
+  cause: "Validation failed: literal === nehonix.space"
+}
+*/
+```
 
-#### `isValidUri(url: string, options?: object)`
-
-Checks if a string is a valid URI with configurable rules and malicious pattern detection.
-
-- **Parameters**:
-
-  - `url` (`string`): The URI to validate.
-  - `options` (optional): Includes `detectMaliciousPatterns`, `allowInternationalChars`, etc.
-
-- **Returns**: `boolean`.
-
-- **Example**:
+### Validating with asyncCheckUrl
 
 ```typescript
-const isValid = __processor__.isValidUri(
-  "https://xn--n3h.com?greeting=こんにちは",
+import { __processor__ } from "nehonix-uri-processor";
+
+const result = await __processor__.asyncCheckUrl(
+  "https://example.com?user=<script>",
   {
-    allowInternationalChars: true,
+    detectMaliciousPatterns: true,
+    customValidations: [
+      ["pathname", "===", "/"],
+      ["literal", "===", "@this"],
+    ],
   }
 );
-console.log(isValid); // true
-````
 
-#### `asyncIsUrlValid(url: string, options?: object)`
-
-Asynchronously validates a URI string, similar to `isValidUri` but designed for async workflows.
-
-- **Parameters**:
-
-  - `url` (`string`): The URI to validate.
-  - `options` (optional): Same as `isValidUri`.
-
-- **Returns**: `Promise<boolean>`.
-
-- **Example**:
-
-```typescript
-const isValid = await __processor__.asyncIsUrlValid("https://example.com", {
-  httpsOnly: true,
-});
-console.log(isValid); // true
+console.log(result);
+/* Output:
+{
+  isValid: false,
+  validationDetails: {
+    emptyCheck: { isValid: true, message: "URL contains valid content" },
+    parsing: { isValid: true, message: "URL parsed successfully" },
+    customValidations: {
+      isValid: false,
+      message: "Validation failed: pathname === /; Validation passed: literal === @this",
+      results: [
+        { isValid: false, message: "Validation failed: pathname === /", rule: ["pathname", "===", "/"] },
+        { isValid: true, message: "Validation passed: literal === @this", rule: ["literal", "===", "@this"] }
+      ]
+    },
+    maliciousPatterns: {
+      isValid: false,
+      message: "Malicious pattern detected",
+      detectedPatterns: [{ type: "XSS", value: "<script>", score: 90 }],
+      score: 90,
+      confidence: "High",
+      recommendation: "Sanitize parameter 'user' to prevent XSS"
+    },
+    // ...other validation details
+  },
+  cause: "Validation failed: pathname === /"
+}
+*/
 ```
 
-#### `createUrl(uri: string)`
+## Notes
 
-Creates a native `URL` object from a URI string.
+- **Debug Logging**: Set `debug: true` to log detailed validation information (e.g., `[DEBUG] Left Value: test_domain`).
+- **Type Safety**: `literalValue` accepts `"@this"`, `string`, or `number`. Use `fullCustomValidation` for custom property validations.
+- **FCV Alias**: Both `fullCustomValidation.<property>` and `fcv.<property>` are supported in `customValidations`.
+- **Error Messages**: Failures provide detailed `cause` and `validationDetails` for debugging.
+- **International Characters**: Enable `allowInternationalChars` for non-ASCII URIs (uses punycode).
+- **Malicious Patterns**: Only `asyncCheckUrl` populates `validationDetails.maliciousPatterns` when `detectMaliciousPatterns` is enabled.
 
-- **Returns**: `URL`.
+## Security Considerations
 
-- **Example**:
+Both methods are designed for security testing and URI validation:
 
-```typescript
-const url = __processor__.createUrl("https://example.com/path");
-console.log(url.pathname); // /path
-```
+- Use `customValidations` to enforce constraints on URL components or metadata.
+- Leverage `asyncCheckUrl` for malicious pattern detection (e.g., SQL injection, XSS).
+- Combine with `scanUrl` or `detectMaliciousPatterns` to identify vulnerable parameters.
+- Use `fullCustomValidation` to validate application-specific metadata (e.g., session IDs, versions).
+- Enable `strictMode`, `httpsOnly`, or `strictParamEncoding` for high-security contexts.
 
-#### `detectEncoding(input: string, depth?: number)`
-
-Detects encoding types in a URI string, with optional recursion for nested encodings.
-
-- **Returns**: `{ mostLikely: string, confidence: number, nestedTypes: string[] }`.
-
-- **Example**:
-
-```typescript
-const detection = __processor__.detectEncoding("hello%20world");
-console.log(detection.mostLikely); // percentEncoding
-```
-
-#### `autoDetectAndDecode(input: string, maxIterations?: number)`
-
-**Recommended**: Automatically detects and decodes a URI to plaintext.
-
-- **Parameters**:
-
-  - `input` (`string`): The URI to decode.
-  - `maxIterations` (`number`, default: `10`): Limits decoding iterations.
-
-- **Returns**: `string` (decoded plaintext).
-
-- **Example**:
+## Example Integration with Security Testing
 
 ```typescript
-const decoded = __processor__.autoDetectAndDecode(
-  "https://example.com?test=dHJ1ZQ=="
-);
-console.log(decoded); // https://example.com?test=true
+import { __processor__ } from "nehonix-uri-processor";
+
+async function validateLoginUrl(url: string) {
+  const result = await __processor__.asyncCheckUrl(url, {
+    httpsOnly: true,
+    strictParamEncoding: true,
+    detectMaliciousPatterns: true,
+    fullCustomValidation: { sessionId: "abc123", version: 1.2 },
+    customValidations: [
+      ["pathname", "===", "/login"],
+      ["fcv.sessionId", "===", "abc123"],
+      ["fcv.version", ">=", 1.0],
+    ],
+  });
+
+  if (!result.isValid) {
+    console.error(`Validation failed: ${result.cause}`);
+    console.log(result.validationDetails.maliciousPatterns); // Check for malicious patterns
+  } else {
+    console.log("URL and metadata are valid");
+  }
+}
+
+validateLoginUrl("https://example.com/login?user=admin");
 ```
 
-#### `asyncAutoDetectAndDecode(input: string, maxIterations?: number, useWorker?: boolean)`
+## See Also
 
-Asynchronously decodes a URI to plaintext, suitable for complex URIs.
-
-- **Returns**: `Promise<string>`.
-
-- **Example**:
-
-```typescript
-const decoded = await __processor__.asyncAutoDetectAndDecode(
-  "https://example.com?data=SGVsbG8gV29ybGQ="
-);
-console.log(decoded); // https://example.com?data=Hello World
-```
-
-#### `scanUrl(url: string)`
-
-Generates a security report for a URI, including vulnerability analysis and recommendations.
-
-- **Returns**: `{ analysis, variants, recommendations }`.
-
-- **Example**:
-
-```typescript
-const report = __processor__.scanUrl(
-  "https://example.com?user=admin' OR '1'='1"
-);
-console.log(report.recommendations); // ["Sanitize parameter \"user\" to prevent SQL injection..."]
-```
-
-#### `sanitizeInput(input: string, options?: object)`
-
-Sanitizes input by removing potentially malicious patterns. **Note**: This method is not stable and should be used cautiously.
-
-- **Parameters**:
-
-  - `input` (`string`): The string to sanitize.
-  - `options` (optional): Additional sanitization options.
-
-- **Returns**: `string` (sanitized string).
-
-- **Example**:
-
-```typescript
-const sanitized = __processor__.sanitizeInput("<script>alert('xss')</script>");
-console.log(sanitized); // Sanitized string with malicious content removed
-```
-
-#### `needsDeepScan(input: string)`
-
-Lightweight check to determine if a string requires deep scanning. Use as a pre-filter before full pattern detection.
-
-- **Parameters**:
-
-  - `input` (`string`): The string to check.
-
-- **Returns**: `boolean` (whether deep scanning is needed).
-
-- **Example**:
-
-```typescript
-const needsScan = __processor__.needsDeepScan(
-  "https://example.com?user=<script>"
-);
-console.log(needsScan); // true
-```
-
-#### `detectMaliciousPatterns(input: string, options?: MaliciousPatternOptions)`
-
-Analyzes input for malicious patterns and returns detailed detection results.
-
-- **Parameters**:
-
-  - `input` (`string`): The string to analyze.
-  - `options` (`MaliciousPatternOptions`, optional): Configuration for detection (e.g., sensitivity, patterns).
-
-- **Returns**: Detailed analysis result (type depends on `NSS.detectMaliciousPatterns`).
-
-- **Example**:
-
-```typescript
-const result = __processor__.detectMaliciousPatterns(
-  "https://example.com?user=admin' OR '1'='1",
-  { sensitivity: 1.0 }
-);
-console.log(result); // Detailed malicious pattern analysis
-```
-
-### Framework Integrations
-
-#### Express Middleware
-
-Validate and decode URIs in Express applications.
-
-- **Setup**:
-
-```typescript
-import express from "express";
-import { nehonixShieldMiddleware } from "nehonix-uri-processor";
-
-const app = express();
-app.use(nehonixShieldMiddleware({ blockOnMalicious: true }));
-app.get("/", (req, res) => res.send("Hello world"));
-app.listen(3000, () => console.log("Server running on port 3000"));
-```
-
-#### React Hook
-
-Validate and decode URIs in React applications.
-
-- **Usage**:
-
-```typescript
-import { NehonixShieldProvider, useNehonixShield } from "nehonix-uri-processor";
-
-const App = () => (
-  <NehonixShieldProvider>
-    <SecurityDemo />
-  </NehonixShieldProvider>
-);
-
-const SecurityDemo = () => {
-  const { scanUrl } = useNehonixShield();
-  const handleAnalyze = async () => {
-    const result = await scanUrl("https://example.com?category=books");
-    console.log(result);
-  };
-  return <button onClick={handleAnalyze}>Analyze URL</button>;
-};
-```
-
-## Supported Encoding Types
-
-- `percentEncoding` / `url`
-- `doublepercent`
-- `base64`
-- `hex` / `hexadecimal`
-- `unicode`
-- `htmlEntity` / `html`
-- `punycode`
-- `asciihex`
-- `asciioct`
-- `rot13`
-- `base32`
-- `urlSafeBase64`
-- `jsEscape`
-- `cssEscape`
-- `utf7`
-- `quotedPrintable`
-- `decimalHtmlEntity`
-- `rawHexadecimal`
-- `jwt`
-
-## Detection Capabilities
-
-The library detects all supported encoding types, including nested encodings, with high accuracy.
-
-## Security Testing Features
-
-- **Parameter Analysis**: Detects SQL injection, XSS, and path traversal patterns.
-- **WAF Bypass**: Generates encoded variants for testing.
-- **Malicious Pattern Detection**: Configurable sensitivity for detecting attacks.
-- **Sanitization**: Sanitizes harmful inputs (use `sanitizeInput` cautiously due to instability).
-
-## More Information
-
-- Detailed `checkUrl` and `asyncCheckUrl` documentation: [checkUrlMethod.md](./docs/checkUrlMethod.md)
-- Full documentation: [lab.nehonix.space](https://lab.nehonix.space)
-- Changelog: [changelog.md](./docs/changelog.md)
-- Previous versions:
-  - [v2.1.2](./docs/readme-v2.1.2.md)
-  - [v2.0.9](./docs/readmeV2.0.9.md)
+- NehonixURIProcessor README
+- `autoDetectAndDecode`
+- `scanUrl`
+- `detectMaliciousPatterns`
 
 ## License
 
-MIT
+MIT License. See LICENSE for details.

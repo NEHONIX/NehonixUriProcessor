@@ -1,0 +1,270 @@
+export class PARTTERNS {
+  // Pattern collections for different attack types
+  static readonly SQL_INJECTION_PATTERNS = [
+    /('|\s)or\s+\d+=\d+/i,
+    /union\s+select/i,
+    /--\s|;\s*--/i,
+    /;\s*drop/i,
+    /;\s*insert/i,
+    /exec\s*\(/i,
+    /'\s*\+\s*'/i,
+    /\bselect\s+.*?\bfrom\b/i,
+    /\bdelete\s+from\b/i,
+    /\bupdate\s+.*?\bset\b/i,
+    /\bwhere\s+\d+=\d+/i,
+    /\bwaitfor\s+delay\b/i,
+    /\bsleep\s*\(/i,
+    /\bchar\s*\(/i,
+    /\bconcat\s*\(/i,
+    /\having\s+\d+=\d+/i,
+    /cast\s*\(/i,
+    /convert\s*\(/i,
+    /;\s*shutdown/i,
+    /xp_cmdshell/i,
+  ];
+
+  static readonly XSS_PATTERNS = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+    /alert\s*\(/i,
+    /eval\s*\(/i,
+    /\bdata:\s*text\/html/i,
+    /\bvbscript:/i,
+    /\bbase64/i,
+    /\bxss:/i,
+    /\bimg\s+src/i,
+    /\biframe\s+src/i,
+    /\bdocument\.cookie/i,
+    /\bdocument\.location/i,
+    /\bwindow\.location/i,
+    /\bdocument\.write/i,
+    /\bdocument\.\w+\s*=/i,
+    /fromCharCode/i,
+    /String\.fromCharCode/i,
+    /\bsvg\s+onload/i,
+    /\bobject\s+data/i,
+    /\bembed\s+src/i,
+  ];
+
+  static readonly COMMAND_INJECTION_PATTERNS = [
+    /;\s*\w+/i,
+    /\|\s*\w+/i,
+    /`\s*\w+/i,
+    /\$\(/i,
+    /\&\s*\w+/i,
+    /\|\|\s*\w+/i,
+    /\&\&\s*\w+/i,
+    /\bping\s+-c\b/i,
+    /\bnc\s+/i,
+    /\bnetcat\b/i,
+    /\bnmap\b/i,
+    /\bcurl\s+/i,
+    /\bwget\s+/i,
+    /\btelnet\s+/i,
+    /\bpowershell\b/i,
+    /\bcmd\b/i,
+    /\bbash\b/i,
+    /\bsh\b/i,
+    /\bch(mod|own|grp)/i,
+    /\brm\s+-rf/i,
+  ];
+
+  static readonly PATH_TRAVERSAL_PATTERNS = [
+    /\.\.\//i, // ../
+    /\.\.\/\.\\\//i, // ..\.\/ (Windows-style path traversal)
+    /%2e%2e\//i, // %2e%2e/ (URL encoded ../)
+    /%252e%252e\//i, // %252e%252e/ (Double URL encoded ../)
+    /\.\.%2f/i, // ..%2f (URL encoded slash)
+    /\.\.%5c/i, // ..%5c (URL encoded backslash)
+    /\.\.\+\//i, // ..+/ (With plus character)
+    /\.\.\+\\\//i, // ..+\/ (With plus and escaped backslash)
+    /\/%c0%ae\.\./i, // /%c0%ae../ (Alternative encoding)
+    /\/\.\.\/\.\.\//i, // /../../ (Multiple traversal)
+    /\\\\\.\.\\\\\.\.\\\\\//i, // \\..\\..\\ (Windows UNC style)
+    /etc\/passwd/i, // etc/passwd (Linux sensitive file)
+    /etc\/shadow/i, // etc/shadow (Linux sensitive file)
+    /boot\.ini/i, // boot.ini (Windows sensitive file)
+    /win\.ini/i, // win.ini (Windows sensitive file)
+    /system32/i, // system32 (Windows system directory)
+    /\/proc\/self\//i, // /proc/self/ (Linux proc directory)
+  ];
+
+  static readonly OPEN_REDIRECT_PATTERNS = [
+    /url=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+    /redirect=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+    /to=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+    /returnUrl=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+    /next=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+    /return=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+    /destination=https?:\/\/(?!(?:[\w-]+\.)*[\w-]+\.(com|org|edu|gov|net|io|co|us|uk))[\w-]+/i,
+  ];
+
+  static readonly SSRF_PATTERNS = [
+    /https?:\/\/127\.0\.0\.1/i,
+    /https?:\/\/localhost/i,
+    /https?:\/\/0\.0\.0\.0/i,
+    /https?:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}/i,
+    /https?:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}/i,
+    /https?:\/\/192\.168\.\d{1,3}\.\d{1,3}/i,
+    /https?:\/\/169\.254\.\d{1,3}\.\d{1,3}/i,
+    /https?:\/\/::1/i,
+    /file:\/\//i,
+    /dict:\/\//i,
+    /gopher:\/\//i,
+    /ldap:\/\//i,
+    /tftp:\/\//i,
+    /http:\/\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i, // AWS EC2 metadata endpoint pattern
+    /http:\/\/metadata\./i,
+    /http:\/\/169\.254\.169\.254/i, // Cloud metadata endpoints
+  ];
+
+  static readonly CRLF_INJECTION_PATTERNS = [
+    /%0D%0A/i,
+    /%0d%0a/i,
+    /%0D%0a/i,
+    /%0d%0A/i,
+    /\r\n/i,
+    /%E5%98%8A%E5%98%8D/i, // Unicode CRLF
+    /%0A/i,
+    /%0a/i,
+    /%0D/i,
+    /%0d/i,
+  ];
+
+  static readonly TEMPLATE_INJECTION_PATTERNS = [
+    /\${.*?}/i,
+    /<#.*?>/i,
+    /<\?.*?\?>/i,
+    /\{\{.*?\}\}/i,
+    /<\%.*?\%>/i,
+    /\$\{7\*7\}/i,
+    /\{\{7\*7\}\}/i,
+    /\{\{.+?\|eval\}\}/i,
+    /\{\{constructor.constructor\('.*?'\)/i,
+    /\{\{request\}}/i,
+  ];
+
+  static readonly NOSQL_INJECTION_PATTERNS = [
+    /\$where:/i,
+    /\$eq:/i,
+    /\$gt:/i,
+    /\$lt:/i,
+    /\$ne:/i,
+    /\$nin:/i,
+    /\$in:/i,
+    /\$regex:/i,
+    /\$exists:/i,
+    /\$elemMatch:/i,
+    /".*\$ne":/i,
+    /'.*\$ne':/i,
+    /".*\$regex":/i,
+    /'.*\$regex':/i,
+    /\{".*":[\s]*\{.*\}/i,
+    /\{'.*':[\s]*\{.*\}/i,
+  ];
+
+  static readonly GRAPHQL_INJECTION_PATTERNS = [
+    /introspection.*__schema/i,
+    /\{__schema\{/i,
+    /\{__type\(/i,
+    /mutation\s*\{/i,
+    /\)\s*\{\s*__typename/i,
+    /fragment\s+on\s+/i,
+    /query\s*\{.*\{.*\{.*\{/i, // Deeply nested queries
+    /query\s+\w+\s*\{.*\{.*\{.*\{/i,
+    /query\s+\w+\s*@/i, // Custom directive
+  ];
+
+  static readonly ENCODED_PAYLOAD_PATTERNS = [
+    /(%[0-9a-fA-F]{2}){10,}/i, // Multiple percent encodings
+    /(\\u[0-9a-fA-F]{4}){5,}/i, // Multiple unicode escape sequences
+    /&#x[0-9a-fA-F]{2};/i, // HTML hex encoding
+    /&#\d{2,3};/i, // HTML decimal encoding
+    /base64[,;:=][a-zA-Z0-9+/=]{20,}/i, // Base64 data
+    /[a-zA-Z0-9+/=]{30,}/i, // Potential base64
+    /%u[0-9a-fA-F]{4}/i, // Unicode encoding
+    /\\x[0-9a-fA-F]{2}/i, // Hex escape sequences
+    /0x[0-9a-fA-F]{10,}/i, // Long hex value
+    /data:.*?base64/i, // Data URI with base64
+  ];
+
+  static readonly SUSPICIOUS_TLD_PATTERNS = [
+    /\.(tk|ml|ga|cf|gq|top|xyz|pw|club|work|date|racing|win|review|stream|accountant|download|bid)\b/i,
+  ];
+
+  static readonly HOMOGRAPH_ATTACK_PATTERNS = [
+    /xn--/i, // Punycode prefix for IDN
+    /[\u0430\u0435\u043E\u0440\u0441\u0445\u0456]{2,}/i, // Cyrillic chars that look like Latin
+    /[\u0261\u1D26\u0251\u1D25\u00F8\u038C\u03F4\u03A1\u03F9]{2,}/i, // Greek and other look-alike chars
+  ];
+
+  static readonly MULTI_ENCODING_PATTERNS = [
+    /%25[0-9a-fA-F]{2}/i, // Double percent encoding
+    /%[0-9a-fA-F]{2}%[0-9a-fA-F]{2}/i, // Mixed encoding
+    /%u[0-9a-fA-F]{4}%[0-9a-fA-F]{2}/i, // Unicode + percent encoding
+    /&#x[0-9a-fA-F]{2};%[0-9a-fA-F]{2}/i, // HTML + percent encoding
+  ];
+
+  static readonly SUSPICIOUS_PARAMETER_NAMES = [
+    "cmd",
+    "exec",
+    "command",
+    "shell",
+    "execute",
+    "ping",
+    "query",
+    "jump",
+    "code",
+    "reg",
+    "do",
+    "func",
+    "function",
+    "option",
+    "load",
+    "process",
+    "step",
+    "read",
+    "feature",
+    "admin",
+    "cfg",
+    "config",
+    "password",
+    "passwd",
+    "pwd",
+    "auth",
+    "source",
+    "debug",
+    "test",
+    "secret",
+    "ip",
+    "pass",
+    "priv",
+    "root",
+    "login",
+    "admin",
+    "net",
+    "grant",
+    "host",
+    "superuser",
+    "enable",
+    "system",
+    "internal",
+    "globals",
+    "bypass",
+    "master",
+    "access",
+    "dev",
+    "setup",
+    "account",
+    "module",
+    "app",
+    "db",
+    "sql",
+    "secure",
+    "run",
+    "reg",
+    "registry",
+    "key",
+  ];
+}

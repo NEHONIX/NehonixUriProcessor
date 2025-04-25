@@ -1,8 +1,10 @@
 import { NehonixEncService as enc } from "./services/NehonixEnc.service";
 import { SecurityRules as sr } from "./rules/security.rules";
-import { NehonixDecService as dec } from "./services/NehonixDec.service";
+import NDS, { NehonixDecService as dec } from "./services/NehonixDec.service";
 import { DEC_FEATURE_TYPE, ENC_TYPE } from "./types";
 import { ncu } from "./utils/NehonixCoreUtils";
+import NSS from "./services/NehonixSecurity.service";
+import { NehonixSafetyLayer } from "./utils/NehonixSafetyLayer";
 
 /**
  * A comprehensive library for detecting, encoding, and decoding URI strings, designed for security testing and attack analysis.
@@ -66,8 +68,8 @@ class NehonixURIProcessor {
    * // Output: { url: "https://nehonix.space", params: { user: { value: "admin", risks: ["sql_injection", "xss"] } }, ... }
    * ```
    */
-  static analyzeURL(url: string) {
-    return sr.analyzeURL(url);
+  static analyzeURL(...p: Parameters<typeof sr.analyzeURL>) {
+    return sr.analyzeURL(...p);
   }
 
   /**
@@ -197,7 +199,9 @@ class NehonixURIProcessor {
    * @see UrlValidationOptions
    */
 
-  static isValidUri(...props: Parameters<typeof ncu.isValidUrl>): boolean {
+  static isValidUri(
+    ...props: Parameters<typeof ncu.isValidUrl>
+  ): ReturnType<typeof ncu.isValidUrl> {
     return ncu.isValidUrl(...props);
   }
 
@@ -368,6 +372,90 @@ class NehonixURIProcessor {
   static checkUrl = (
     ...p: Parameters<typeof ncu.checkUrl>
   ): ReturnType<typeof ncu.checkUrl> => ncu.checkUrl(...p);
+
+  //v 2.2.0
+  /**
+   * Analyzes input for malicious patterns and returns detailed detection results
+
+@param input — The string to analyze
+
+@param options — Configuration options for detection
+
+@returns — Detailed analysis result
+*/
+
+  static detectMaliciousPatterns(
+    ...arg: Parameters<typeof NSS.detectMaliciousPatterns>
+  ): ReturnType<typeof NSS.detectMaliciousPatterns> {
+    return NSS.detectMaliciousPatterns(...arg);
+  }
+  /**
+   * Analyzes a URL for malicious patterns with specific sensitivity per URL component
+   * @param url — The URL to analyze
+   * @param options — Configuration options for detection
+   * @returns — Detailed analysis result
+   */
+  static scanUrl(
+    ...arg: Parameters<typeof NSS.analyzeUrl>
+  ): ReturnType<typeof NSS.analyzeUrl> {
+    return NSS.analyzeUrl(...arg);
+  }
+  /**
+   *Lightweight check to
+    determine if string needs deep scanning Use as a pre-filter before doing full pattern detection
+   *@param input — String to check
+  * @returns — Whether input needs further scanning
+   */
+  static needsDeepScan = (
+    ...p: Parameters<typeof NSS.needsDeepScan>
+  ): ReturnType<typeof NSS.needsDeepScan> => NSS.needsDeepScan(...p);
+
+  /**
+   * Sanitizes input by removing potentially malicious patterns
+   * @param input — The string to sanitize
+   * @param options — Additional sanitization options
+   * @returns — Sanitized string
+   */
+  static sanitizeInput = (
+    ...p: Parameters<typeof NSS.sanitizeInput>
+  ): ReturnType<typeof NSS.sanitizeInput> => NSS.sanitizeInput(...p);
+
+  static asyncAutoDetectAndDecode(
+    ...p: Parameters<typeof NDS.asyncDecodeAnyToPlainText>
+  ): ReturnType<typeof NDS.asyncDecodeAnyToPlainText> {
+    return NDS.asyncDecodeAnyToPlainText(...p);
+  }
+
+  static async asyncCheckUrl(
+    ...p: Parameters<typeof ncu.asyncCheckUrl>
+  ): ReturnType<typeof ncu.asyncCheckUrl> {
+    return await ncu.asyncCheckUrl(...p);
+  }
+
+  static async asyncIsUrlValid(...p: Parameters<typeof ncu.asyncIsUrlValid>) {
+    return await ncu.asyncIsUrlValid(...p);
+  }
 }
 
 export { NehonixURIProcessor };
+//v2.2.0
+export { MaliciousPatternType } from "./services/MaliciousPatterns.service";
+export type { MaliciousPatternResult } from "./services/MaliciousPatterns.service";
+/**
+ * Encodes user input based on the context in which it will be used
+ * Selects the appropriate encoding method for security and compatibility
+ *
+ * @param input The user input to secure
+ * @param context The context where the input will be used
+ * @param options Optional configuration for specific encoding behaviors
+ * @returns The appropriately encoded string
+ */
+export const __safeEncode__ = NehonixSafetyLayer.__safeEncode__;
+export { NehonixURIProcessor as __processor__ };
+export { NehonixShieldProvider } from "./utils/provider/REACT_UTIL";
+export { useNehonixShield } from "./utils/provider/REACT_HOOK";
+export const decodeB64 = (input: string) =>
+  NDS.decode({
+    input,
+    encodingType: "base64",
+  });
