@@ -38,14 +38,14 @@ export class SecurityRules {
       // Extract parameters
       params.forEach((value, key) => {
         paramMap[key] = value;
-
-        const c = SecurityRules.analyzeMaliciousPatterns(value, options);
-        if (c.isMalicious) {
-          c.detectedPatterns.forEach((pattern) => {
-            vulnerabilities.push(pattern.description);
-          });
-          vulnerabilitieDetails.push(...c.detectedPatterns);
-        }
+        SecurityRules.analyzeMaliciousPatterns(value, options).then((c) => {
+          if (c.isMalicious) {
+            c.detectedPatterns.forEach((pattern) => {
+              vulnerabilities.push(pattern.description);
+            });
+            vulnerabilitieDetails.push(...c.detectedPatterns);
+          }
+        });
       });
 
       return {
