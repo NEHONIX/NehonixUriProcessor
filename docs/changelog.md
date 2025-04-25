@@ -1,5 +1,44 @@
 # NehonixURIProcessor Changelog
 
+All notable changes to the `NehonixURIProcessor` library are documented in this file.
+
+## [2.2.0] - 2025-04-25
+
+### Added
+
+- **New Methods**:
+  - `asyncIsUrlValid`: Asynchronous version of `isValidUri`, validating URIs with configurable rules in async workflows.
+  - `sanitizeInput`: Sanitizes input strings by removing potentially malicious patterns (unstable, use with caution).
+  - `needsDeepScan`: Lightweight check to determine if a string requires deep scanning, useful as a pre-filter for malicious pattern detection.
+  - `detectMaliciousPatterns`: Analyzes input for malicious patterns (e.g., XSS, SQL injection) with detailed detection results and configurable options.
+- **Import Alias**: Added support for importing `NehonixURIProcessor` as `__processor__` for shorter, more convenient usage.
+- **Type Definitions**:
+  - Introduced `DetectedPattern` interface for structuring malicious pattern detection results.
+  - Added `AsyncUrlCheckResult` type, extending `UrlCheckResult` with `maliciousPatterns` in `validationDetails`.
+  - FrameWork integration
+
+### Changed
+
+- **Type Structure**:
+  - Updated `asyncCheckUrl` to include `maliciousPatterns` within `validationDetails` (`result.validationDetails.maliciousPatterns`) instead of at the top level, improving consistency and type safety.
+  - Preserved `UrlCheckResult` unchanged to maintain compatibility with `checkUrl`.
+- **Documentation**:
+  - Updated `checkUrlMethod.md` to reflect new `AsyncUrlCheckResult` type structure and clarify `maliciousPatterns` access for `asyncCheckUrl`.
+  - Enhanced `readme.md` with details for new methods (`asyncIsUrlValid`, `sanitizeInput`, `needsDeepScan`, `detectMaliciousPatterns`) and `__processor__` alias.
+  - Improved `checkUrl` and `asyncCheckUrl` documentation with clearer `literalValue` explanations and links to `checkUrlMethod.md`.
+- **Examples**:
+  - Updated code examples in `readme.md` and `checkUrlMethod.md` to use `__processor__` alias and demonstrate new methods.
+  - Refined example outputs for `asyncCheckUrl` to show `validationDetails.maliciousPatterns`.
+
+### Fixed
+
+- Corrected `analyzeUrl` to `scanUrl` in `readme.md` React Hook example, aligning with actual API.
+- Improved type safety for `literalValue` in `checkUrl` and `asyncCheckUrl`, ensuring proper handling of `"@this"`, `string`, or `number`.
+
+### Removed
+
+- None.
+
 ## Version 2.1.2
 
 **Release Date**: 2025-21-04
