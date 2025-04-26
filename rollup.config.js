@@ -19,6 +19,8 @@ export default [
         format: "cjs",
         sourcemap: true,
         exports: "named",
+        interop: "auto",
+        intro: "const require = module.createRequire(import.meta.url);",
       },
       {
         file: pkg.module || "dist/index.esm.js",
