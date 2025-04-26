@@ -19,10 +19,8 @@ interface NsbMiddlewareOptions extends MaliciousPatternOptions {
  * NSB Express middleware for securing incoming requests
  * @param options - Middleware options
  * @returns Express middleware function
- */ 
-export const nehonixShieldMiddleware = (
-  options: NsbMiddlewareOptions = {}
-) => {
+ */
+export const nehonixShieldMiddleware = (options: NsbMiddlewareOptions = {}) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;

@@ -29,7 +29,8 @@
     "test": "jest",
     "patch": "npm version patch && npm publish",
     "minor": "npm version minor && npm publish",
-    "major": "npm version major && npm publish"
+    "major": "npm version major && npm publish",
+    "serve": "ts-node ./src/tests/express.test.js"
   },
   "exports": {
     ".": {
@@ -48,6 +49,7 @@
     "@types/react": "^19.1.2",
     "rollup": "^4.40.0",
     "rollup-plugin-dts": "^6.2.1",
+    "ts-node": "^10.9.2",
     "tslib": "^2.8.1"
   },
   "repository": {
@@ -60,7 +62,6 @@
     "express": "^5.1.0",
     "idna-uts46-hx": "^6.0.8",
     "node-fetch": "^3.3.2",
-    "react": "^19.1.0",
-    "supertest": "^7.1.0"
+    "react": "^19.1.0"
   }
 }
