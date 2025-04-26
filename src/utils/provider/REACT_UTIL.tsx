@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useCallback } from "react";
 import {
   MaliciousPatternResult,
   MaliciousPatternOptions,

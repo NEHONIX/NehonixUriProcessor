@@ -45,7 +45,7 @@
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/express": "^5.0.1",
     "@types/node": "^22.14.1",
-    "@types/react": "^19.1.2",
+    "@types/react": "^18.2.15",
     "rollup": "^4.40.0",
     "rollup-plugin-dts": "^6.2.1",
     "ts-node": "^10.9.2",
@@ -61,6 +61,6 @@
     "express": "^5.1.0",
     "idna-uts46-hx": "^6.0.8",
     "node-fetch": "^3.3.2",
-    "react": "^19.1.0"
+    "react": "^18.2.0"
   }
 }
