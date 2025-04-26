@@ -20,7 +20,7 @@ interface NsbMiddlewareOptions extends MaliciousPatternOptions {
  * @param options - Middleware options
  * @returns Express middleware function
  */
-export const nehonixShieldMiddleware = (options: NsbMiddlewareOptions = {}) => {
+const nehonixShieldMiddleware = (options: NsbMiddlewareOptions = {}) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
@@ -54,7 +54,7 @@ export const nehonixShieldMiddleware = (options: NsbMiddlewareOptions = {}) => {
  * @param options - NSB analysis options
  * @returns Analysis result
  */
-export const scanRequest = async (
+const scanRequest = async (
   req: Request,
   components: ("url" | "headers" | "query" | "body")[] = ["url"],
   options: MaliciousPatternOptions = {}
@@ -165,3 +165,5 @@ function deduplicatePatterns(patterns: DetectedPattern[]): DetectedPattern[] {
   });
   return Array.from(seen.values());
 }
+
+export { nehonixShieldMiddleware, scanRequest };
