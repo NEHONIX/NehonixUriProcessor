@@ -1,12 +1,11 @@
 {
   "name": "nehonix-uri-processor",
-  "version": "2.2.5",
+  "version": "2.2.3",
   "description": "A powerful URI processor for encoding, decoding, and analyzing URI data securely.",
   "type": "module",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
-  "author": "Nehonix nehonix@proton.me",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.esm.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
@@ -35,8 +34,7 @@
   "exports": {
     ".": {
       "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs.js",
-      "default": "./dist/index.esm.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
   },

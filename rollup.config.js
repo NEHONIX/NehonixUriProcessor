@@ -4,31 +4,20 @@ import commonjs from "@rollup/plugin-commonjs";
 import dts from "rollup-plugin-dts";
 import { readFileSync } from "fs";
 
-// Read package.json without using import assertions
 const pkg = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8")
 );
 
 export default [
-  // Bundle for ES modules and CommonJS
+  // ESM build
   {
     input: "src/index.ts",
-    output: [
-      {
-        file: pkg.main,
-        format: "cjs",
-        sourcemap: true,
-        exports: "named",
-        interop: "auto",
-        intro: "const require = module.createRequire(import.meta.url);",
-      },
-      {
-        file: pkg.module || "dist/index.esm.js",
-        format: "es",
-        sourcemap: true,
-        exports: "named",
-      },
-    ],
+    output: {
+      file: "dist/index.esm.js",
+      format: "es",
+      sourcemap: true,
+      exports: "named",
+    },
     plugins: [
       resolve(),
       commonjs(),
@@ -39,11 +28,30 @@ export default [
       ...Object.keys(pkg.peerDependencies || {}),
     ],
   },
-  // Bundle for TypeScript declaration files
+  // CommonJS build
   {
     input: "src/index.ts",
     output: {
-      file: pkg.types,
+      file: "dist/index.cjs",
+      format: "cjs",
+      sourcemap: true,
+      exports: "named",
+    },
+    plugins: [
+      resolve(),
+      commonjs(),
+      typescript({ tsconfig: "./tsconfig.json" }),
+    ],
+    external: [
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {}),
+    ],
+  },
+  // TypeScript declarations
+  {
+    input: "src/index.ts",
+    output: {
+      file: "dist/index.d.ts",
       format: "es",
     },
     plugins: [dts()],
