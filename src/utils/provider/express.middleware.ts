@@ -26,7 +26,7 @@ const nehonixShieldMiddleware = (options: NsbMiddlewareOptions = {}) => {
       const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
       const result = await NSB.analyzeUrl(fullUrl, options);
 
-      if (options.logDetails) {
+      if (options.logDetails) { 
         AppLogger.info(`NSB Analysis for ${fullUrl}:`, result);
       }
 
