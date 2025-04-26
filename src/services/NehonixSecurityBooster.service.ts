@@ -10,7 +10,6 @@ import {
 } from "./MaliciousPatterns.service";
 import { NSS } from "./NehonixSecurity.service";
 import NDS from "./NehonixDec.service";
-import fetch from "node-fetch";
 import { ncu } from "../utils/NehonixCoreUtils";
 import { UrlValidationOptions } from "../types";
 
@@ -40,7 +39,7 @@ export class NSB extends NSS {
 
   private static threatIntel: Map<string, ThreatIntelEntry> = new Map();
   private static virusTotalApiKey: string | undefined =
-    process.env.VIRUSTOTAL_API_KEY;
+    process?.env?.VIRUSTOTAL_API_KEY;
 
   private static metrics: PerformanceMetrics = {
     cacheHits: 0,
