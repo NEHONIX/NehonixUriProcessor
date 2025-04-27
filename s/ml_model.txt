@@ -1,0 +1,88 @@
+import json
+import sys
+import numpy as np
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+import pickle
+import os
+
+MODEL_PATH = "ml_model.pkl"
+SCALER_PATH = "scaler.pkl"
+
+def initialize_model():
+    model = MLPClassifier(
+        hidden_layer_sizes=(64, 32),
+        activation="logistic",
+        solver="adam",
+        max_iter=1000,
+        learning_rate_init=0.01,
+        random_state=42
+    )
+    scaler = StandardScaler()
+    return model, scaler
+
+def save_model(model, scaler):
+    with open(MODEL_PATH, "wb") as f:
+        pickle.dump(model, f)
+    with open(SCALER_PATH, "wb") as f:
+        pickle.dump(scaler, f)
+
+def load_model():
+    if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+        with open(SCALER_PATH, "rb") as f:
+            scaler = pickle.load(f)
+        return model, scaler
+    return None, None
+
+def train_model(data):
+    try:
+        inputs = np.array(data["inputs"])
+        outputs = np.array(data["outputs"]).ravel()
+        
+        model, scaler = initialize_model()
+        scaler.fit(inputs)
+        inputs_scaled = scaler.transform(inputs)
+        
+        model.fit(inputs_scaled, outputs)
+        save_model(model, scaler)
+        
+        return {"status": "success", "message": "Model trained successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+def predict_proba(data):
+    try:
+        input_data = np.array([data["input"]])
+        model, scaler = load_model()
+        
+        if model is None or scaler is None:
+            return {"status": "error", "message": "Model not trained"}
+        
+        input_scaled = scaler.transform(input_data)
+        proba = model.predict_proba(input_scaled)[0][1]  # Probability of malicious (class 1)
+        
+        return {"status": "success", "probability": float(proba)}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+def main():
+    # Read input from stdin
+    input_data = json.load(sys.stdin)
+    
+    # Process based on command
+    command = input_data.get("command")
+    if command == "train":
+        result = train_model(input_data)
+    elif command == "predict":
+        result = predict_proba(input_data)
+    else:
+        result = {"status": "error", "message": "Invalid command"}
+    
+    # Output result to stdout
+    print(json.dumps(result))
+    sys.stdout.flush()
+
+if __name__ == "__main__":
+    main()

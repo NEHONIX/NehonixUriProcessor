@@ -1,0 +1,43 @@
+2025-04-27 00:57:36 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 00:57:36 [INFO] Processing training data 
+2025-04-27 00:58:35 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 00:58:35 [INFO] Processing training data 
+2025-04-27 01:01:39 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 200}}
+2025-04-27 01:02:23 [INFO] Cross-validation completed {"cv_scores": [0.9999984375000001, 0.9999984375000001, 1.0, 1.0, 1.0], "mean_cv_score": 0.999999375}
+2025-04-27 01:02:41 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 1.0, "validation_accuracy": 1.0, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 245.18187618255615, "top_features": ["special_char_ratio", "param_count", "query_length", "suspicious_keyword_count", "subdomain_count", "length", "entropy", "domain_similarity", "path_length", "percent_encoded_chars"]}
+2025-04-27 01:05:57 [INFO] Model and scaler loaded 
+2025-04-27 01:05:57 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.17324376106262207}
+2025-04-27 01:07:22 [INFO] Model and scaler loaded 
+2025-04-27 01:07:22 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.12629055976867676}
+2025-04-27 01:12:51 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 01:12:51 [INFO] Processing training data 
+2025-04-27 01:14:18 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 100}}
+2025-04-27 01:14:31 [INFO] Cross-validation completed {"cv_scores": [0.9999953125, 1.0, 0.999996875, 1.0, 0.999996875], "mean_cv_score": 0.9999978125}
+2025-04-27 01:14:45 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 1.0, "validation_accuracy": 0.999, "auc_score": 0.9999979999999999, "pr_auc": 0.9999979999990001, "training_time_sec": 114.14553689956665, "top_features": ["special_char_ratio", "param_count", "length", "entropy", "subdomain_count", "query_length", "domain_similarity", "domain_length", "digit_ratio", "path_depth"]}
+2025-04-27 01:15:17 [INFO] Model and scaler loaded 
+2025-04-27 01:15:17 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.14197564125061035}
+2025-04-27 01:22:08 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 01:22:08 [INFO] Processing training data 
+2025-04-27 01:23:55 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 100}}
+2025-04-27 01:24:10 [INFO] Cross-validation completed {"cv_scores": [0.9999953125, 1.0, 0.999996875, 1.0, 0.999996875], "mean_cv_score": 0.9999978125}
+2025-04-27 01:26:00 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 01:26:00 [INFO] Processing training data 
+2025-04-27 01:27:37 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 200}}
+2025-04-27 01:28:00 [INFO] Cross-validation completed {"cv_scores": [0.999996875, 1.0, 0.999953125, 1.0, 0.9999984375], "mean_cv_score": 0.9999896875000001}
+2025-04-27 01:28:18 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.999875, "validation_accuracy": 0.9995, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 137.70482754707336, "top_features": ["special_char_ratio", "param_count", "entropy", "query_length", "length", "digit_ratio", "subdomain_count", "domain_similarity", "domain_length", "path_depth"]}
+2025-04-27 01:28:41 [INFO] Model and scaler loaded 
+2025-04-27 01:28:41 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.23608756065368652}
+2025-04-27 01:39:39 [ERROR] Training data file not found {"path": "microservices/training_data/url_training_data.json"}
+2025-04-27 01:39:43 [INFO] Model and scaler loaded 
+2025-04-27 01:39:43 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.11376190185546875}
+2025-04-27 01:41:55 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 01:41:55 [INFO] Processing training data 
+2025-04-27 01:44:04 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 5, "xgb__n_estimators": 200}}
+2025-04-27 01:44:35 [INFO] Cross-validation completed {"cv_scores": [0.9999796875000001, 0.999853125, 0.9999546874999999, 0.999903125, 0.9999875000000001], "mean_cv_score": 0.999935625}
+2025-04-27 01:45:00 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 01:45:00 [INFO] Processing training data 
+2025-04-27 01:46:38 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 200}}
+2025-04-27 01:46:54 [INFO] Cross-validation completed {"cv_scores": [1.0, 0.9999875, 0.9999984375000002, 0.9999750000000001, 1.0], "mean_cv_score": 0.9999921875}
+2025-04-27 01:47:14 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.99925, "validation_accuracy": 0.9975, "auc_score": 0.999985, "pr_auc": 0.9999850818180847, "training_time_sec": 133.61971616744995, "top_features": ["special_char_ratio", "entropy", "param_count", "subdomain_count", "domain_similarity", "query_length", "path_depth", "percent_encoded_chars", "digit_ratio", "length"]}
+2025-04-27 01:47:20 [INFO] Model and scaler loaded 
+2025-04-27 01:47:20 [INFO] Prediction completed {"num_samples": 8, "prediction_time_sec": 0.09719491004943848}

@@ -1,0 +1,1575 @@
+import { AppLogger } from "../common/AppLogger";
+import { MaliciousPatternType, MaliciousComponentType } from "../types/v2.2.0";
+import { 
+  MaliciousPatternResult, 
+  DetectedPattern, 
+  MaliciousPatternOptions 
+} from "./MaliciousPatterns.service";
+import { NSB } from "./NehonixSecurityBooster.service";
+import { ncu } from "../utils/NehonixCoreUtils";
+import * as crypto from "crypto";
+
+/**
+ * NehonixAISecurityEnhancer (NAISE)
+ * 
+ * An advanced AI-powered security enhancer for the NSB service that adds:
+ * - Machine learning-based threat detection
+ * - Zero-day vulnerability detection
+ * - Behavior analysis
+ * - Performance optimizations
+ * - Distributed threat intelligence
+ */
+export class NAISE {
+  private static instance: NAISE;
+  private mlModel: any = null;
+  private threatSignatures: Map<string, ThreatSignature> = new Map();
+  private patternWeights: Map<MaliciousPatternType, number> = new Map();
+  private zeroKnowledgePatterns: ZeroKnowledgePatterns = {
+    anomalyThresholds: new Map(),
+    patternClusters: []
+  };
+  private performanceStats: PerformanceStats = {
+    totalRequests: 0,
+    avgProcessingTime: 0,
+    peakMemoryUsage: 0,
+    totalProcessingTime: 0,
+    requestsWithCache: 0,
+    requestsWithoutCache: 0
+  };
+  private distributedThreatDB: Map<string, DistributedThreatEntry> = new Map();
+  private lastModelUpdate: number = Date.now();
+  private modelUpdateInterval: number = 24 * 60 * 60 * 1000; // 24 hours
+  private parallelProcessingEnabled: boolean = true;
+  private emergencyPatterns: RegExp[] = [
+    /\[\[(\+|\*|\/|%|&|\||^|~|<<|>>|\*\*)\]\]/i, // Generic prototype pollution
+    /\{\{[^}]*\}\}/i, // Template injection
+    /\$\{.*\}/i, // Command injection
+    /\["(constructor|prototype|__proto__)"\]/i, // Object pollution
+    /<svg[^>]*onload/i, // SVG XSS
+    /<img[^>]*onerror/i, // IMG XSS
+    /\/dev\/[a-z]+/i, // Path traversal
+    /\.\.\/\.\.\/\.\./i // Path traversal
+  ];
+  private workerPool: Array<{ id: number, busy: boolean }> = [];
+  private requestQueue: Array<PendingRequest> = [];
+  private MAX_WORKERS = 4;
+  private trainingData: TrainingDataPoint[] = [];
+  private lastTrainingTime: number = 0;
+  private trainingInterval: number = 7 * 24 * 60 * 60 * 1000; // 7 days
+  
+  constructor() {
+    this.initializePatternWeights();
+    this.initializeWorkerPool();
+    this.initializeZeroKnowledgePatterns();
+    this.loadThreatSignatures();
+    this.initializeEmergencyPatterns();
+    AppLogger.info("NAISE service initialized");
+    
+    // Schedule regular operations
+    setInterval(() => this.updateModels(), this.modelUpdateInterval);
+    setInterval(() => this.cleanDistributedThreatDB(), 12 * 60 * 60 * 1000); // 12 hours
+    setInterval(() => this.processTrainingData(), this.trainingInterval);
+  }
+
+  public static getInstance(): NAISE {
+    if (!NAISE.instance) {
+      NAISE.instance = new NAISE();
+    }
+    return NAISE.instance;
+  }
+
+  /**
+   * Main entry point for enhancing URL analysis with AI capabilities
+   */
+  public async enhanceUrlAnalysis(
+    url: string, 
+    basicResult: MaliciousPatternResult, 
+    options: MaliciousPatternOptions = {}
+  ): Promise<MaliciousPatternResult> {
+    const startTime = performance.now();
+    this.performanceStats.totalRequests++;
+    
+    try {
+      // Create a hash of the URL for tracking
+      const urlHash = this.createUrlHash(url);
+      
+      // Check if we should process in parallel
+      if (this.parallelProcessingEnabled && basicResult.score > 20) {
+        return await this.processUrlInParallel(url, basicResult, options, urlHash, startTime);
+      } else {
+        return await this.processUrlSequentially(url, basicResult, options, urlHash, startTime);
+      }
+    } catch (error) {
+      AppLogger.error("Error in NAISE.enhanceUrlAnalysis:", error);
+      this.updatePerformanceStats(startTime);
+      return basicResult;
+    }
+  }
+
+  /**
+   * Process URL sequentially when parallel processing isn't needed or available
+   */
+  private async processUrlSequentially(
+    url: string,
+    basicResult: MaliciousPatternResult,
+    options: MaliciousPatternOptions,
+    urlHash: string,
+    startTime: number
+  ): Promise<MaliciousPatternResult> {
+    let enhancedResult = { ...basicResult };
+    
+    // Apply emergency patterns for critical threats
+    const emergencyResults = this.applyEmergencyPatterns(url);
+    if (emergencyResults.criticalThreatDetected) {
+      AppLogger.warn(`NAISE: Critical threat detected in URL: ${url}`);
+      enhancedResult.detectedPatterns.push(...emergencyResults.patterns);
+      enhancedResult.score += emergencyResults.scoreAdjustment;
+      enhancedResult.isMalicious = true;
+      enhancedResult.confidence = "high";
+      enhancedResult.recommendation = `URGENT: ${enhancedResult.recommendation} Critical security threat detected. Immediate action required.`;
+      
+      // Add to distributed threat database
+      this.addToDistributedThreatDB(url, enhancedResult, "emergency");
+      
+      this.updatePerformanceStats(startTime);
+      return enhancedResult;
+    }
+    
+    // Apply AI pattern detection
+    const aiResults = await this.applyAIPatternDetection(url, enhancedResult);
+    enhancedResult.detectedPatterns.push(...aiResults.patterns);
+    enhancedResult.score += aiResults.scoreAdjustment;
+    
+    // Apply behavioral analysis
+    const behaviorResults = this.applyBehavioralAnalysis(url, enhancedResult);
+    enhancedResult.detectedPatterns.push(...behaviorResults.patterns);
+    enhancedResult.score += behaviorResults.scoreAdjustment;
+    
+    // Apply zero-day detection
+    const zeroResults = this.applyZeroDayDetection(url, enhancedResult);
+    enhancedResult.detectedPatterns.push(...zeroResults.patterns);
+    enhancedResult.score += zeroResults.scoreAdjustment;
+    
+    // Check against distributed threat intelligence
+    const threatIntelResults = this.checkDistributedThreatDB(url);
+    enhancedResult.detectedPatterns.push(...threatIntelResults.patterns);
+    enhancedResult.score += threatIntelResults.scoreAdjustment;
+    
+    // Apply weighted scoring based on pattern importance
+    enhancedResult.score = this.applyWeightedScoring(enhancedResult);
+    
+    // Update final result properties
+    enhancedResult.confidence = this.determineConfidence(enhancedResult);
+    enhancedResult.isMalicious = enhancedResult.score >= (options.minScore || 50);
+    enhancedResult.recommendation = this.enhanceRecommendation(enhancedResult);
+    
+    // Add contextual analysis if not present
+    if (!enhancedResult.contextAnalysis) {
+      enhancedResult.contextAnalysis = {
+        relatedPatterns: [],
+        entropyScore: this.calculateEntropyScore(url),
+        anomalyScore: this.calculateAnomalyScore(url, enhancedResult),
+        encodingLayers: this.detectEncodingLayers(url)
+      };
+    }
+    
+    // Add to training data
+    this.addToTrainingData(url, enhancedResult);
+    
+    this.updatePerformanceStats(startTime);
+    return enhancedResult;
+  }
+
+  /**
+   * Process URL using worker pool for parallel processing
+   */
+  private async processUrlInParallel(
+    url: string,
+    basicResult: MaliciousPatternResult,
+    options: MaliciousPatternOptions,
+    urlHash: string,
+    startTime: number
+  ): Promise<MaliciousPatternResult> {
+    // First check emergency patterns - these need immediate attention
+    const emergencyResults = this.applyEmergencyPatterns(url);
+    if (emergencyResults.criticalThreatDetected) {
+      const enhancedResult = { ...basicResult };
+      enhancedResult.detectedPatterns.push(...emergencyResults.patterns);
+      enhancedResult.score += emergencyResults.scoreAdjustment;
+      enhancedResult.isMalicious = true;
+      enhancedResult.confidence = "high";
+      enhancedResult.recommendation = `URGENT: ${enhancedResult.recommendation} Critical security threat detected. Immediate action required.`;
+      
+      this.addToDistributedThreatDB(url, enhancedResult, "emergency");
+      this.updatePerformanceStats(startTime);
+      return enhancedResult;
+    }
+      
+    // Queue the request for processing
+    return new Promise((resolve) => {
+      this.requestQueue.push({
+        url,
+        basicResult,
+        options,
+        urlHash,
+        startTime,
+        resolve
+      });
+      
+      this.processNextInQueue();
+    });
+  }
+
+  /**
+   * Process next request in the queue using available workers
+   */
+  private processNextInQueue(): void {
+    if (this.requestQueue.length === 0) return;
+    
+    const availableWorker = this.workerPool.find(worker => !worker.busy);
+    if (!availableWorker) return;
+    
+    availableWorker.busy = true;
+    const request = this.requestQueue.shift()!;
+    
+    setTimeout(async () => {
+      const result = await this.processUrlSequentially(
+        request.url,
+        request.basicResult,
+        request.options,
+        request.urlHash,
+        request.startTime
+      );
+      
+      request.resolve(result);
+      availableWorker.busy = false;
+      this.processNextInQueue();
+    }, 0);
+  }
+
+  /**
+   * Apply emergency patterns for critical immediate threats
+   */
+  private applyEmergencyPatterns(url: string): {
+    patterns: DetectedPattern[],
+    scoreAdjustment: number,
+    criticalThreatDetected: boolean
+  } {
+    const patterns: DetectedPattern[] = [];
+    let scoreAdjustment = 0;
+    let criticalThreatDetected = false;
+    
+    // Check URL against emergency patterns
+    this.emergencyPatterns.forEach((pattern, index) => {
+      if (pattern.test(url)) {
+        const match = url.match(pattern);
+        if (match) {
+          criticalThreatDetected = true;
+          patterns.push({
+            type: MaliciousPatternType.ZERO_DAY, // Mark as zero-day for immediate attention
+            pattern: pattern.source,
+            location: `emergency:pattern:${index}`,
+            severity: "high",
+            confidence: "high",
+            description: "Critical security threat detected by emergency pattern",
+            matchedValue: match[0]
+          });
+          scoreAdjustment += 75; // High score for critical threats
+        }
+      }
+    });
+    
+    // Check for known ransomware/malware indicators
+    if (url.includes("encrypt=") && url.includes("files=")) {
+      criticalThreatDetected = true;
+      patterns.push({
+        type: MaliciousPatternType.RANSOMWARE,
+        pattern: "ransomware_indicators",
+        location: "url:parameters",
+        severity: "high",
+        confidence: "high",
+        description: "Potential ransomware activity detected",
+        matchedValue: url
+      });
+      scoreAdjustment += 90;
+    }
+    
+    return { patterns, scoreAdjustment, criticalThreatDetected };
+  }
+
+  /**
+   * Apply AI-based pattern detection
+   */
+  private async applyAIPatternDetection(
+    url: string,
+    result: MaliciousPatternResult
+  ): Promise<{ patterns: DetectedPattern[], scoreAdjustment: number }> {
+    const patterns: DetectedPattern[] = [];
+    let scoreAdjustment = 0;
+    
+    try {
+      // Extract features from URL
+      const features = this.extractUrlFeatures(url);
+      
+      // Use threat signatures for pattern matching
+      this.threatSignatures.forEach((signature, key) => {
+        if (signature.matches(url, features)) {
+          patterns.push({
+            type: signature.patternType,
+            pattern: signature.name,
+            location: `ai:signature:${key}`,
+            severity: signature.severity,
+            confidence: signature.confidence,
+            description: signature.description,
+            matchedValue: url
+          });
+          
+          scoreAdjustment += signature.severity === "high" ? 35 : 
+                              signature.severity === "medium" ? 20 : 10;
+        }
+      });
+      
+      // Simple AI detection based on n-gram analysis
+      const anomalousNgrams = this.detectAnomalousNgrams(url);
+      if (anomalousNgrams.length > 0) {
+        patterns.push({
+          type: MaliciousPatternType.ANOMALY_DETECTED,
+          pattern: "n_gram_anomaly",
+          location: "ai:ngram_analysis",
+          severity: "medium",
+          confidence: "medium",
+          description: `Anomalous n-gram patterns detected: ${anomalousNgrams.join(", ")}`,
+          matchedValue: anomalousNgrams[0]
+        });
+        scoreAdjustment += 15;
+      }
+      
+      // Check for command obfuscation techniques
+      if (this.detectCommandObfuscation(url)) {
+        patterns.push({
+          type: MaliciousPatternType.COMMAND_INJECTION,
+          pattern: "obfuscated_command",
+          location: "ai:obfuscation_detection",
+          severity: "high",
+          confidence: "medium",
+          description: "Obfuscated command injection attempt detected",
+          matchedValue: url
+        });
+        scoreAdjustment += 30;
+      }
+    } catch (error) {
+      AppLogger.error("Error in AI pattern detection:", error);
+    }
+    
+    return { patterns, scoreAdjustment };
+  }
+
+  /**
+   * Apply behavioral analysis to detect abnormal patterns
+   */
+  private applyBehavioralAnalysis(
+    url: string,
+    result: MaliciousPatternResult
+  ): Promise<{ patterns: DetectedPattern[], scoreAdjustment: number }> | { patterns: DetectedPattern[], scoreAdjustment: number } {
+    const patterns: DetectedPattern[] = [];
+    let scoreAdjustment = 0;
+    
+    try {
+      // Extract hostname for behavior tracking
+      const hostname = new URL(url).hostname;
+      
+      // Check if this host has been flagged in distributed threat DB
+      const threatEntry = this.distributedThreatDB.get(hostname);
+      if (threatEntry && threatEntry.maliciousScore > 0.7) {
+        patterns.push({
+          type: MaliciousPatternType.SUSPICIOUS_BEHAVIOR,
+          pattern: "historical_malicious_behavior",
+          location: `behavior:historical:${hostname}`,
+          severity: "high",
+          confidence: "high",
+          description: `Host has demonstrated malicious behavior in ${threatEntry.reportCount} previous analyses`,
+          matchedValue: hostname
+        });
+        scoreAdjustment += 40;
+      }
+      
+      // Check for parameter anomalies
+      const paramAnomalies = this.detectParameterAnomalies(url);
+      if (paramAnomalies.length > 0) {
+        patterns.push({
+          type: MaliciousPatternType.PARAMETER_TAMPERING,
+          pattern: "parameter_anomaly",
+          location: "behavior:parameters",
+          severity: "medium",
+          confidence: "medium",
+          description: `Unusual parameter patterns detected: ${paramAnomalies.join(", ")}`,
+          matchedValue: paramAnomalies[0]
+        });
+        scoreAdjustment += 15;
+      }
+      
+      // Check entropy of URL components
+      const entropyScore = this.calculateEntropyScore(url);
+      if (entropyScore > 5.5) {
+        patterns.push({
+          type: MaliciousPatternType.HIGH_ENTROPY,
+          pattern: "high_entropy_content",
+          location: "behavior:entropy",
+          severity: "medium",
+          confidence: "medium",
+          description: `Unusually high entropy content detected (${entropyScore.toFixed(2)})`,
+          matchedValue: url
+        });
+        scoreAdjustment += 20;
+      }
+    } catch (error) {
+      AppLogger.error("Error in behavioral analysis:", error);
+    }
+    
+    return { patterns, scoreAdjustment };
+  }
+
+  /**
+   * Apply zero-day vulnerability detection
+   */
+  private applyZeroDayDetection(
+    url: string,
+    result: MaliciousPatternResult
+  ): { patterns: DetectedPattern[], scoreAdjustment: number } {
+    const patterns: DetectedPattern[] = [];
+    let scoreAdjustment = 0;
+    
+    try {
+      // Check for emerging attack patterns
+      const emergingPatterns = [
+        // Common patterns for known zero days
+        /\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/proc\/self\/environ/i,
+        /.*\$\{jndi:ldap:\/\/.*/i,
+        /\{\{[\s\S]*\}\}/i, // Template injection
+        /\[\[\s*\$\{\s*\(.*\)\s*\}\s*\]\]/i, // Expression injection
+        /\$\{.*::-\[.*\]\}/i, // Expression language injection
+      ];
+      
+      emergingPatterns.forEach((pattern, index) => {
+        if (pattern.test(url)) {
+          const match = url.match(pattern);
+          if (match) {
+            patterns.push({
+              type: MaliciousPatternType.ZERO_DAY,
+              pattern: pattern.source,
+              location: `zeroday:pattern:${index}`,
+              severity: "high",
+              confidence: "medium",
+              description: "Potential zero-day exploit pattern detected",
+              matchedValue: match[0]
+            });
+            scoreAdjustment += 50;
+          }
+        }
+      });
+      
+      // Look for anomalies in clusters
+      this.zeroKnowledgePatterns.patternClusters.forEach((cluster, index) => {
+        const score = this.scoreAgainstCluster(url, cluster);
+        if (score > 0.8) {
+          patterns.push({
+            type: MaliciousPatternType.ZERO_DAY,
+            pattern: `pattern_cluster_${index}`,
+            location: `zeroday:cluster:${index}`,
+            severity: "high",
+            confidence: "medium",
+            description: `URL matches emerging threat pattern cluster (score: ${score.toFixed(2)})`,
+            matchedValue: url
+          });
+          scoreAdjustment += 40;
+        }
+      });
+      
+      // Check against innovative attack techniques
+      const innovativeAttacks = this.detectInnovativeAttackVectors(url);
+      if (innovativeAttacks.detected) {
+        patterns.push({
+          type: MaliciousPatternType.ZERO_DAY,
+          pattern: "innovative_attack_vector",
+          location: `zeroday:innovative:${innovativeAttacks.technique}`,
+          severity: "high",
+          confidence: "medium",
+          description: `Innovative attack vector detected: ${innovativeAttacks.description}`,
+          matchedValue: innovativeAttacks.matchedValue
+        });
+        scoreAdjustment += 45;
+      }
+    } catch (error) {
+      AppLogger.error("Error in zero-day detection:", error);
+    }
+    
+    return { patterns, scoreAdjustment };
+  }
+
+  /**
+   * Check URL against distributed threat database
+   */
+  private checkDistributedThreatDB(url: string): { patterns: DetectedPattern[], scoreAdjustment: number } {
+    const patterns: DetectedPattern[] = [];
+    let scoreAdjustment = 0;
+    
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const urlPath = parsedUrl.pathname.toLowerCase();
+      
+      // Check if hostname is in threat DB
+      const threatEntry = this.distributedThreatDB.get(hostname);
+      if (threatEntry) {
+        patterns.push({
+          type: MaliciousPatternType.KNOWN_THREAT,
+          pattern: "distributed_threat_intel",
+          location: `hostname:${hostname}`,
+          severity: threatEntry.severity,
+          confidence: threatEntry.confidence,
+          description: `Host found in distributed threat intelligence database (${threatEntry.reportCount} reports)`,
+          matchedValue: hostname
+        });
+        scoreAdjustment += threatEntry.maliciousScore * 50;
+      }
+      
+      // Check if path matches known malicious patterns
+      for (const [key, entry] of this.distributedThreatDB.entries()) {
+        if (key.startsWith("path:") && urlPath.includes(key.substring(5))) {
+          patterns.push({
+            type: MaliciousPatternType.KNOWN_THREAT,
+            pattern: "distributed_threat_path",
+            location: `path:${urlPath}`,
+            severity: entry.severity,
+            confidence: entry.confidence,
+            description: `URL path matches known malicious pattern (${entry.reportCount} reports)`,
+            matchedValue: urlPath
+          });
+          scoreAdjustment += entry.maliciousScore * 40;
+          break;
+        }
+      }
+      
+      // Check for patterns in parameters
+      parsedUrl.searchParams.forEach((value, key) => {
+        for (const [threatKey, entry] of this.distributedThreatDB.entries()) {
+          if (threatKey.startsWith("param:") && 
+             (threatKey === `param:${key}` || value.includes(threatKey.substring(6)))) {
+            patterns.push({
+              type: MaliciousPatternType.KNOWN_THREAT,
+              pattern: "distributed_threat_param",
+              location: `param:${key}=${value}`,
+              severity: entry.severity,
+              confidence: entry.confidence,
+              description: `URL parameter matches known malicious pattern (${entry.reportCount} reports)`,
+              matchedValue: `${key}=${value}`
+            });
+            scoreAdjustment += entry.maliciousScore * 35;
+            break;
+          }
+        }
+      });
+    } catch (error) {
+      AppLogger.error("Error checking distributed threat DB:", error);
+    }
+    
+    return { patterns, scoreAdjustment };
+  }
+
+  /**
+   * Apply weighted scoring based on pattern importance
+   */
+  private applyWeightedScoring(result: MaliciousPatternResult): number {
+    let score = result.score;
+    
+    // Apply weights to different pattern types
+    result.detectedPatterns.forEach(pattern => {
+      const weight = this.patternWeights.get(pattern.type) || 1.0;
+      if (weight !== 1.0) {
+        // Apply weight to the contribution this pattern made to the score
+        const patternScore = pattern.severity === "high" ? 25 : 
+                             pattern.severity === "medium" ? 15 : 5;
+        
+        // Remove original score contribution and add weighted contribution
+        score = score - patternScore + (patternScore * weight);
+      }
+    });
+    
+    // Cap score at 200
+    return Math.min(Math.round(score), 200);
+  }
+
+  /**
+   * Determine confidence level based on patterns and score
+   */
+  private determineConfidence(result: MaliciousPatternResult): "low" | "medium" | "high" {
+    const score = result.score;
+    const patternCount = result.detectedPatterns.length;
+    const highSeverityCount = result.detectedPatterns.filter(p => p.severity === "high").length;
+    
+    if (score >= 100 || highSeverityCount >= 3) {
+      return "high";
+    } else if (score >= 50 || patternCount >= 3) {
+      return "medium";
+    } else {
+      return "low";
+    }
+  }
+
+  /**
+   * Generate enhanced recommendation based on detected threats
+   */
+  private enhanceRecommendation(result: MaliciousPatternResult): string {
+    const baseRecommendation = result.recommendation || "URL analysis complete.";
+    const additionalNotes: string[] = [];
+    
+    // Add specific recommendations based on pattern types
+    const patternTypes = new Set(result.detectedPatterns.map(p => p.type));
+    
+    if (patternTypes.has(MaliciousPatternType.ZERO_DAY)) {
+      additionalNotes.push("URGENT: Potential zero-day vulnerability detected. Implement emergency blocking measures.");
+    }
+    
+    if (patternTypes.has(MaliciousPatternType.PROTOTYPE_POLLUTION)) {
+      additionalNotes.push("Implement prototype freezing and strict object validation to mitigate prototype pollution attacks.");
+    }
+    
+    if (patternTypes.has(MaliciousPatternType.XSS)) {
+      additionalNotes.push("Enable Content-Security-Policy headers and implement output encoding to prevent XSS attacks.");
+    }
+    
+    if (patternTypes.has(MaliciousPatternType.SQL_INJECTION)) {
+      additionalNotes.push("Use parameterized queries and input validation to prevent SQL injection attacks.");
+    }
+    
+    if (patternTypes.has(MaliciousPatternType.COMMAND_INJECTION)) {
+      additionalNotes.push("Implement strict input validation and avoid using shell commands with user input.");
+    }
+    
+    if (result.score >= 100) {
+      additionalNotes.push("Consider blocking this host entirely due to high threat score.");
+    }
+    
+    return additionalNotes.length > 0
+      ? `${baseRecommendation} ${additionalNotes.join(" ")}`
+      : baseRecommendation;
+  }
+
+  /**
+   * Calculate entropy score for a string
+   */
+  private calculateEntropyScore(input: string): number {
+    const frequencies: Map<string, number> = new Map();
+    const length = input.length;
+    
+    // Count character frequencies
+    for (let i = 0; i < length; i++) {
+      const char = input[i];
+      frequencies.set(char, (frequencies.get(char) || 0) + 1);
+    }
+    
+    // Calculate entropy
+    let entropy = 0;
+    for (const [_, count] of frequencies.entries()) {
+      const probability = count / length;
+      entropy -= probability * Math.log2(probability);
+    }
+    
+    return entropy;
+  }
+
+  /**
+   * Calculate anomaly score based on URL characteristics
+   */
+  private calculateAnomalyScore(url: string, result: MaliciousPatternResult): number {
+    let anomalyScore = 0;
+    
+    try {
+      const parsedUrl = new URL(url);
+      
+      // Check for unusual TLDs
+      const tldMatch = parsedUrl.hostname.match(/\.([a-z]{2,})$/i);
+      if (tldMatch) {
+        const tld = tldMatch[1].toLowerCase();
+        const unusualTlds = ["xyz", "top", "club", "online", "site", "fun", "monster"];
+        if (unusualTlds.includes(tld)) {
+          anomalyScore += 10;
+        }
+      }
+      
+      // Check for numeric subdomains (often used in temporary malicious domains)
+      if (/^[0-9]+\./.test(parsedUrl.hostname)) {
+        anomalyScore += 15;
+      }
+      
+      // Check for excessive subdomain levels
+      const subdomainCount = parsedUrl.hostname.split(".").length - 2;
+      if (subdomainCount > 3) {
+        anomalyScore += 5 * (subdomainCount - 3);
+      }
+      
+      // Check for unusual parameter names or values
+      let unusualParamCount = 0;
+      parsedUrl.searchParams.forEach((value, key) => {
+        // Unusual parameter names
+        if (/^[a-z]{1,2}$/.test(key) || /^[0-9]+$/.test(key)) {
+          unusualParamCount++;
+        }
+        
+        // Very long parameter values
+        if (value.length > 100) {
+          anomalyScore += 10;
+        }
+        
+        // Highly encoded values
+        if ((value.match(/%[0-9A-F]{2}/g) || []).length > 10) {
+          anomalyScore += 15;
+        }
+      });
+      
+      anomalyScore += unusualParamCount * 5;
+      
+      // Path anomalies
+      if (parsedUrl.pathname.length > 100) {
+        anomalyScore += 10;
+      }
+      
+      if ((parsedUrl.pathname.match(/\.\.\//g) || []).length > 0) {
+        anomalyScore += 25;
+      }
+    } catch (error) {
+      AppLogger.error("Error calculating anomaly score:", error);
+    }
+    
+    return Math.min(anomalyScore, 100);
+  }
+
+  /**
+   * Detect the number of encoding layers in a URL
+   */
+  private detectEncodingLayers(url: string): number {
+    let layers = 0;
+    let currentUrl = url;
+    
+    // Try to detect multiple layers of encoding
+    while (layers < 10) {
+      const decodedUrl = decodeURIComponent(currentUrl);
+      if (decodedUrl === currentUrl) {
+        break;
+      }
+      layers++;
+      currentUrl = decodedUrl;
+    }
+    
+    return layers;
+  }
+private extractUrlFeatures(url: string): URLFeatures {
+    const features: URLFeatures = {
+      length: url.length,
+      entropy: this.calculateEntropyScore(url),
+      specialCharCount: (url.match(/[^a-zA-Z0-9]/g) || []).length,
+      digitCount: (url.match(/[0-9]/g) || []).length,
+      encodedCharCount: (url.match(/%[0-9A-F]{2}/g) || []).length,
+      subdomainLevels: 0,
+      parameterCount: 0,
+      pathDepth: 0,
+      hasUnusualPort: false,
+      containsIPAddress: false,
+      hexEncodingRatio: 0,
+      domainLength: 0,
+      tld: "",
+      hasBase64: false
+    };
+    
+    try {
+      const parsedUrl = new URL(url);
+      
+      // Domain features
+      const hostnameParts = parsedUrl.hostname.split(".");
+      features.subdomainLevels = Math.max(0, hostnameParts.length - 2);
+      features.domainLength = parsedUrl.hostname.length;
+      features.tld = hostnameParts[hostnameParts.length - 1].toLowerCase();
+      
+      // Path features
+      features.pathDepth = parsedUrl.pathname.split("/").filter(Boolean).length;
+      
+      // Parameter features
+      features.parameterCount = parsedUrl.searchParams.size;
+      
+      // Port features
+      features.hasUnusualPort = parsedUrl.port !== "" && parsedUrl.port !== "80" && parsedUrl.port !== "443";
+      
+      // IP address features
+      features.containsIPAddress = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(url);
+      
+      // Encoding features
+      const hexMatches = url.match(/%[0-9A-F]{2}/g) || [];
+      features.hexEncodingRatio = hexMatches.length / url.length;
+      
+      // Base64 detection
+      features.hasBase64 = /[A-Za-z0-9+/]{20,}={0,2}/.test(url);
+    } catch (error) {
+      AppLogger.debug("Error extracting URL features:", error);
+    }
+    
+    return features;
+  }
+
+  /**
+   * Detect anomalous n-grams in the URL
+   */
+  private detectAnomalousNgrams(url: string): string[] {
+    const anomalousNgrams: string[] = [];
+    const ngramSize = 3;
+    
+    // Generate n-grams
+    const ngrams: string[] = [];
+    for (let i = 0; i <= url.length - ngramSize; i++) {
+      ngrams.push(url.substring(i, i + ngramSize));
+    }
+    
+    // Check for suspicious n-grams
+    const suspiciousNgrams = [
+      "sql", "xss", "cmd", "exe", "eval", "';--", "etc", 
+      "bin", "%3C%", "\\\\'", "${j", "ldap", "<svg", 
+      "%00", "%0d", "%0a", "../"
+    ];
+    
+    ngrams.forEach(ngram => {
+      const normalizedNgram = ngram.toLowerCase();
+      if (suspiciousNgrams.some(suspicious => normalizedNgram.includes(suspicious))) {
+        anomalousNgrams.push(ngram);
+      }
+    });
+    
+    return anomalousNgrams;
+  }
+
+  /**
+   * Detect command obfuscation techniques
+   */
+  private detectCommandObfuscation(url: string): boolean {
+    // Check for shell command obfuscation
+    const obfuscationPatterns = [
+      /\$\{.*?:.*?\}/i, // Bash variable substitution
+      /\$\(.*?\)/i, // Command substitution
+      /\\x[0-9a-f]{2}/i, // Hex encoding
+      /\\u[0-9a-f]{4}/i, // Unicode encoding
+      /`.*?`/i, // Backtick command execution
+      /base64.*?=/i, // Base64 reference
+      /\$[a-z0-9_]+=.*?&&.*?\$[a-z0-9_]+/i, // Variable assignment and command chaining
+      /\|(?:\s*[a-z]+)+/i, // Pipe to command
+      /(?:^|;|\s+)(?:wget|curl|chmod|bash|sh|nc|netcat)\s+/i // Common shell commands
+    ];
+    
+    return obfuscationPatterns.some(pattern => pattern.test(url));
+  }
+
+  /**
+   * Detect parameter anomalies in URL
+   */
+  private detectParameterAnomalies(url: string): string[] {
+    const anomalies: string[] = [];
+    
+    try {
+      const parsedUrl = new URL(url);
+      
+      // Check for duplicated parameters
+      const paramCounts = new Map<string, number>();
+      parsedUrl.searchParams.forEach((_, key) => {
+        paramCounts.set(key, (paramCounts.get(key) || 0) + 1);
+      });
+      
+      paramCounts.forEach((count, key) => {
+        if (count > 1) {
+          anomalies.push(`duplicate_param:${key}`);
+        }
+      });
+      
+      // Check for suspicious parameter names
+      parsedUrl.searchParams.forEach((value, key) => {
+        if (/(?:exec|cmd|run|system|eval|js|script|sql|query|code|function)/i.test(key)) {
+          anomalies.push(`suspicious_param_name:${key}`);
+        }
+        
+        // Check for very short parameter names (often used in attacks)
+        if (key.length === 1 && /[a-z]/i.test(key)) {
+          anomalies.push(`single_char_param:${key}`);
+        }
+        
+        // Check for excessively long values
+        if (value.length > 500) {
+          anomalies.push(`long_value:${key}`);
+        }
+        
+        // Check for mixed case encodings (often obfuscation)
+        const upperEncodings = (value.match(/%[0-9A-F]{2}/g) || []).length;
+        const lowerEncodings = (value.match(/%[0-9a-f]{2}/g) || []).length;
+        if (upperEncodings > 0 && lowerEncodings > 0 && upperEncodings !== lowerEncodings) {
+          anomalies.push(`mixed_encoding:${key}`);
+        }
+      });
+    } catch (error) {
+      AppLogger.debug("Error detecting parameter anomalies:", error);
+    }
+    
+    return anomalies;
+  }
+
+  /**
+   * Score a URL against a pattern cluster for zero-day detection
+   */
+  private scoreAgainstCluster(url: string, cluster: PatternCluster): number {
+    let matches = 0;
+    
+    // Check regex patterns
+    for (const pattern of cluster.patterns) {
+      if (pattern.test(url)) {
+        matches++;
+      }
+    }
+    
+    // Check token presence
+    const tokens = cluster.tokens || [];
+    for (const token of tokens) {
+      if (url.includes(token)) {
+        matches++;
+      }
+    }
+    
+    // Calculate final score
+    const totalPatterns = cluster.patterns.length + tokens.length;
+    return totalPatterns > 0 ? matches / totalPatterns : 0;
+  }
+
+  /**
+   * Detect innovative attack vectors
+   */
+  private detectInnovativeAttackVectors(url: string): {
+    detected: boolean;
+    technique?: string;
+    description?: string;
+    matchedValue?: string;
+  } {
+    // Check for code reuse attacks
+    if (/fetch\s*\(\s*['"`][^'"`]+['"]\s*\)\.then\(/i.test(url)) {
+      return {
+        detected: true,
+        technique: "code_reuse",
+        description: "JavaScript code reuse/injection attack",
+        matchedValue: url.match(/fetch\s*\(\s*['"`][^'"`]+['"]\s*\)\.then\(/i)?.[0] || url
+      };
+    }
+    
+    // Check for template injection
+    if (/\{\{\s*[\$_a-z0-9]+\s*\.\s*[\$_a-z0-9]+\s*\}\}/i.test(url)) {
+      return {
+        detected: true,
+        technique: "template_injection",
+        description: "Template expression injection attack",
+        matchedValue: url.match(/\{\{\s*[\$_a-z0-9]+\s*\.\s*[\$_a-z0-9]+\s*\}\}/i)?.[0] || url
+      };
+    }
+    
+    // Check for GraphQL injection
+    if (/\{\s*(?:__schema|__type|__typename)/.test(url)) {
+      return {
+        detected: true,
+        technique: "graphql_injection",
+        description: "GraphQL introspection/injection attack",
+        matchedValue: url.match(/\{\s*(?:__schema|__type|__typename).*?\}/is)?.[0] || url
+      };
+    }
+    
+    // Check for JavaScript prototype pollution variations
+    if (/[\[.](?:__proto__|constructor|prototype)[\.\[]/.test(url)) {
+      return {
+        detected: true,
+        technique: "prototype_pollution",
+        description: "Advanced JavaScript prototype pollution attack",
+        matchedValue: url.match(/[\[.](?:__proto__|constructor|prototype)[\.\[].+?(?:\]|$)/)?.[0] || url
+      };
+    }
+    
+    // Check for DOM clobbering
+    if (/name=["'](?:innerHTML|outerHTML|nodeValue|textContent)["']/.test(url)) {
+      return {
+        detected: true,
+        technique: "dom_clobbering",
+        description: "DOM property clobbering attack",
+        matchedValue: url.match(/name=["'](?:innerHTML|outerHTML|nodeValue|textContent)["']/)?.[0] || url
+      };
+    }
+    
+    return { detected: false };
+  }
+
+  /**
+   * Add detected threat to distributed threat DB
+   */
+  private addToDistributedThreatDB(
+    url: string, 
+    result: MaliciousPatternResult,
+    source: "analysis" | "emergency" | "feedback" = "analysis"
+  ): void {
+    if (!result.isMalicious && source !== "feedback") return;
+    
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      
+      // Update hostname entry
+      this.updateThreatEntry(hostname, result, source);
+      
+      // Update path pattern if relevant
+      if (parsedUrl.pathname.length > 1) {
+        const normalizedPath = parsedUrl.pathname.toLowerCase();
+        this.updateThreatEntry(`path:${normalizedPath}`, result, source);
+      }
+      
+      // Update parameter patterns if relevant
+      parsedUrl.searchParams.forEach((value, key) => {
+        if (
+          key.length > 2 && 
+          !['id', 'page', 'url', 'ref', 'src', 'href'].includes(key.toLowerCase())
+        ) {
+          this.updateThreatEntry(`param:${key}`, result, source);
+        }
+        
+        if (value.length > 10) {
+          // Look for interesting patterns in parameter values
+          const patterns = [
+            /<script/i, /\balert\s*\(/i, /\beval\s*\(/i, /\bdocument\./i,
+            /\$\{/i, /\[\[/i, /union\s+select/i, /\/etc\//i, /\bexec\s*\(/i
+          ];
+          
+          for (const pattern of patterns) {
+            if (pattern.test(value)) {
+              const match = value.match(pattern);
+              if (match) {
+                this.updateThreatEntry(`paramval:${match[0]}`, result, source);
+              }
+              break;
+            }
+          }
+        }
+      });
+      
+    } catch (error) {
+      AppLogger.debug("Error adding to threat DB:", error);
+    }
+  }
+
+  /**
+   * Update an entry in the threat database
+   */
+  private updateThreatEntry(
+    key: string, 
+    result: MaliciousPatternResult, 
+    source: "analysis" | "emergency" | "feedback"
+  ): void {
+    const now = Date.now();
+    const entry = this.distributedThreatDB.get(key) || {
+      firstSeen: now,
+      lastSeen: now,
+      reportCount: 0,
+      maliciousCount: 0,
+      maliciousScore: 0,
+      patterns: new Set<MaliciousPatternType>(),
+      severity: "low" as "low" | "medium" | "high",
+      confidence: "low" as "low" | "medium" | "high"
+    };
+    
+    entry.lastSeen = now;
+    entry.reportCount++;
+    
+    if (result.isMalicious || source === "emergency" || source === "feedback") {
+      entry.maliciousCount++;
+      result.detectedPatterns.forEach(pattern => {
+        entry.patterns.add(pattern.type);
+      });
+    }
+    
+    // Update severity and confidence
+    if (entry.maliciousCount > 5 || source === "emergency") {
+      entry.severity = "high";
+      entry.confidence = "high";
+    } else if (entry.maliciousCount > 2) {
+      entry.severity = "medium";
+      entry.confidence = "medium";
+    }
+    
+    // Calculate malicious score
+    entry.maliciousScore = entry.maliciousCount / entry.reportCount;
+    if (source === "emergency") {
+      entry.maliciousScore = Math.max(0.9, entry.maliciousScore);
+    }
+    
+    this.distributedThreatDB.set(key, entry);
+  }
+
+  /**
+   * Clean up old entries from distributed threat DB
+   */
+  private cleanDistributedThreatDB(): void {
+    const now = Date.now();
+    const expiryTime = 30 * 24 * 60 * 60 * 1000; // 30 days
+    
+    let removedCount = 0;
+    for (const [key, entry] of this.distributedThreatDB.entries()) {
+      if (now - entry.lastSeen > expiryTime && entry.maliciousScore < 0.5) {
+        this.distributedThreatDB.delete(key);
+        removedCount++;
+      }
+    }
+    
+    if (removedCount > 0) {
+      AppLogger.debug(`Cleaned ${removedCount} entries from distributed threat DB`);
+    }
+  }
+
+  /**
+   * Update performance statistics
+   */
+  private updatePerformanceStats(startTime: number): void {
+    const duration = performance.now() - startTime;
+    this.performanceStats.totalProcessingTime += duration;
+    this.performanceStats.avgProcessingTime = 
+      this.performanceStats.totalProcessingTime / this.performanceStats.totalRequests;
+    
+    // Update peak memory usage
+    try {
+      const memoryUsage = process.memoryUsage?.().heapUsed || 0;
+      this.performanceStats.peakMemoryUsage = Math.max(
+        this.performanceStats.peakMemoryUsage,
+        memoryUsage
+      );
+    } catch {
+      // Ignore if process.memoryUsage is not available
+    }
+  }
+
+  /**
+   * Add URL analysis to training data
+   */
+  private addToTrainingData(url: string, result: MaliciousPatternResult): void {
+    try {
+      const features = this.extractUrlFeatures(url);
+      
+      this.trainingData.push({
+        url,
+        features,
+        isMalicious: result.isMalicious,
+        detectedPatternTypes: result.detectedPatterns.map(p => p.type),
+        score: result.score,
+        timestamp: Date.now()
+      });
+      
+      // Limit training data size
+      if (this.trainingData.length > 1000) {
+        this.trainingData.shift();
+      }
+    } catch (error) {
+      AppLogger.debug("Error adding to training data:", error);
+    }
+  }
+
+  /**
+   * Process training data to update pattern weights
+   */
+  private processTrainingData(): void {
+    if (this.trainingData.length < 100 || 
+        Date.now() - this.lastTrainingTime < 24 * 60 * 60 * 1000) {
+      return;
+    }
+    
+    this.lastTrainingTime = Date.now();
+    AppLogger.info(`Processing ${this.trainingData.length} training data points`);
+    
+    try {
+      // Count pattern occurrences in malicious URLs
+      const patternCounts = new Map<MaliciousPatternType, number>();
+      const maliciousPatternCounts = new Map<MaliciousPatternType, number>();
+      
+      this.trainingData.forEach(data => {
+        data.detectedPatternTypes.forEach(type => {
+          patternCounts.set(type, (patternCounts.get(type) || 0) + 1);
+          
+          if (data.isMalicious) {
+            maliciousPatternCounts.set(type, (maliciousPatternCounts.get(type) || 0) + 1);
+          }
+        });
+      });
+      
+      // Update pattern weights based on correlation with malicious URLs
+      patternCounts.forEach((count, type) => {
+        const maliciousCount = maliciousPatternCounts.get(type) || 0;
+        const correlation = maliciousCount / count;
+        
+        // Update weight - patterns more correlated with malicious URLs get higher weights
+        let weight = 1.0;
+        if (correlation > 0.8) {
+          weight = 2.0; // Strongly correlated with malicious URLs
+        } else if (correlation > 0.5) {
+          weight = 1.5; // Moderately correlated
+        } else if (correlation < 0.2 && count > 10) {
+          weight = 0.7; // Weakly correlated (many false positives)
+        }
+        
+        this.patternWeights.set(type, weight);
+        AppLogger.debug(`Updated weight for ${type}: ${weight} (correlation: ${correlation.toFixed(2)})`);
+      });
+      
+      // Update zero-knowledge patterns based on clustering
+      this.updateZeroKnowledgePatterns();
+    } catch (error) {
+      AppLogger.error("Error processing training data:", error);
+    }
+  }
+
+  /**
+   * Update zero-knowledge patterns based on clustering
+   */
+  private updateZeroKnowledgePatterns(): void {
+    // Simple clustering of URL features from malicious URLs
+    const maliciousData = this.trainingData.filter(data => data.isMalicious);
+    
+    if (maliciousData.length < 20) {
+      return;
+    }
+    
+    // Extract common patterns from malicious URLs
+    const patterns: RegExp[] = [];
+    const tokens: string[] = [];
+    
+    maliciousData.forEach(data => {
+      // Extract repeating patterns
+      const url = data.url;
+      const matches = url.match(/([\/\?&=][^\/\?&=]{3,})/g);
+      
+      if (matches) {
+        matches.forEach(match => {
+          // Check if this pattern appears in multiple malicious URLs
+          const occurrences = maliciousData.filter(d => d.url.includes(match)).length;
+          
+          if (occurrences >= 3 && match.length >= 5) {
+            // This might be a meaningful pattern
+            try {
+              const escaped = match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              patterns.push(new RegExp(escaped, 'i'));
+              tokens.push(match);
+            } catch {
+              // Ignore regex errors
+            }
+          }
+        });
+      }
+    });
+    
+    // Create new pattern cluster
+    if (patterns.length > 0) {
+      this.zeroKnowledgePatterns.patternClusters.push({
+        patterns,
+        tokens,
+        created: Date.now()
+      });
+      
+      AppLogger.info(`Created new zero-knowledge pattern cluster with ${patterns.length} patterns`);
+    }
+    
+    // Limit number of clusters
+    if (this.zeroKnowledgePatterns.patternClusters.length > 10) {
+      // Remove oldest cluster
+      this.zeroKnowledgePatterns.patternClusters.shift();
+    }
+  }
+
+  /**
+   * Initialize pattern weights
+   */
+  private initializePatternWeights(): void {
+    // Set initial weights based on severity
+    Object.values(MaliciousPatternType).forEach(type => {
+      let weight = 1.0;
+      
+      // Prioritize critical vulnerabilities
+      switch (type) {
+        case MaliciousPatternType.PROTOTYPE_POLLUTION:
+        case MaliciousPatternType.COMMAND_INJECTION:
+        case MaliciousPatternType.DESERIALIZATION:
+        case MaliciousPatternType.RCE:
+        case MaliciousPatternType.ZERO_DAY:
+        case MaliciousPatternType.RANSOMWARE:
+          weight = 2.0;
+          break;
+          
+        case MaliciousPatternType.SQL_INJECTION:
+        case MaliciousPatternType.XSS:
+        case MaliciousPatternType.SSRF:
+        case MaliciousPatternType.JWT_MANIPULATION:
+        case MaliciousPatternType.PATH_TRAVERSAL:
+          weight = 1.5;
+          break;
+          
+        case MaliciousPatternType.SUSPICIOUS_DOMAIN:
+        case MaliciousPatternType.SUSPICIOUS_IP:
+        case MaliciousPatternType.ANOMALY_DETECTED:
+          weight = 1.2;
+          break;
+      }
+      
+      this.patternWeights.set(type, weight);
+    });
+  }
+
+  /**
+   * Initialize worker pool for parallel processing
+   */
+  private initializeWorkerPool(): void {
+    for (let i = 0; i < this.MAX_WORKERS; i++) {
+      this.workerPool.push({ id: i, busy: false });
+    }
+    AppLogger.debug(`Initialized worker pool with ${this.MAX_WORKERS} workers`);
+  }
+
+  /**
+   * Initialize zero knowledge patterns
+   */
+  private initializeZeroKnowledgePatterns(): void {
+    // Set initial anomaly thresholds
+    this.zeroKnowledgePatterns.anomalyThresholds.set("entropy", 5.0);
+    this.zeroKnowledgePatterns.anomalyThresholds.set("specialCharRatio", 0.3);
+    this.zeroKnowledgePatterns.anomalyThresholds.set("encodedCharRatio", 0.2);
+    this.zeroKnowledgePatterns.anomalyThresholds.set("digitRatio", 0.4);
+    
+    AppLogger.debug("Initialized zero knowledge patterns");
+  }
+
+  /**
+   * Load threat signatures from configuration
+   */
+  private loadThreatSignatures(): void {
+    // Example threat signatures
+    const signatures: ThreatSignature[] = [
+      {
+        id: "ts001",
+        name: "Log4Shell Exploitation",
+        description: "Detects Log4j JNDI exploitation attempts",
+        patternType: MaliciousPatternType.ZERO_DAY,
+        severity: "high",
+        confidence: "high",
+        matches: (url, features) => {
+          return /jndi:(?:ldap|rmi|dns)/.test(url);
+        }
+      },
+      {
+        id: "ts002",
+        name: "Spring4Shell Exploitation",
+        description: "Detects Spring4Shell exploitation attempts",
+        patternType: MaliciousPatternType.ZERO_DAY,
+        severity: "high",
+        confidence: "high",
+        matches: (url, features) => {
+          return /class\.module\.classLoader\.resources\.context\.parent\.pipeline\.first\.pattern/.test(url);
+        }
+      },
+      {
+        id: "ts003",
+        name: "High Entropy Content",
+        description: "Detects anomalously high entropy content in URL components",
+        patternType: MaliciousPatternType.ANOMALY_DETECTED,
+        severity: "medium",
+        confidence: "medium",
+        matches: (url, features) => {
+          return features.entropy > 5.5 && features.length > 100;
+        }
+      },
+      {
+        id: "ts004",
+        name: "Suspicious Domain Pattern",
+        description: "Domain exhibits characteristics common to malicious sites",
+        patternType: MaliciousPatternType.SUSPICIOUS_DOMAIN,
+        severity: "medium",
+        confidence: "medium",
+        matches: (url, features) => {
+          try {
+            const domain = new URL(url).hostname;
+            // Check for random-looking domains
+            return /[a-z0-9]{10,}\./.test(domain) && features.entropy > 4.0;
+          } catch {
+            return false;
+          }
+        }
+      },
+      {
+        id: "ts005",
+        name: "Advanced XSS Vector",
+        description: "Advanced Cross-Site Scripting (XSS) payload",
+        patternType: MaliciousPatternType.XSS,
+        severity: "high",
+        confidence: "high",
+        matches: (url, features) => {
+          return /on(?:load|error|click|mouseover)=.*?(?:alert|confirm|prompt|eval|document\.|window\.|fetch)/.test(url);
+        }
+      }
+    ];
+    
+    signatures.forEach(signature => {
+      this.threatSignatures.set(signature.id, signature);
+    });
+    
+    AppLogger.debug(`Loaded ${signatures.length} threat signatures`);
+  }
+
+  /**
+   * Update AI models and patterns periodically
+   */
+  private updateModels(): void {
+    this.lastModelUpdate = Date.now();
+    AppLogger.info("Updating AI models and patterns");
+    
+    // Update emergency patterns with new zero-day vulnerabilities
+    this.updateEmergencyPatterns();
+    
+    // Process training data to improve detection
+    this.processTrainingData();
+    
+    // Update pattern weights
+    this.updatePatternWeights();
+  }
+
+  /**
+   * Update emergency patterns with new zero-day vulnerabilities
+   */
+  private updateEmergencyPatterns(): void {
+    // Here you would typically fetch new patterns from a central server
+    // For demonstration, we'll add some additional patterns
+    
+    const newPatterns: RegExp[] = [
+      // New prototype pollution variants
+      /\.__proto__\.(?!constructor|hasOwnProperty)/i,
+      /constructor\.prototype\.[a-zA-Z]+=/i,
+      
+      // New code injection patterns
+      /setTimeout\(["'](?:\\/\\*)?.*(?:\\*\\/)?["']\)/i,
+      /import\(['"]data:/i,
+      
+      // New web attack patterns
+      /<(?:svg|img|iframe).*on(?:load|error)=/i,
+      /document\.write\s*\(/i
+    ];
+    
+    // Add new patterns that aren't already included
+    newPatterns.forEach(pattern => {
+      if (!this.emergencyPatterns.some(p => p.source === pattern.source)) {
+        this.emergencyPatterns.push(pattern);
+      }
+    });
+    
+    AppLogger.debug(`Updated emergency patterns, now have ${this.emergencyPatterns.length} patterns`);
+  }
+
+  /**
+   * Update pattern weights based on historical performance
+   */
+  private updatePatternWeights(): void {
+    // This would typically analyze false positive/negative rates
+    // For now, just slightly adjust weights based on predefined logic
+    
+    this.patternWeights.forEach((weight, type) => {
+      // Slightly increase weights for critical vulnerabilities
+      if ([
+        MaliciousPatternType.ZERO_DAY,
+        MaliciousPatternType.COMMAND_INJECTION,
+        MaliciousPatternType.PROTOTYPE_POLLUTION
+      ].includes(type)) {
+        this.patternWeights.set(type, Math.min(weight * 1.05, 3.0));
+      }
+    });
+  }
+
+  /**
+   * Initialize critical emergency patterns
+   */
+  private initializeEmergencyPatterns(): void {
+    // Add more patterns for critical vulnerabilities
+    this.emergencyPatterns.push(
+      // Node.js prototype pollution
+      /__proto__\.constructor\.prototype/i,
+      // PHP object injection
+      /O:[0-9]+:"[^"]+":[0-9]+:\{/i,
+      // Server-side template injection
+      /\{\{[\s\S]*?\}\}/i,
+      // XXE attack
+      /<!ENTITY\s+[\w%]\s+SYSTEM/i,
+      // GraphQL introspection
+      /\{\s*__schema\s*\{/i
+    );
+    
+    AppLogger.debug(`Initialized ${this.emergencyPatterns.length} emergency patterns`);
+  }
+
+  /**
+   * Create URL hash for tracking and caching
+   */
+  private createUrlHash(url: string): string {
+    try {
+      return crypto.createHash('sha256').update(url).digest('hex').substring(0, 16);
+    } catch {
+      // Simple fallback if crypto is not available
+      let hash = 0;
+      for (let i = 0; i < url.length; i++) {
+        const char = url.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString(16);
+    }
+  }
+
+  /**
+   * Get current performance statistics
+   */
+  public getPerformanceStats(): PerformanceStats {
+    return { ...this.performanceStats };
+  }
+
+  /**
+   * Get distributed threat intelligence statistics
+   */
+  public getThreatIntelStats(): {
+    totalEntries: number;
+    knownMaliciousDomains: number;
+    knownMaliciousPatterns: number;
+  } {
+    let knownMaliciousDomains = 0;
+    let knownMaliciousPatterns = 0;
+    
+    this.distributedThreatDB.forEach((entry, key) => {
+      if (entry.maliciousScore > 0.5) {
+        if (!key.includes(':')) {
+          knownMaliciousDomains++;
+        } else {
+          knownMaliciousPatterns++;
+        }
+      }
+    });
+    
+    return {
+      totalEntries: this.distributedThreatDB.size,
+      knownMaliciousDomains,
+      knownMaliciousPatterns
+    };
+  }
+
+  /**
+   * Integrate with NSB to enhance its capabilities
+   */
+  public static integrateWithNSB(): void {
+    const naise = NAISE.getInstance();
+    
+    // Monkey patch NSB.analyzeUrl to enhance it
+    const originalAnalyzeUrl = NSB.analyzeUrl;
+    NSB.analyzeUrl = async function(input: string, options: MaliciousPatternOptions = {}): Promise<MaliciousPatternResult> {
+      // Call original method first
+      const basicResult = await 

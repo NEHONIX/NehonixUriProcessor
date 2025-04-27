@@ -31,7 +31,7 @@ export class AppLogger {
     colorize: true,
     prefix: "",
   };
-  static debugs_state = false;
+  static debugs_state = true;
   /**
    * Configure logger options
    */
