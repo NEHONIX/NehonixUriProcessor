@@ -3,3 +3,5 @@
 /private
 *.private.*
 *.tgz
+.venv
+/.venv
