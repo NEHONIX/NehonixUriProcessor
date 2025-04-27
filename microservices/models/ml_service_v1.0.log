@@ -1,43 +1,197 @@
-2025-04-27 00:57:36 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 00:57:36 [INFO] Processing training data 
-2025-04-27 00:58:35 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 00:58:35 [INFO] Processing training data 
-2025-04-27 01:01:39 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 200}}
-2025-04-27 01:02:23 [INFO] Cross-validation completed {"cv_scores": [0.9999984375000001, 0.9999984375000001, 1.0, 1.0, 1.0], "mean_cv_score": 0.999999375}
-2025-04-27 01:02:41 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 1.0, "validation_accuracy": 1.0, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 245.18187618255615, "top_features": ["special_char_ratio", "param_count", "query_length", "suspicious_keyword_count", "subdomain_count", "length", "entropy", "domain_similarity", "path_length", "percent_encoded_chars"]}
-2025-04-27 01:05:57 [INFO] Model and scaler loaded 
-2025-04-27 01:05:57 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.17324376106262207}
-2025-04-27 01:07:22 [INFO] Model and scaler loaded 
-2025-04-27 01:07:22 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.12629055976867676}
-2025-04-27 01:12:51 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 01:12:51 [INFO] Processing training data 
-2025-04-27 01:14:18 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 100}}
-2025-04-27 01:14:31 [INFO] Cross-validation completed {"cv_scores": [0.9999953125, 1.0, 0.999996875, 1.0, 0.999996875], "mean_cv_score": 0.9999978125}
-2025-04-27 01:14:45 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 1.0, "validation_accuracy": 0.999, "auc_score": 0.9999979999999999, "pr_auc": 0.9999979999990001, "training_time_sec": 114.14553689956665, "top_features": ["special_char_ratio", "param_count", "length", "entropy", "subdomain_count", "query_length", "domain_similarity", "domain_length", "digit_ratio", "path_depth"]}
-2025-04-27 01:15:17 [INFO] Model and scaler loaded 
-2025-04-27 01:15:17 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.14197564125061035}
-2025-04-27 01:22:08 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 01:22:08 [INFO] Processing training data 
-2025-04-27 01:23:55 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 100}}
-2025-04-27 01:24:10 [INFO] Cross-validation completed {"cv_scores": [0.9999953125, 1.0, 0.999996875, 1.0, 0.999996875], "mean_cv_score": 0.9999978125}
-2025-04-27 01:26:00 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 01:26:00 [INFO] Processing training data 
-2025-04-27 01:27:37 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 200}}
-2025-04-27 01:28:00 [INFO] Cross-validation completed {"cv_scores": [0.999996875, 1.0, 0.999953125, 1.0, 0.9999984375], "mean_cv_score": 0.9999896875000001}
-2025-04-27 01:28:18 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.999875, "validation_accuracy": 0.9995, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 137.70482754707336, "top_features": ["special_char_ratio", "param_count", "entropy", "query_length", "length", "digit_ratio", "subdomain_count", "domain_similarity", "domain_length", "path_depth"]}
-2025-04-27 01:28:41 [INFO] Model and scaler loaded 
-2025-04-27 01:28:41 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.23608756065368652}
-2025-04-27 01:39:39 [ERROR] Training data file not found {"path": "microservices/training_data/url_training_data.json"}
-2025-04-27 01:39:43 [INFO] Model and scaler loaded 
-2025-04-27 01:39:43 [INFO] Prediction completed {"num_samples": 4, "prediction_time_sec": 0.11376190185546875}
-2025-04-27 01:41:55 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 01:41:55 [INFO] Processing training data 
-2025-04-27 01:44:04 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 5, "xgb__n_estimators": 200}}
-2025-04-27 01:44:35 [INFO] Cross-validation completed {"cv_scores": [0.9999796875000001, 0.999853125, 0.9999546874999999, 0.999903125, 0.9999875000000001], "mean_cv_score": 0.999935625}
-2025-04-27 01:45:00 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
-2025-04-27 01:45:00 [INFO] Processing training data 
-2025-04-27 01:46:38 [INFO] Best hyperparameters {"params": {"rf__max_depth": 10, "rf__n_estimators": 100, "xgb__max_depth": 3, "xgb__n_estimators": 200}}
-2025-04-27 01:46:54 [INFO] Cross-validation completed {"cv_scores": [1.0, 0.9999875, 0.9999984375000002, 0.9999750000000001, 1.0], "mean_cv_score": 0.9999921875}
-2025-04-27 01:47:14 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.99925, "validation_accuracy": 0.9975, "auc_score": 0.999985, "pr_auc": 0.9999850818180847, "training_time_sec": 133.61971616744995, "top_features": ["special_char_ratio", "entropy", "param_count", "subdomain_count", "domain_similarity", "query_length", "path_depth", "percent_encoded_chars", "digit_ratio", "length"]}
-2025-04-27 01:47:20 [INFO] Model and scaler loaded 
-2025-04-27 01:47:20 [INFO] Prediction completed {"num_samples": 8, "prediction_time_sec": 0.09719491004943848}
+2025-04-27 13:49:13 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 13:49:13 [INFO] Processing training data 
+2025-04-27 13:49:13 [ERROR] Training failed {"error": "bad escape \\p at position 12"}
+2025-04-27 13:54:47 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 13:54:47 [INFO] Processing training data 
+2025-04-27 13:54:48 [ERROR] Training failed {"error": "bad escape \\p at position 12"}
+2025-04-27 13:57:19 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 13:57:19 [INFO] Processing training data 
+2025-04-27 13:57:20 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 14:02:36 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 14:02:36 [INFO] Processing training data 
+2025-04-27 14:02:37 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 14:11:41 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 14:11:41 [INFO] Processing training data 
+2025-04-27 14:11:42 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 14:12:01 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 14:12:01 [INFO] Processing training data 
+2025-04-27 14:12:01 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 14:38:19 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 14:38:19 [INFO] Processing training data 
+2025-04-27 14:38:19 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 14:40:09 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 14:40:09 [INFO] Processing training data 
+2025-04-27 14:40:10 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 14:42:48 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 14:42:48 [INFO] Processing training data 
+2025-04-27 14:49:46 [INFO] Applied SMOTE for data balancing {"new_sample_count": 10000}
+2025-04-27 14:50:08 [INFO] Best hyperparameters {"params": {"rf__max_depth": 5, "rf__n_estimators": 50, "xgb__max_depth": 3, "xgb__n_estimators": 100}}
+2025-04-27 14:50:10 [INFO] Cross-validation completed {"cv_scores": [0.9999999999999999, 0.9999125, 0.9998593750000001, 0.9999984375, 1.0], "mean_cv_score": 0.9999540625}
+2025-04-27 14:50:28 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.999875, "validation_accuracy": 1.0, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 460.1492917537689, "top_features": ["special_char_ratio", "avg_param_length", "subdomain_count", "domain_similarity", "param_count", "domain_length", "query_length", "suspicious_keyword_count", "attack_pattern_count", "entropy"]}
+2025-04-27 15:02:10 [INFO] Model and scaler loaded 
+2025-04-27 15:02:11 [ERROR] Prediction failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 15:03:32 [INFO] Model and scaler loaded 
+2025-04-27 15:06:06 [INFO] Model and scaler loaded 
+2025-04-27 15:06:39 [INFO] Model and scaler loaded 
+2025-04-27 15:08:29 [INFO] Model and scaler loaded 
+2025-04-27 15:08:57 [INFO] Model and scaler loaded 
+2025-04-27 15:08:57 [ERROR] Prediction failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 15:09:31 [INFO] Model and scaler loaded 
+2025-04-27 15:10:08 [INFO] Model and scaler loaded 
+2025-04-27 15:10:52 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 15:10:52 [INFO] Processing training data 
+2025-04-27 15:27:43 [INFO] Applied SMOTE for data balancing {"new_sample_count": 10000}
+2025-04-27 15:28:06 [INFO] Best hyperparameters {"params": {"rf__max_depth": 8, "rf__n_estimators": 100, "xgb__max_depth": 2, "xgb__n_estimators": 100}}
+2025-04-27 15:28:09 [INFO] Cross-validation completed {"cv_scores": [0.99999375, 0.9999625, 0.9998859375, 0.9999984375000001, 1.0], "mean_cv_score": 0.9999681249999999}
+2025-04-27 15:28:32 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.9995, "validation_accuracy": 0.999, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 1060.3839919567108, "top_features": ["special_char_ratio", "avg_param_length", "subdomain_count", "domain_similarity", "param_count", "domain_length", "has_xxe", "suspicious_keyword_count", "targets_cloud_metadata", "hex_ratio"]}
+2025-04-27 15:29:55 [INFO] Model and scaler loaded 
+2025-04-27 15:41:05 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 15:41:05 [INFO] Processing training data 
+2025-04-27 15:41:05 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 15:41:48 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 15:41:48 [INFO] Processing training data 
+2025-04-27 15:41:48 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 15:42:12 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 15:42:12 [INFO] Processing training data 
+2025-04-27 15:57:15 [INFO] Applied SMOTE for data balancing {"new_sample_count": 10000}
+2025-04-27 15:57:36 [INFO] Best hyperparameters {"params": {"rf__max_depth": 8, "rf__n_estimators": 100, "xgb__max_depth": 2, "xgb__n_estimators": 100}}
+2025-04-27 15:57:39 [INFO] Cross-validation completed {"cv_scores": [0.99999375, 0.9999625, 0.9998859375, 0.9999984375000001, 1.0], "mean_cv_score": 0.9999681249999999}
+2025-04-27 15:58:00 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.9995, "validation_accuracy": 0.999, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 947.9873275756836, "top_features": ["special_char_ratio", "avg_param_length", "subdomain_count", "domain_similarity", "param_count", "domain_length", "has_xxe", "suspicious_keyword_count", "targets_cloud_metadata", "hex_ratio"]}
+2025-04-27 16:11:55 [INFO] Model and scaler loaded 
+2025-04-27 16:47:41 [INFO] Model and scaler loaded 
+2025-04-27 16:54:51 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:54:51 [INFO] Processing training data 
+2025-04-27 16:55:20 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:55:20 [INFO] Processing training data 
+2025-04-27 16:55:20 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 16:56:12 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:56:12 [INFO] Processing training data 
+2025-04-27 16:56:12 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 16:56:24 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:56:24 [INFO] Processing training data 
+2025-04-27 16:56:24 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 16:56:46 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:56:46 [INFO] Processing training data 
+2025-04-27 16:57:06 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:57:06 [INFO] Processing training data 
+2025-04-27 16:57:06 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 16:57:22 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:57:22 [INFO] Processing training data 
+2025-04-27 16:57:22 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 16:57:44 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:57:44 [INFO] Processing training data 
+2025-04-27 16:57:44 [ERROR] Training failed {"error": "invalid group reference 2 at position 66"}
+2025-04-27 16:58:03 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:58:04 [INFO] Processing training data 
+2025-04-27 16:58:05 [ERROR] Training failed {"error": "invalid group reference 2 at position 67"}
+2025-04-27 16:58:16 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:58:16 [INFO] Processing training data 
+2025-04-27 16:58:16 [ERROR] Training failed {"error": "invalid group reference 2 at position 62"}
+2025-04-27 16:58:49 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:58:49 [INFO] Processing training data 
+2025-04-27 16:59:58 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 16:59:58 [INFO] Processing training data 
+2025-04-27 16:59:59 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:00:49 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:00:49 [INFO] Processing training data 
+2025-04-27 17:00:50 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:01:08 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:01:08 [INFO] Processing training data 
+2025-04-27 17:01:08 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:01:16 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:01:16 [INFO] Processing training data 
+2025-04-27 17:01:16 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:01:28 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:01:28 [INFO] Processing training data 
+2025-04-27 17:01:29 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:01:42 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:01:42 [INFO] Processing training data 
+2025-04-27 17:01:42 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:01:55 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:01:55 [INFO] Processing training data 
+2025-04-27 17:01:56 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:02:11 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:02:11 [INFO] Processing training data 
+2025-04-27 17:02:11 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:02:20 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:02:20 [INFO] Processing training data 
+2025-04-27 17:02:20 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:02:40 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:02:40 [INFO] Processing training data 
+2025-04-27 17:03:02 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:03:02 [INFO] Processing training data 
+2025-04-27 17:03:02 [ERROR] Training failed {"error": "invalid group reference 2 at position 66"}
+2025-04-27 17:03:16 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:03:16 [INFO] Processing training data 
+2025-04-27 17:03:16 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:03:31 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:03:31 [INFO] Processing training data 
+2025-04-27 17:03:31 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 17:03:43 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 17:03:43 [INFO] Processing training data 
+2025-04-27 20:10:39 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:10:39 [INFO] Processing training data 
+2025-04-27 20:11:49 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:11:49 [INFO] Processing training data 
+2025-04-27 20:11:49 [ERROR] Training failed {"error": "invalid group reference 2 at position 62"}
+2025-04-27 20:12:07 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:12:07 [INFO] Processing training data 
+2025-04-27 20:12:07 [ERROR] Training failed {"error": "invalid group reference 2 at position 62"}
+2025-04-27 20:12:22 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:12:22 [INFO] Processing training data 
+2025-04-27 20:12:23 [ERROR] Training failed {"error": "invalid group reference 2 at position 62"}
+2025-04-27 20:12:32 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:12:32 [INFO] Processing training data 
+2025-04-27 20:12:33 [ERROR] Training failed {"error": "invalid group reference 2 at position 62"}
+2025-04-27 20:12:45 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:12:45 [INFO] Processing training data 
+2025-04-27 20:13:32 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:13:32 [INFO] Processing training data 
+2025-04-27 20:13:32 [ERROR] Training failed {"error": "invalid group reference 2 at position 71"}
+2025-04-27 20:14:38 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:14:38 [INFO] Processing training data 
+2025-04-27 20:16:10 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:16:10 [INFO] Processing training data 
+2025-04-27 20:16:37 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:16:37 [INFO] Processing training data 
+2025-04-27 20:17:48 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:17:48 [INFO] Processing training data 
+2025-04-27 20:19:46 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:19:46 [INFO] Processing training data 
+2025-04-27 20:35:40 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 20:35:40 [INFO] Processing training data 
+2025-04-27 20:53:09 [INFO] Applied SMOTE for data balancing {"new_sample_count": 10000}
+2025-04-27 20:53:32 [INFO] Best hyperparameters {"params": {"rf__max_depth": 8, "rf__n_estimators": 100, "xgb__max_depth": 2, "xgb__n_estimators": 100}}
+2025-04-27 20:53:35 [INFO] Cross-validation completed {"cv_scores": [0.9999921874999999, 0.9999578125, 0.9999125000000001, 0.9999984375, 1.0], "mean_cv_score": 0.9999721874999998}
+2025-04-27 20:53:54 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.9995, "validation_accuracy": 0.999, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 1093.8914654254913, "top_features": ["special_char_ratio", "avg_param_length", "subdomain_count", "domain_similarity", "param_count", "domain_length", "has_xxe", "suspicious_keyword_count", "unusual_port", "percent_encoded_chars"]}
+2025-04-27 20:53:57 [INFO] Model and scaler loaded 
+2025-04-27 21:38:51 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:38:51 [INFO] Processing training data 
+2025-04-27 21:38:51 [ERROR] Training failed {"error": "look-behind requires fixed-width pattern"}
+2025-04-27 21:38:54 [ERROR] Prediction failed {"error": "[Errno 2] No such file or directory: 'microservices/models/ml_model_v1.0.joblib'"}
+2025-04-27 21:41:54 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:41:54 [INFO] Processing training data 
+2025-04-27 21:41:54 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 21:41:56 [ERROR] Prediction failed {"error": "[Errno 2] No such file or directory: 'microservices/models/ml_model_v1.0.joblib'"}
+2025-04-27 21:42:35 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:42:35 [INFO] Processing training data 
+2025-04-27 21:42:35 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 21:43:13 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:43:13 [INFO] Processing training data 
+2025-04-27 21:43:13 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 21:43:36 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:43:36 [INFO] Processing training data 
+2025-04-27 21:43:36 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 21:44:01 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:44:01 [INFO] Processing training data 
+2025-04-27 21:44:53 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:44:53 [INFO] Processing training data 
+2025-04-27 21:44:53 [ERROR] Training failed {"error": "first argument must be string or compiled pattern"}
+2025-04-27 21:44:56 [ERROR] Prediction failed {"error": "[Errno 2] No such file or directory: 'microservices/models/ml_model_v1.0.joblib'"}
+2025-04-27 21:45:18 [INFO] Loaded training data {"num_samples": 10000, "num_malicious": 5000}
+2025-04-27 21:45:18 [INFO] Processing training data 
+2025-04-27 22:07:49 [INFO] Applied SMOTE for data balancing {"new_sample_count": 10000}
+2025-04-27 22:08:34 [INFO] Best hyperparameters {"params": {"rf__max_depth": 8, "rf__n_estimators": 100, "xgb__max_depth": 2, "xgb__n_estimators": 100}}
+2025-04-27 22:08:41 [INFO] Cross-validation completed {"cv_scores": [0.9999921874999999, 0.9999578125, 0.9999125000000001, 0.9999984375, 1.0], "mean_cv_score": 0.9999721874999998}
+2025-04-27 22:09:13 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.9995, "validation_accuracy": 0.999, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 1434.648419380188, "top_features": ["special_char_ratio", "avg_param_length", "subdomain_count", "domain_similarity", "param_count", "domain_length", "has_xxe", "suspicious_keyword_count", "unusual_port", "percent_encoded_chars"]}
+2025-04-27 22:09:16 [INFO] Model and scaler loaded 

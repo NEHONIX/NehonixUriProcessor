@@ -1,6 +1,6 @@
 import { AppLogger } from "../common/AppLogger";
 import { MaliciousComponentType } from "../types/v2.2.0";
-import { PARTTERNS } from "../utils/attacks_parttens";
+import { PATTERNS } from "../utils/attacks_parttens";
 import {
   MaliciousPatternResult,
   DetectedPattern,
@@ -108,7 +108,7 @@ export class NSB extends NSS {
   }
 
   private initializeDynamicPatterns(): void {
-    Object.entries(PARTTERNS).forEach(([key, patterns]) => {
+    Object.entries(PATTERNS).forEach(([key, patterns]) => {
       const type = key
         .replace("_PATTERNS", "")
         .toLowerCase() as MaliciousPatternType;

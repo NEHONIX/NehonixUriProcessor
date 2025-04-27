@@ -1,6 +1,6 @@
 import { AppLogger } from "../common/AppLogger";
 import { MaliciousComponentType } from "../types/v2.2.0";
-import { PARTTERNS } from "../utils/attacks_parttens";
+import { PATTERNS } from "../utils/attacks_parttens";
 import {
   ContextAnalysisResult,
   DetectedPattern,
@@ -13,7 +13,7 @@ import NSS from "../services/NehonixSecurity.service";
 
 export class NMPSUtils {
   private static SUSPICIOUS_PARAMETER_NAMES =
-    PARTTERNS.SUSPICIOUS_PARAMETER_NAMES;
+    PATTERNS.SUSPICIOUS_PARAMETER_NAMES;
   static sanitizeInput: typeof NSS.sanitizeInput;
   constructor(sanitizeInput: typeof NSS.sanitizeInput) {
     NMPSUtils.sanitizeInput = sanitizeInput;
