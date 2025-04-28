@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { ShieldContextType } from "./provider.type";
+import { ExtendedShieldContextType, ShieldContextType } from "./provider.type";
 import { NehonixShieldContext } from "./REACT_UTIL";
 
 /**
@@ -7,7 +7,7 @@ import { NehonixShieldContext } from "./REACT_UTIL";
  * @returns NSB context methods
  * @throws Error if used outside NsbSecurityProvider
  */
-export const useNehonixShield = (): ShieldContextType => {
+export const useNehonixShield = (): ExtendedShieldContextType => {
   const context = useContext(NehonixShieldContext);
   if (!context) {
     throw new Error(
@@ -16,3 +16,16 @@ export const useNehonixShield = (): ShieldContextType => {
   }
   return context;
 };
+
+// /**
+//  * Custom hook to use the Nehonix Shield context
+//  */
+// export const useNehonixShield = () => {
+//   const context = React.useContext(NehonixShieldContext);
+//   if (context === undefined) {
+//     throw new Error(
+//       "useNehonixShield must be used within a NehonixShieldProvider"
+//     );
+//   }
+//   return context;
+// };

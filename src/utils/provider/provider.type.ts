@@ -34,3 +34,49 @@ export interface ShieldContextType {
     ...p: Parameters<typeof NSB.analyzeUrl>
   ) => ReturnType<typeof NSB.analyzeUrl>;
 }
+
+
+
+/**
+ * Extended Shield Context Type
+ */
+export interface ExtendedShieldContextType extends ShieldContextType {
+  analyzeDom: (options?: DomAnalysisOptions) => Promise<MaliciousPatternResult>;
+  analyzeRequests: (options?: RequestAnalysisOptions) => void;
+  stopRequestAnalysis: () => void;
+  blockingEnabled: boolean;
+  setBlockingEnabled: (enabled: boolean) => void;
+  lastAnalysisResult: MaliciousPatternResult | null;
+  isAnalyzing: boolean;
+}
+
+/**
+ * DOM Analysis Options
+ */
+export interface DomAnalysisOptions extends MaliciousPatternOptions {
+  targetSelector?: string;
+  includeAttributes?: boolean;
+  includeScripts?: boolean;
+  includeLinks?: boolean;
+  scanIframes?: boolean;
+}
+
+/**
+ * Request Analysis Options
+ */
+export interface RequestAnalysisOptions extends MaliciousPatternOptions {
+  includeXHR?: boolean;
+  includeFetch?: boolean;
+  includeImages?: boolean;
+  includeScripts?: boolean;
+  blockOnMalicious?: boolean;
+}
+
+/**
+ * NSB provider props
+ */
+export interface NsbProviderProps {
+  children: React.ReactNode;
+  defaultOptions?: MaliciousPatternOptions;
+  autoBlocking?: boolean;
+}

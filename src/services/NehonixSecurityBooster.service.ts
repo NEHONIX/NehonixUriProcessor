@@ -39,7 +39,7 @@ export class NSB extends NSS {
 
   private static threatIntel: Map<string, ThreatIntelEntry> = new Map();
   //TODO: creat build in service
-  private static virusTotalApiKey: string | undefined = ""; 
+  private static virusTotalApiKey: string | undefined = "";
 
   private static metrics: PerformanceMetrics = {
     cacheHits: 0,
@@ -147,7 +147,7 @@ export class NSB extends NSS {
       const cacheKey = `${input}:${JSON.stringify(options)}`;
       let url = (await NDS.asyncDecodeAnyToPlainText(input)).val();
       const checkUrl = ncu.checkUrl(url, this.default_checkurl_opt);
-      if (!(await checkUrl).isValid) {
+      if (!checkUrl.isValid) {
         url = `http://mock.nehonix.space?q=${url}`;
       }
       if (NSB.analysisCache.has(cacheKey)) {

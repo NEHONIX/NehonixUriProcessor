@@ -438,7 +438,7 @@ class NehonixURIProcessor {
 }
 
 export { NehonixURIProcessor };
-//v2.2.0
+//v2
 export { MaliciousPatternType } from "./services/MaliciousPatterns.service";
 export type { MaliciousPatternResult } from "./services/MaliciousPatterns.service";
 /**
@@ -452,9 +452,12 @@ export type { MaliciousPatternResult } from "./services/MaliciousPatterns.servic
  */
 export const __safeEncode__ = NehonixSafetyLayer.__safeEncode__;
 export { NehonixURIProcessor as __processor__ };
-export { NehonixShieldProvider } from "./utils/provider/REACT_UTIL";
-export { useNehonixShield } from "./utils/provider/REACT_HOOK";
+export * from "./utils/provider/REACT_UTIL";
+export * from "./utils/provider/REACT_HOOK";
 export * from "./utils/provider/express.middleware";
+export * from "./utils/provider/REACT.NehonixDomProtector";
+export * from "./utils/provider/REACT.RequestProtector";
+export * from "./utils/provider/REACT.NehonixProtector";
 export const decodeB64 = (input: string) =>
   NDS.decode({
     input,

@@ -2,7 +2,7 @@
 
 A comprehensive TypeScript library for detecting, decoding, and encoding various URI encoding schemes. This utility is designed for security testing, web application penetration testing, and analyzing potential attacks, with powerful auto-detection and decoding capabilities.
 
-**Version**: 2.3.1
+**Version**: 2.2.0  
 **License**: MIT  
 **Documentation**: [lab.nehonix.space](https://lab.nehonix.space/nehonix_viewer/_doc/NehonixUriProcessor/readme)
 
@@ -28,7 +28,7 @@ A comprehensive TypeScript library for detecting, decoding, and encoding various
     - [`detectMaliciousPatterns(input: string, options?: MaliciousPatternOptions)`](#detectmaliciouspatternsinput-string-options-maliciouspatternoptions)
   - [Framework Integrations](#framework-integrations)
     - [Express Middleware](#express-middleware)
-    - [React Utils](#react-utils)
+    - [React Hook](#react-hook)
 - [Supported Encoding Types](#supported-encoding-types)
 - [Detection Capabilities](#detection-capabilities)
 - [Security Testing Features](#security-testing-features)
@@ -653,25 +653,11 @@ app.get("/", (req, res) => res.send("Hello world"));
 app.listen(3000, () => console.log("Server running on port 3000"));
 ```
 
-#### React Utils
+#### React Hook
 
-## Overview
+Validate and decode URIs in React applications.
 
-The NSB DOM & Request Analysis feature enhances web application security by adding real-time scanning of DOM elements and network requests. This feature builds upon the existing Nehonix Security Booster framework to detect and block malicious content before it reaches the user.
-
-## Features
-
-- **DOM Analysis**: Scan the document object model for malicious patterns
-- **Request Monitoring**: Analyze network requests in real-time
-- **Automatic Protection**: Components for easy integration of security features
-- **Blocking Capability**: Optionally block and alert on malicious content
-- **Developer Controls**: Toggle security features and access analysis results
-
-## Quick Start
-
-Wrap your application in the `NehonixShieldProvider` to enable security features:
-
-- **Basic Usage**:
+- **Usage**:
 
 ```typescript
 import { NehonixShieldProvider, useNehonixShield } from "nehonix-uri-processor";
@@ -691,48 +677,6 @@ const SecurityDemo = () => {
   return <button onClick={handleAnalyze}>Analyze URL</button>;
 };
 ```
-
-## Core Components
-
-### NehonixShieldProvider
-
-The main provider component that makes security features available to your application.
-
-```jsx
-<NehonixShieldProvider
-  defaultOptions={{ sensitivityLevel: "high" }}
-  autoBlocking={true}
->
-  {children}
-</NehonixShieldProvider>
-```
-
-Props:
-
-- `defaultOptions`: Default options for security analysis
-- `autoBlocking`: Whether to block malicious content by default
-
-### NehonixProtector
-
-All-in-one protection component that enables both DOM and request analysis.
-
-```jsx
-<NehonixProtector
-  domOptions={{ includeScripts: true, scanIframes: true }}
-  requestOptions={{ includeFetch: true, includeXHR: true }}
-  domInterval={60000} // Re-scan DOM every minute
->
-  <UserGeneratedContent />
-</NehonixProtector>
-```
-
-Props:
-
-- `domOptions`: Options for DOM analysis
-- `requestOptions`: Options for request analysis
-- `domInterval`: Interval in milliseconds for periodic DOM scanning (null for no periodic scanning)
-
-## [Read more.](./docs/react%20component%20protector.md)
 
 ## Supported Encoding Types
 
@@ -773,7 +717,6 @@ The library detects all supported encoding types, including nested encodings, wi
 - Full documentation: [lab.nehonix.space](https://lab.nehonix.space)
 - Changelog: [changelog.md](./docs/changelog.md)
 - Previous versions:
-  - [v2.2.0](./docs/processor%20v2.2.0.md)
   - [v2.1.2](./docs/readme-v2.1.2.md)
   - [v2.0.9](./docs/readmeV2.0.9.md)
 
