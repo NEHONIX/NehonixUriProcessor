@@ -335,20 +335,23 @@ export class PATTERNS {
 
   // ========== SUSPICIOUS TLD PATTERNS ==========
   static readonly SUSPICIOUS_TLD_PATTERNS = [
-    // Suspicious TLDs with better boundaries
-    /(?:https?:\/\/|\b)[\w-]+\.(?:tk|ml|ga|cf|gq|top|xyz|pw|club|work|date|racing|win|review|stream|accountant|download|bid|loan|party|trade|cricket|faith|science|gdn|men|hosting|webcam|agency|fm|press|wf|report|rocks|band|market|click|host|site|tech|online|website|space|bar|uno|biz|red|eu|cc|in|surf|tokyo|link|world|network|zip|pro|icu|fun|cloud)(?:[/?#]|\s|$)/i,
+    // Suspicious TLDs with better context-based detection
+    /(?:https?:\/\/|\b)(?:free|get|claim|urgent|verify|access|secure|login|account|update|support|service|prize)[\w-]*\.(?:tk|ml|ga|cf|gq|top|xyz|pw|club|work|date|racing|win|review|stream|accountant|download|bid|loan|party|trade|cricket|faith|science|gdn|men|hosting|webcam|agency|fm|press|wf|report|rocks|band|market|click|host|site|tech|online|website|space|bar|uno|biz|red|eu|cc|in|surf|tokyo|link|world|network|zip|pro|icu|fun|cloud)(?:[/?#]|\s|$)/i,
 
-    // Free subdomain services
-    /(?:https?:\/\/|\b)[\w-]+\.(?:blogspot|wordpress|livejournal|tumblr|weebly|yolasite|angelfire|tripod|neocities|wixsite|webs)\.(?:com|net|org|info|biz)(?:[/?#]|\s|$)/i,
+    // Free subdomain services - only when combined with suspicious keywords
+    /(?:https?:\/\/|\b)(?:verify|secure|bank|login|account|payment|wallet|crypto|reset|password|auth)[\w-]*\.(?:blogspot|wordpress|livejournal|tumblr|weebly|yolasite|angelfire|tripod|neocities|wixsite|webs)\.(?:com|net|org|info|biz)(?:[/?#]|\s|$)/i,
 
-    // URL shorteners with context
-    /(?:https?:\/\/|\b)(?:bit\.ly|goo\.gl|t\.co|tinyurl\.com|is\.gd|cli\.gs|pic\.gd|DwarfURL\.com|ow\.ly|yfrog|migre\.me|ff\.im|tiny\.cc|url4\.eu|tr\.im|twit\.ac|su\.pr|twurl\.nl|snipurl\.com|short\.to|BudURL\.com|ping\.fm|post\.ly|Just\.as|bkite\.com|snipr\.com|fic\.kr|loopt\.us|doiop\.com|short\.ie|go2\.me|pli\.gs|dfl8\.me|tellyou\.com|prettylinkpro\.com|chod\.sk|adcraft\.co|smsh\.me|x\.co|prettylinkpro\.com|viralurl\.com|EasyURL\.net|simurl\.com|Shrinkify\.com|shrinkr\.com|dai\.ly|db\.tt|qr\.ae|adf\.ly|bitly\.com|cur\.lv|tinyurl\.com|ow\.ly|bit\.do|adcrun\.ch|buzzurl\.com|atu\.ca|anonypaste\.pro|twitthis\.com|u\.to|j\.mp|bee4\.biz|mcaf\.ee|scrnch\.me|wp\.me)\/\S+/i,
+    // URL shorteners context - more specific patterns
+    /(?:https?:\/\/|\b)(?:bit\.ly|goo\.gl|t\.co|tinyurl\.com|is\.gd|cli\.gs|pic\.gd|DwarfURL\.com|ow\.ly|yfrog|migre\.me|ff\.im|tiny\.cc|url4\.eu|tr\.im|twit\.ac|su\.pr|twurl\.nl|snipurl\.com|short\.to|BudURL\.com|ping\.fm|post\.ly|Just\.as|bkite\.com|snipr\.com|fic\.kr|loopt\.us|doiop\.com|short\.ie|go2\.me|pli\.gs|dfl8\.me|tellyou\.com|prettylinkpro\.com|chod\.sk|adcraft\.co|smsh\.me|x\.co|prettylinkpro\.com|viralurl\.com|EasyURL\.net|simurl\.com|Shrinkify\.com|shrinkr\.com|dai\.ly|db\.tt|qr\.ae|adf\.ly|bitly\.com|cur\.lv|tinyurl\.com|ow\.ly|bit\.do|adcrun\.ch|buzzurl\.com|atu\.ca|anonypaste\.pro|twitthis\.com|u\.to|j\.mp|bee4\.biz|mcaf\.ee|scrnch\.me|wp\.me)\/\S+(?=.*(?:password|login|credential|bank|wallet|verify|bitcoin|eth|coin|nft|metamask|wallet|verify|urgent|limited|expires))/i,
 
-    // Suspicious domain name patterns
-    /(?:https?:\/\/|\b)(?:[\w-]+\.)?(?:link|official|verify|secure|account|signin|login|auth|confirm|validation|security|access|managment|manage|service|support|update)[\w-]*\.(?:[a-z]{2,})(?:[/?#]|\s|$)/i,
+    // Suspicious domain combinations with improved context
+    /(?:https?:\/\/|\b)(?!nehonix\.space)(?:[\w-]+\.)?(?:link|verify|secure|account|signin|login|auth|confirm|validation|security|access|managment|manage|service|support|update)[\w-]*?-(?:bank|paypal|apple|google|facebook|instagram|microsoft|yahoo|amazon|netflix|ebay|twitter)\.(?:[a-z]{2,})(?:[/?#]|\s|$)/i,
 
-    // Country code TLDs with uncommon combinations
-    /(?:https?:\/\/|\b)(?:bank|paypal|apple|google|facebook|instagram|microsoft|yahoo|amazon|netflix|ebay|twitter)(?:[\w-]*?)\.(?:tk|ml|ga|cf|gq|top|xyz|pw|club|work|date|racing|win|review|stream|accountant|webcam|science)(?:[/?#]|\s|$)/i,
+    // Brand impersonation with specific TLDs - excludes legitimate domains
+    /(?:https?:\/\/|\b)(?!nehonix\.space)(?:bank|paypal|apple|google|facebook|instagram|microsoft|yahoo|amazon|netflix|ebay|twitter)(?:[\w-]*?)(?:-?secure|-?login|-?verify|-?account|-?support|-?service)\.(?:tk|ml|ga|cf|gq|top|xyz|pw|club|work|date|racing|win|review|stream|accountant|webcam|science)(?:[/?#]|\s|$)/i,
+
+    // Number-heavy domains with suspicious TLDs
+    /(?:https?:\/\/|\b)(?!nehonix\.space)[\w-]*?\d{4,}[\w-]*?\.(?:tk|ml|ga|cf|gq|top|xyz|pw|club|work|date|racing)(?:[/?#]|\s|$)/i,
   ];
 
   // ========== HOMOGRAPH ATTACK PATTERNS ==========

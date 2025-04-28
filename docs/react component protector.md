@@ -5,6 +5,7 @@
 The NSB DOM & Request Analysis feature enhances web application security by adding real-time scanning of DOM elements and network requests. This feature builds upon the existing Nehonix Security Booster framework to detect and block malicious content before it reaches the user.
 
 ## Features
+
 - **DOM Analysis**: Scan the document object model for malicious patterns
 - **Request Monitoring**: Analyze network requests in real-time
 - **Automatic Protection**: Components for easy integration of security features
@@ -34,10 +35,7 @@ function App() {
 The main provider component that makes security features available to your application.
 
 ```jsx
-<NehonixShieldProvider
-  defaultOptions={{ sensitivityLevel: "high" }}
-  autoBlocking={true}
->
+<NehonixShieldProvider defaultOptions={{ debug: false }} autoBlocking={true}>
   {children}
 </NehonixShieldProvider>
 ```

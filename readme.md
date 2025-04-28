@@ -699,10 +699,7 @@ const SecurityDemo = () => {
 The main provider component that makes security features available to your application.
 
 ```jsx
-<NehonixShieldProvider
-  defaultOptions={{ sensitivityLevel: "high" }}
-  autoBlocking={true}
->
+<NehonixShieldProvider defaultOptions={{ debug: false }} autoBlocking={true}>
   {children}
 </NehonixShieldProvider>
 ```
@@ -731,6 +728,46 @@ Props:
 - `domOptions`: Options for DOM analysis
 - `requestOptions`: Options for request analysis
 - `domInterval`: Interval in milliseconds for periodic DOM scanning (null for no periodic scanning)
+
+Example of using:
+
+```typescript
+// Basic setup with automatic blocking
+<NehonixShieldProvider autoBlocking={true}>
+  <YourApp />
+</NehonixShieldProvider>
+
+// Add comprehensive protection to a specific component
+<NehonixProtector
+  domOptions={{ includeScripts: true, scanIframes: true }}
+  requestOptions={{ includeFetch: true, includeXHR: true }}
+  domInterval={30000} // Re-scan DOM every 30 seconds
+>
+  <UserContent />
+</NehonixProtector>
+
+// Use the hook for manual control
+function SecureComponent() {
+  const { analyzeDom, blockingEnabled, setBlockingEnabled } = useNehonixShield();
+
+  const handleUserContent = (content) => {
+    // Manually analyze content before rendering
+    analyzeDom({
+      targetSelector: "#user-content",
+      includeScripts: true
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={() => setBlockingEnabled(!blockingEnabled)}>
+        {blockingEnabled ? "Disable" : "Enable"} Protection
+      </button>
+      <div id="user-content">{/* user content */}</div>
+    </div>
+  );
+}
+```
 
 ## [Read more.](./docs/react%20component%20protector.md)
 
