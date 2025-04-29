@@ -9,17 +9,17 @@ export const RequestProtector: React.FC<{
   children: React.ReactNode;
   options?: RequestAnalysisOptions;
 }> = ({ children, options = {} }) => {
-  const { analyzeRequests, stopRequestAnalysis } = useNehonixShield();
+  // const { analyzeRequests, maliciousElements } = useNehonixShield();
 
-  useEffect(() => {
-    // Start analyzing requests
-    analyzeRequests(options);
+  // useEffect(() => {
+  //   // Start analyzing requests
+  //   analyzeRequests(options);
 
-    // Clean up
-    return () => {
-      stopRequestAnalysis();
-    };
-  }, [analyzeRequests, stopRequestAnalysis, options]);
+  //   // Clean up
+  //   return () => {
+  //     stopRequestAnalysis();
+  //   };
+  // }, [analyzeRequests, stopRequestAnalysis, options]);
 
   return <>{children}</>;
 };

@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { ExtendedShieldContextType, ShieldContextType } from "./provider.type";
+import { EnhancedShieldContextType } from "./provider.type";
 import { NehonixShieldContext } from "./REACT_UTIL";
 
 /**
@@ -7,7 +7,7 @@ import { NehonixShieldContext } from "./REACT_UTIL";
  * @returns NSB context methods
  * @throws Error if used outside NsbSecurityProvider
  */
-export const useNehonixShield = (): ExtendedShieldContextType => {
+export const useNehonixShield = (): EnhancedShieldContextType => {
   const context = useContext(NehonixShieldContext);
   if (!context) {
     throw new Error(

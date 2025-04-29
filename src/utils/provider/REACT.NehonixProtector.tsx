@@ -18,7 +18,8 @@ export const NehonixProtector: React.FC<{
 }) => {
   return (
     <nehonix.NehonixDomProtector options={domOptions} interval={domInterval}>
-      <RequestProtector options={requestOptions}>{children}</RequestProtector>
+      {/* <RequestProtector options={requestOptions}>{children}</RequestProtector> */}
+      {children}
     </nehonix.NehonixDomProtector>
   );
 };

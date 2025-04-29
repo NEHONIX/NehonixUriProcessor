@@ -1,56 +1,91 @@
-import React, { createContext, useCallback, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import {
   MaliciousPatternResult,
   MaliciousPatternOptions,
+  DetectedPattern,
 } from "../../services/MaliciousPatterns.service";
 import { NSB } from "../../services/NehonixSecurityBooster.service";
-import {
-  DomAnalysisOptions,
-  ExtendedShieldContextType,
-  NsbProviderProps,
-  RequestAnalysisOptions,
-} from "./provider.type";
-import { useNehonixShield } from "./REACT_HOOK";
+import { AlertProps, DomAnalysisResult, EnhancedShieldContextType, EnhancedShieldOptions, EnhancedShieldProviderProps, ShieldContextType } from "./provider.type";
+import SecurityAlert from "./REACT.SecurityAlert";
 
-/**
- * v2.3.1
- * Extended NSB context with DOM and request analysis
- */
+const defaultEnhancedOptions: EnhancedShieldOptions = {
+  blockOnMalicious: false,
+  blockThreshold: 80,
+  showAlerts: true,
+  alertDuration: 5000,
+  scanDom: true,
+  scanRequests: true,
+  deepScan: false,
+  whitelistedDomains: [],
+  alertPosition: "top-right",
+  autoCleanDOM: false,
+  scanInterval: 5000,
+  reportToServer: false,
+};
+
+
+// Create enhanced context
 export const NehonixShieldContext = createContext<
-  ExtendedShieldContextType | undefined
+  EnhancedShieldContextType | undefined
 >(undefined);
 
 /**
- * Enhanced NSB provider component
+ * Enhanced Shield Provider component
  */
-export const NehonixShieldProvider: React.FC<NsbProviderProps> = ({
-  children,
-  defaultOptions,
-  autoBlocking = true,
-}) => {
-  const [blockingEnabled, setBlockingEnabled] = useState(
-    autoBlocking
-  );
-  const [lastAnalysisResult, setLastAnalysisResult] =
-    useState<MaliciousPatternResult | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [requestObserver, setRequestObserver] = useState<any>(null);
+export const NehonixShieldProvider: React.FC<
+  EnhancedShieldProviderProps
+> = ({ children, options: initialOptions = {} }) => {
+  // Merge with defaults
+  const [options, setOptions] = useState<EnhancedShieldOptions>({
+    ...defaultEnhancedOptions,
+    ...initialOptions,
+  });
 
+  // State for tracking
+  const [maliciousElements, setMaliciousElements] = useState<
+    DomAnalysisResult[]
+  >([]);
+  const [blockedRequests, setBlockedRequests] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<
+    Array<{
+      id: string;
+      message: string;
+      type: "warning" | "error" | "info";
+      details?: DetectedPattern[];
+    }>
+  >([]);
+
+  // Refs
+  const requestInterceptorRef = useRef<any>(null);
+  const intervalRef = useRef<number | null>(null);
+  const originalFetch = useRef<typeof window.fetch | null>(null);
+  const originalXHR = useRef<any>(null);
+
+  // Base methods from original shield
   const analyzeUrl = useCallback(
-    async (url: string, options: MaliciousPatternOptions = {}) => {
-      const mergedOptions = { ...defaultOptions, ...options };
+    async (url: string, customOptions: MaliciousPatternOptions = {}) => {
+      const mergedOptions = { ...options, ...customOptions };
       return await NSB.analyzeUrl(url, mergedOptions);
     },
-    [defaultOptions]
+    [options]
   );
 
   const scanInput = useCallback(
-    async (input: string, options: MaliciousPatternOptions = {}) => {
-      const mergedOptions = { ...defaultOptions, ...options };
-      const url = "http://mock.nehonix.space";
-      return await NSB.analyzeUrl(url + "q=" + input, mergedOptions);
+    async (input: string, customOptions: MaliciousPatternOptions = {}) => {
+      const mergedOptions = { ...options, ...customOptions };
+      const url = "http://mock.nehonix.space?q=";
+      return await NSB.analyzeUrl(
+        url + encodeURIComponent(input),
+        mergedOptions
+      );
     },
-    [defaultOptions]
+    [options]
   );
 
   const provideFeedback = useCallback(
@@ -64,327 +99,486 @@ export const NehonixShieldProvider: React.FC<NsbProviderProps> = ({
     return NSB.getPerformanceMetrics();
   }, []);
 
-  // NEW METHODS
+  // Show an alert
+  const showAlert = useCallback(
+    (
+      message: string,
+      type: "warning" | "error" | "info",
+      details?: DetectedPattern[]
+    ) => {
+      if (!options.showAlerts) return;
 
-  /**
-   * Analyzes the current DOM for malicious patterns
-   */
-  const analyzeDom = useCallback(
-    async (options: DomAnalysisOptions = {}) => {
-      setIsAnalyzing(true);
-      try {
-        const {
-          targetSelector = "body",
-          includeAttributes = true,
-          includeScripts = true,
-          includeLinks = true,
-          scanIframes = false,
-          ...nsbOptions
-        } = options;
+      const id = Math.random().toString(36).substring(2, 9);
+      setAlerts((prev) => [...prev, { id, message, type, details }]);
 
-        const mergedOptions = { ...defaultOptions, ...nsbOptions };
-        const target = document.querySelector(targetSelector) || document.body;
+      setTimeout(() => {
+        setAlerts((prev) => prev.filter((alert) => alert.id !== id));
+      }, options.alertDuration);
+    },
+    [options.showAlerts, options.alertDuration]
+  );
 
-        // Clone the target to avoid modifying the actual DOM
-        const clonedTarget = target.cloneNode(true) as HTMLElement;
+  // Clear all alerts
+  const clearAlerts = useCallback(() => {
+    setAlerts([]);
+  }, []);
 
-        // Get the content to analyze
-        let contentToAnalyze = clonedTarget.innerHTML;
+  // Reset tracking stats
+  const resetStats = useCallback(() => {
+    setMaliciousElements([]);
+    setBlockedRequests([]);
+  }, []);
 
-        // Include scripts if requested
-        if (includeScripts) {
-          const scripts = Array.from(document.querySelectorAll("script"));
-          const scriptContent = scripts
-            .map((script) => script.innerHTML)
-            .join("\n");
-          contentToAnalyze += `\n${scriptContent}`;
+  // Update shield options
+  const setShieldOptions = useCallback(
+    (newOptions: Partial<EnhancedShieldOptions>) => {
+      setOptions((prev) => {
+        const updated = { ...prev, ...newOptions };
+
+        // Apply changes based on new options
+        if (updated.scanDom && !prev.scanDom) {
+          startDomScanning(updated);
+        } else if (!updated.scanDom && prev.scanDom && intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
 
-        // Include attributes if requested
-        if (includeAttributes) {
-          const elements = Array.from(document.querySelectorAll("*"));
-          const attributeContent = elements
-            .flatMap((el) => Array.from(el.attributes))
-            .map((attr) => `${attr.name}="${attr.value}"`)
-            .join("\n");
-          contentToAnalyze += `\n${attributeContent}`;
-        }
+        return updated;
+      });
+    },
+    []
+  );
 
-        // Include links if requested
-        if (includeLinks) {
-          const links = Array.from(
-            document.querySelectorAll(
-              "a[href], link[href], img[src], script[src], iframe[src]"
-            )
-          );
-          const linkContent = links
-            .map(
-              (el) => el.getAttribute("href") || el.getAttribute("src") || ""
-            )
-            .filter((url) => url !== "")
-            .join("\n");
-          contentToAnalyze += `\n${linkContent}`;
-        }
+  // Analyze DOM for potential threats
+  const scanDom = useCallback(
+    async (customOptions?: Partial<EnhancedShieldOptions>) => {
+      const scanOptions = { ...options, ...customOptions };
+      const results: DomAnalysisResult[] = [];
 
-        // Include iframe content if requested
-        if (scanIframes) {
-          try {
-            const iframes = Array.from(document.querySelectorAll("iframe"));
-            for (const iframe of iframes) {
-              try {
-                const iframeDocument =
-                  iframe.contentDocument || iframe.contentWindow?.document;
-                if (iframeDocument) {
-                  contentToAnalyze += `\n${iframeDocument.body.innerHTML}`;
-                }
-              } catch (error) {
-                console.warn(
-                  "Could not access iframe content due to same-origin policy:",
-                  error
-                );
+      // Get all elements with attributes
+      const elements = document.querySelectorAll("*");
+
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i] as HTMLElement;
+
+        // Skip if element is part of Nehonix Shield UI
+        if (element.closest(".nehonix-shield-ui")) continue;
+
+        // Analyze each attribute
+        const attributesToCheck = [
+          "href",
+          "src",
+          "style",
+          "onclick",
+          "onload",
+          "onerror",
+        ];
+        let elementResult: MaliciousPatternResult | null = null;
+
+        for (const attr of attributesToCheck) {
+          const value = element.getAttribute(attr);
+          if (!value) continue;
+
+          // Skip whitelisted domains
+          if (attr === "href" || attr === "src") {
+            try {
+              const url = new URL(value, window.location.origin);
+              if (
+                scanOptions.whitelistedDomains.some((domain) =>
+                  url.hostname.includes(domain)
+                )
+              ) {
+                continue;
               }
+            } catch (e) {
+              // Invalid URL, continue with analysis
             }
-          } catch (error) {
-            console.warn("Error scanning iframes:", error);
+          }
+
+          // Analyze the attribute value
+          const result = await scanInput(value, scanOptions);
+
+          // If malicious and no previous malicious result for this element
+          if (
+            result.isMalicious &&
+            (!elementResult || !elementResult.isMalicious)
+          ) {
+            elementResult = result;
+          }
+          // If both are malicious, combine with the higher score
+          else if (
+            result.isMalicious &&
+            elementResult &&
+            elementResult.isMalicious
+          ) {
+            elementResult =
+              result.score > elementResult.score ? result : elementResult;
           }
         }
 
-        // Analyze the content
-        const result = await NSB.analyzeUrl(
-          `http://mock.nehonix.space?dom=${encodeURIComponent(
-            contentToAnalyze
-          )}`,
-          mergedOptions
-        );
+        // Deep scan: also check text content
+        if (
+          scanOptions.deepScan &&
+          element.textContent &&
+          !element.children.length
+        ) {
+          const text = element.textContent.trim();
 
-        setLastAnalysisResult(result);
+          // Only analyze text that might be suspicious (contains script tags, iframe, etc.)
+          const suspiciousPatterns = [
+            "<script",
+            "javascript:",
+            "data:text/html",
+            "<iframe",
+            "eval(",
+            "document.write",
+            "fromCharCode",
+            "String.fromCharCode",
+          ];
 
-        // Block the display if malicious content is detected and blocking is enabled
-        if (result.isMalicious && result.detectedPatterns.length > 0 && blockingEnabled ) {
-          // Create a blocking overlay
-          const overlay = document.createElement("div");
-          overlay.style.position = "fixed";
-          overlay.style.top = "0";
-          overlay.style.left = "0";
-          overlay.style.width = "100%";
-          overlay.style.height = "100%";
-          overlay.style.backgroundColor = "rgba(255, 0, 0, 0.1)";
-          overlay.style.zIndex = "9999";
-          overlay.style.display = "flex";
-          overlay.style.flexDirection = "column";
-          overlay.style.alignItems = "center";
-          overlay.style.justifyContent = "center";
-          overlay.style.padding = "20px";
-          overlay.style.boxSizing = "border-box";
+          if (
+            text.length > 0 &&
+            suspiciousPatterns.some((pattern) =>
+              text.toLowerCase().includes(pattern)
+            )
+          ) {
+            const result = await scanInput(text, scanOptions);
 
-          const message = document.createElement("div");
-          message.style.backgroundColor = "white";
-          message.style.padding = "20px";
-          message.style.borderRadius = "5px";
-          message.style.maxWidth = "80%";
-          message.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
-
-          message.innerHTML = `
-            <h2>Nehonix Security Warning</h2>
-            <p>Malicious content detected!</p>
-            <p>Details: ${result.detectedPatterns
-              .map(
-                (p) =>
-                  `<strong>${p.type}</strong>: ${p.matchedValue} (${p.location})`
-              )
-              .join("<br>")}</p>
-            <p>Recommendation: ${result.recommendation}</p>
-            <button id="nsb-continue-anyway">Continue Anyway</button>
-            <button id="nsb-block-page">Block Page</button>
-            powered by <a href="https://lab.nehonix.space/nehonix_viewer/_doc/NehonixUriProcessor/readme">NEHONIX</a>
-          `;
-
-          overlay.appendChild(message);
-          document.body.appendChild(overlay);
-
-          // Add event listeners to buttons
-          document
-            .getElementById("nsb-continue-anyway")
-            ?.addEventListener("click", () => {
-              document.body.removeChild(overlay);
-            });
-
-          document
-            .getElementById("nsb-block-page")
-            ?.addEventListener("click", () => {
-              window.location.href = "about:blank";
-            });
+            if (
+              result.isMalicious &&
+              (!elementResult || result.score > elementResult.score)
+            ) {
+              elementResult = result;
+            }
+          }
         }
 
-        return result;
-      } catch (error) {
-        console.error("Error analyzing DOM:", error);
-        const errorResult: MaliciousPatternResult = {
-          isMalicious: false,
-          detectedPatterns: [],
-          score: 0,
-          confidence: "low",
-          recommendation: "Error analyzing DOM: " + String(error),
-          contextAnalysis: {
-            relatedPatterns: [],
-            entropyScore: 0,
-            anomalyScore: 0,
-            encodingLayers: 0,
-          },
-        };
-        setLastAnalysisResult(errorResult);
-        return errorResult;
-      } finally {
-        setIsAnalyzing(false);
+        // If malicious content was found
+        if (elementResult && elementResult.isMalicious) {
+          results.push({ element, result: elementResult });
+
+          // Auto-clean if enabled
+          if (scanOptions.autoCleanDOM) {
+            cleanElement(element, elementResult);
+          }
+        }
+      }
+
+      // Update state with new malicious elements
+      if (results.length > 0) {
+        setMaliciousElements((prev) => {
+          // Deduplicate elements
+          const existing = new Set(prev.map((item) => item.element));
+          const newItems = results.filter(
+            (item) => !existing.has(item.element)
+          );
+
+          if (newItems.length > 0 && scanOptions.showAlerts) {
+            const highestThreat = newItems.reduce(
+              (max, current) =>
+                current.result.score > max.result.score ? current : max,
+              newItems[0]
+            );
+
+            showAlert(
+              `Detected ${newItems.length} malicious element(s) on this page`,
+              highestThreat.result.score > scanOptions.blockThreshold
+                ? "error"
+                : "warning",
+              highestThreat.result.detectedPatterns
+            );
+          }
+
+          return [...prev, ...newItems];
+        });
+      }
+
+      return results;
+    },
+    [options, scanInput, showAlert]
+  );
+
+  // Clean/sanitize malicious element
+  const cleanElement = (
+    element: HTMLElement,
+    result: MaliciousPatternResult
+  ) => {
+    // For each detected pattern, try to clean the specific attribute
+    result.detectedPatterns.forEach((pattern) => {
+      // Extract attribute name from location if possible
+      const attrMatch = pattern.location.match(/attribute:([a-zA-Z0-9-]+)/);
+
+      if (attrMatch && attrMatch[1]) {
+        const attribute = attrMatch[1];
+        if (element.hasAttribute(attribute)) {
+          // Remove the attribute or sanitize it
+          element.removeAttribute(attribute);
+        }
+      } else if (pattern.location.includes("text")) {
+        // If it's in text content, we replace it with a warning message
+        element.textContent = "[Content removed by Nehonix Shield]";
+      } else if (pattern.location.includes("innerHTML")) {
+        // If it's in HTML content, we clear it
+        element.innerHTML = "";
+      }
+    });
+  };
+
+  // Start periodic DOM scanning
+  const startDomScanning = useCallback(
+    (scanOptions: EnhancedShieldOptions) => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+
+      // Initial scan
+      scanDom(scanOptions);
+
+      // Setup interval if interval is positive
+      if (scanOptions.scanInterval > 0) {
+        intervalRef.current = window.setInterval(() => {
+          scanDom(scanOptions);
+        }, scanOptions.scanInterval);
       }
     },
-    [defaultOptions, blockingEnabled]
+    [scanDom]
   );
 
-  /**
-   * Starts monitoring network requests for malicious patterns
-   */
-  const analyzeRequests = useCallback(
-    (options: RequestAnalysisOptions = {}) => {
-      const {
-        includeXHR = true,
-        includeFetch = true,
-        includeImages = false,
-        includeScripts = true,
-        blockOnMalicious = blockingEnabled,
-        ...nsbOptions
-      } = options;
-
-      const mergedOptions = { ...defaultOptions, ...nsbOptions };
-
-      // Stop any existing observer
-      stopRequestAnalysis();
-
-      // Create a new observer instance
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        for (const entry of entries) {
-          // Only process resource entries
-          if (entry.entryType === "resource") {
-            const resourceEntry = entry as PerformanceResourceTiming;
-
-            // Apply filters
-            const isXHR = resourceEntry.initiatorType === "xmlhttprequest";
-            const isFetch = resourceEntry.initiatorType === "fetch";
-            const isImage = resourceEntry.initiatorType === "img";
-            const isScript = resourceEntry.initiatorType === "script";
-
-            const shouldAnalyze =
-              (includeXHR && isXHR) ||
-              (includeFetch && isFetch) ||
-              (includeImages && isImage) ||
-              (includeScripts && isScript);
-
-            if (shouldAnalyze) {
-              // Analyze the URL
-              NSB.analyzeUrl(resourceEntry.name, mergedOptions)
-                .then((result) => {
-                  setLastAnalysisResult(result);
-
-                  if (result.isMalicious && blockOnMalicious) {
-                    console.warn(
-                      "Malicious request detected:",
-                      resourceEntry.name
-                    );
-                    console.warn("Analysis result:", result);
-
-                    // For demonstration purposes - in a real implementation,
-                    // you would need to prevent the request from completing
-                    // This is challenging as PerformanceObserver only notices
-                    // requests after they start loading
-
-                    // Show a notification
-                    if (
-                      "Notification" in window &&
-                      Notification.permission === "granted"
-                    ) {
-                      new Notification("Security Warning", {
-                        body: `Malicious request detected: ${resourceEntry.name}`,
-                        icon: "/path/to/security-icon.png",
-                      });
-                    }
-                  }
-                })
-                .catch((error) => {
-                  console.error("Error analyzing request:", error);
-                });
-            }
-          }
+  // Intercept and analyze network requests
+  const interceptRequests = useCallback(
+    (enable: boolean) => {
+      // Remove existing interceptors if any
+      if (requestInterceptorRef.current) {
+        if (originalFetch.current) {
+          window.fetch = originalFetch.current;
         }
-      });
+        if (originalXHR.current) {
+          window.XMLHttpRequest = originalXHR.current;
+        }
+        requestInterceptorRef.current = null;
+      }
 
-      // Start observing
-      observer.observe({ entryTypes: ["resource"] });
+      if (!enable) return;
 
-      // Store the observer for cleanup
-      setRequestObserver(observer);
+      // Store original methods
+      originalFetch.current = window.fetch;
+      originalXHR.current = window.XMLHttpRequest;
+
+      // Intercept fetch
+      window.fetch = async function (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+            ? input.href
+            : input.url;
+
+        try {
+          // Skip analysis for whitelisted domains
+          const parsedUrl = new URL(url, window.location.origin);
+          if (
+            options.whitelistedDomains.some((domain) =>
+              parsedUrl.hostname.includes(domain)
+            )
+          ) {
+            return originalFetch.current!(input, init);
+          }
+
+          // Analyze URL
+          const result = await NSB.analyzeUrl(url, options);
+
+          // If malicious and should block
+          if (
+            result.isMalicious &&
+            options.blockOnMalicious &&
+            result.score >= options.blockThreshold
+          ) {
+            setBlockedRequests((prev) => {
+              const newBlocked = [...prev, url];
+              if (!prev.includes(url)) {
+                showAlert(
+                  `Blocked malicious request to: ${new URL(url).hostname}`,
+                  "error",
+                  result.detectedPatterns
+                );
+              }
+              return newBlocked;
+            });
+
+            // Mock a network error
+            return Promise.reject(
+              new Error("Request blocked by Nehonix Shield")
+            );
+          }
+
+          // Otherwise, proceed with the original request
+          return originalFetch.current!(input, init);
+        } catch (error) {
+          console.error("Error in Nehonix Shield fetch interceptor:", error);
+          // If analysis fails, allow the request
+          return originalFetch.current!(input, init);
+        }
+      };
+
+      // Intercept XHR
+      window.XMLHttpRequest = function () {
+        const xhr = new originalXHR.current!();
+        const originalOpen = xhr.open;
+
+        xhr.open = function (
+          method: string,
+          url: string | URL,
+          ...args: any[]
+        ) {
+          const urlString = url instanceof URL ? url.href : url;
+          xhr._nehonixUrl = urlString;
+
+          // Original open - we'll check before send
+          originalOpen.call(xhr, method, url, ...args);
+        };
+
+        const originalSend = xhr.send;
+        xhr.send = async function (body?: Document | BodyInit | null) {
+          try {
+            if (xhr._nehonixUrl) {
+              // Skip analysis for whitelisted domains
+              const parsedUrl = new URL(
+                xhr._nehonixUrl,
+                window.location.origin
+              );
+              if (
+                options.whitelistedDomains.some((domain) =>
+                  parsedUrl.hostname.includes(domain)
+                )
+              ) {
+                originalSend.call(xhr, body);
+                return;
+              }
+
+              // Analyze URL
+              const result = await NSB.analyzeUrl(xhr._nehonixUrl, options);
+
+              // Check body if in deep scan mode
+              let bodyResult = null;
+              if (options.deepScan && body && typeof body === "string") {
+                bodyResult = await scanInput(body);
+              }
+
+              const finalResult =
+                bodyResult &&
+                bodyResult.isMalicious &&
+                bodyResult.score > result.score
+                  ? bodyResult
+                  : result;
+
+              // If malicious and should block
+              if (
+                finalResult.isMalicious &&
+                options.blockOnMalicious &&
+                finalResult.score >= options.blockThreshold
+              ) {
+                setBlockedRequests((prev) => {
+                  const newBlocked = [...prev, xhr._nehonixUrl];
+                  if (!prev.includes(xhr._nehonixUrl)) {
+                    showAlert(
+                      `Blocked malicious XHR request to: ${
+                        new URL(xhr._nehonixUrl).hostname
+                      }`,
+                      "error",
+                      finalResult.detectedPatterns
+                    );
+                  }
+                  return newBlocked;
+                });
+
+                // Abort the request
+                xhr.abort();
+                return;
+              }
+            }
+
+            // Otherwise, proceed with the original request
+            originalSend.call(xhr, body);
+          } catch (error) {
+            console.error("Error in Nehonix Shield XHR interceptor:", error);
+            // If analysis fails, allow the request
+            originalSend.call(xhr, body);
+          }
+        };
+
+        return xhr;
+      } as any;
+
+      // Store interceptor flag
+      requestInterceptorRef.current = true;
     },
-    [defaultOptions, blockingEnabled]
+    [options, scanInput, showAlert]
   );
 
-  /**
-   * Stops monitoring network requests
-   */
-  const stopRequestAnalysis = useCallback(() => {
-    if (requestObserver) {
-      requestObserver.disconnect();
-      setRequestObserver(null);
-    }
-  }, [requestObserver]);
-
-  // Clean up the request observer when the component unmounts
+  // Set up initial DOM scanning and request interception
   useEffect(() => {
+    if (options.scanDom) {
+      startDomScanning(options);
+    }
+
+    if (options.scanRequests) {
+      interceptRequests(true);
+    }
+
     return () => {
-      stopRequestAnalysis();
+      // Clean up
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+
+      // Remove request interceptors
+      if (requestInterceptorRef.current) {
+        if (originalFetch.current) {
+          window.fetch = originalFetch.current;
+        }
+        if (originalXHR.current) {
+          window.XMLHttpRequest = originalXHR.current;
+        }
+      }
     };
-  }, [stopRequestAnalysis]);
+  }, [options, startDomScanning, interceptRequests]);
 
   return (
     <NehonixShieldContext.Provider
       value={{
         scanUrl: analyzeUrl,
+        scanInput,
         provideFeedback,
         getPerformanceMetrics,
-        scanInput,
-        analyzeDom,
-        analyzeRequests,
-        stopRequestAnalysis,
-        blockingEnabled,
-        setBlockingEnabled,
-        lastAnalysisResult,
-        isAnalyzing,
+        scanDom,
+        interceptRequests,
+        setShieldOptions,
+        currentOptions: options,
+        maliciousElements,
+        blockedRequests,
+        clearAlerts,
+        resetStats,
       }}
     >
       {children}
+
+      {/* Render alerts */}
+      {alerts.map((alert) => (
+        <SecurityAlert
+          key={alert.id}
+          message={alert.message}
+          type={alert.type}
+          details={alert.details}
+          onDismiss={() =>
+            setAlerts((prev) => prev.filter((a) => a.id !== alert.id))
+          }
+          position={options.alertPosition}
+        />
+      ))}
     </NehonixShieldContext.Provider>
   );
 };
 
-/**
- * HOC to automatically analyze DOM when component mounts
- */
-export const withDomAnalysis = <P extends object>(
-  Component: React.ComponentType<P>,
-  options: DomAnalysisOptions = {}
-) => {
-  return (props: P) => {
-    const { analyzeDom, isAnalyzing, lastAnalysisResult } = useNehonixShield();
-
-    useEffect(() => {
-      analyzeDom(options);
-    }, []);
-
-    return (
-      <Component
-        {...props}
-        nsbIsAnalyzing={isAnalyzing}
-        nsbAnalysisResult={lastAnalysisResult}
-      />
-    );
-  };
-};

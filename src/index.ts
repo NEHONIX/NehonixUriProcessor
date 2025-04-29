@@ -455,7 +455,7 @@ export { NehonixURIProcessor as __processor__ };
 export * from "./utils/provider/REACT_UTIL";
 export * from "./utils/provider/REACT_HOOK";
 export * from "./utils/provider/express.middleware";
-export * from "./utils/provider/REACT.NehonixDomProtector";
+// export * from "./utils/provider/REACT.NehonixDomProtector";
 export * from "./utils/provider/REACT.RequestProtector";
 export * from "./utils/provider/REACT.NehonixProtector";
 export const decodeB64 = (input: string) =>

@@ -8,7 +8,9 @@ import {
 
 const App: React.FC = () => {
   return (
-    <NehonixShieldProvider defaultOptions={{ minScore: 50, sensitivity: 1.0 }}>
+    <NehonixShieldProvider>
+      {" "}
+      {/**defaultOptions={{ minScore: 50, sensitivity: 1.0 }} */}
       <SecurityDemo />
     </NehonixShieldProvider>
   );

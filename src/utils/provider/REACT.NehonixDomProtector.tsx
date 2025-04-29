@@ -10,7 +10,7 @@ export const NehonixDomProtector: React.FC<{
   options?: DomAnalysisOptions;
   interval?: number | null;
 }> = ({ children, options = {}, interval = null }) => {
-  const { analyzeDom } = useNehonixShield();
+  const { scanDom: analyzeDom } = useNehonixShield();
 
   useEffect(() => {
     // Initial analysis
