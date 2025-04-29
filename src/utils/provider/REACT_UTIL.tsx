@@ -160,7 +160,7 @@ export const NehonixShieldProvider: React.FC<NsbProviderProps> = ({
         setLastAnalysisResult(result);
 
         // Block the display if malicious content is detected and blocking is enabled
-        if (result.isMalicious && blockingEnabled) {
+        if (result.isMalicious && result.detectedPatterns.length > 0 && blockingEnabled ) {
           // Create a blocking overlay
           const overlay = document.createElement("div");
           overlay.style.position = "fixed";
