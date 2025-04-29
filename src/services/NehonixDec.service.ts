@@ -7,7 +7,7 @@ import {
   UriHandlerInterface,
   UrlValidationOptions,
 } from "../types";
-import punycode from "node:punycode";
+import punycode from "punycode";
 import chalk from "chalk";
 import { ncu, NehonixCoreUtils } from "../utils/NehonixCoreUtils";
 import { NehonixSharedUtils } from "../common/NehonixCommonUtils";
