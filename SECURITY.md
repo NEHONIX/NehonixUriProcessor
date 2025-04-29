@@ -20,12 +20,17 @@ We take the security of NehonixURIProcessor seriously. This library is designed 
 If you discover a security vulnerability within NehonixURIProcessor, please follow these steps:
 
 1. **Do not disclose the vulnerability publicly** until it has been addressed by our team
-2. Email your findings to security@nehonix.space
-3. Include detailed information about the vulnerability:
+2. Include detailed information about the vulnerability:
    - Description of the issue
    - Steps to reproduce
    - Potential impact
    - Suggested fix (if available)
+     Click the google form link below to report a vulnerability.
+     [Report now](https://forms.gle/VwP2mQHFR8VrrQp39)
+
+---
+Direct link to google form
+https://forms.gle/VwP2mQHFR8VrrQp39
 
 ### What to Expect
 
