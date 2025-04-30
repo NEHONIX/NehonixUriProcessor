@@ -1,3 +1,4 @@
+import { MaliciousPatternOptions } from "../services/MaliciousPatterns.service";
 import { URLAnalysisResult, WAFBypassVariants } from "./index";
 
 /**
@@ -59,10 +60,10 @@ export interface AsyncDecodeOptions {
   useWorker?: boolean;
 }
 
-/**
- * Options for malicious pattern detection in URIs.
- */
-export interface MaliciousPatternOptions {
+// /**
+//  * Options for malicious pattern detection in URIs.
+//  */
+export interface WAFMaliciousPatternOptions {
   /**
    * If true, detects common SQL injection patterns.
    * @default true
@@ -96,7 +97,7 @@ export interface MaliciousPatternOptions {
 /**
  * Extended URL validation options for v2.2.0.
  */
-export interface ExtendedUrlValidationOptions {
+export default interface ExtendedUrlValidationOptions {
   /**
    * If true, enables detection of malicious patterns in URL parameters.
    * @default false

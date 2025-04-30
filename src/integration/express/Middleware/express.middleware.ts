@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from "express";
-import { NSB } from "../../services/NehonixSecurityBooster.service";
+import { NSB } from "../../../services/NehonixSecurityBooster.service";
 import {
   MaliciousPatternResult,
   MaliciousPatternOptions,
-} from "../../services/MaliciousPatterns.service";
-import { DetectedPattern } from "../../services/MaliciousPatterns.service";
-import { AppLogger } from "../../common/AppLogger";
+} from "../../../services/MaliciousPatterns.service";
+import { DetectedPattern } from "../../../services/MaliciousPatterns.service";
+import { AppLogger } from "../../../common/AppLogger";
 
 /**
  * Interface for NSB Express middleware options
- */
+ */ 
 interface NsbMiddlewareOptions extends MaliciousPatternOptions {
   blockOnMalicious?: boolean;
   logDetails?: boolean;
@@ -26,7 +26,7 @@ const nehonixShieldMiddleware = (options: NsbMiddlewareOptions = {}) => {
       const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
       const result = await NSB.analyzeUrl(fullUrl, options);
 
-      if (options.logDetails) { 
+      if (options.logDetails) {
         AppLogger.info(`NSB Analysis for ${fullUrl}:`, result);
       }
 

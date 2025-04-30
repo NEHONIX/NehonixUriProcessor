@@ -5,3 +5,6 @@
 *.tgz
 .venv
 /.venv
+/Nouveau dossier
+*/Nouveau dossier
+Nouveau dossier/*

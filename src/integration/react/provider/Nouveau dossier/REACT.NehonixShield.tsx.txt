@@ -1,0 +1,264 @@
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  createContext,
+  useContext,
+} from "react";
+// import { NSB } from "../../services/NehonixSecurityBooster.service";
+
+import { NSB } from "../../../services/NehonixSecurityBooster.service";
+import {
+  MaliciousPatternResult,
+  MaliciousPatternOptions,
+} from "../../../services/MaliciousPatterns.service";
+import { AppLogger } from "../../../common/AppLogger";
+
+// Interface for the context value
+interface NehonixShieldContextT {
+  scanResult: MaliciousPatternResult | null;
+  deepScanReport: DeepScanReport | null;
+  isScanning: boolean;
+  analyzeRequest: (
+    url: string,
+    options?: MaliciousPatternOptions
+  ) => Promise<MaliciousPatternResult>;
+  startDeepScan: () => void;
+}
+
+// Default context value
+const defaultContextValue: NehonixShieldContextT = {
+  scanResult: null,
+  deepScanReport: null,
+  isScanning: false,
+  analyzeRequest: async () => ({
+    isMalicious: false,
+    detectedPatterns: [],
+    score: 0,
+    confidence: "low",
+    recommendation: "No analysis performed.",
+  }),
+  startDeepScan: () => {},
+};
+
+// Create the context
+export const NehonixShieldContext =
+  createContext<NehonixShieldContextT>(defaultContextValue);
+
+// Hook to use the context
+export const useNehonixShield = () => useContext(NehonixShieldContext);
+
+// Interface for deep scan results
+interface DeepScanReport {
+  domActivity: ActivityLog[];
+  scriptActivity: ActivityLog[];
+  extensionActivity: ExtensionActivity[];
+  detectedIssues: MaliciousPatternResult[];
+}
+
+interface ActivityLog {
+  timestamp: number;
+  type: string;
+  details: string;
+}
+
+interface ExtensionActivity {
+  id: string;
+  name: string;
+  permissions: string[];
+  detectedIssues: MaliciousPatternResult[];
+}
+
+// NehonixShieldProvider component
+export const NehonixShieldProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [scanResult, setScanResult] = useState<MaliciousPatternResult | null>(
+    null
+  );
+  const [deepScanReport, setDeepScanReport] = useState<DeepScanReport | null>(
+    null
+  );
+  const [isScanning, setIsScanning] = useState(false);
+
+  // Web Worker for background processing
+  const worker = useMemo(() => {
+    if (typeof Worker !== "undefined") {
+      const workerCode = `
+        self.onmessage = async (e) => {
+          const { url, options } = e.data;
+          const response = await fetch("/api/analyze-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, options }),
+          });
+          const result = await response.json();
+          self.postMessage(result);
+        };
+      `;
+      const blob = new Blob([workerCode], { type: "application/javascript" });
+      return new Worker(URL.createObjectURL(blob));
+    }
+    return null;
+  }, []);
+
+  // Background process: Continuous malware detection
+  useEffect(() => {
+    if (!worker) {
+      AppLogger.warn("Web Worker not supported in this environment.");
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        setIsScanning(true);
+        const currentUrl = window.location.href;
+        worker.postMessage({ url: currentUrl, options: { minScore: 50 } });
+      } catch (error) {
+        AppLogger.error("Background scan error:", error);
+      } finally {
+        setIsScanning(false);
+      }
+    }, 30000); // Scan every 30 seconds
+
+    worker.onmessage = (e) => {
+      const result: MaliciousPatternResult = e.data;
+      setScanResult(result);
+      if (result.isMalicious) {
+        AppLogger.warn(
+          "Malicious activity detected in background scan:",
+          result
+        );
+      }
+    };
+
+    return () => clearInterval(interval);
+  }, [worker]);
+
+  // Request Interceptor: Override fetch to analyze requests
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (input, init) => {
+      const url = typeof input === "string" ? input : (input as any).url;
+      try {
+        const result = await NSB.analyzeUrl(url, { minScore: 50 });
+        if (result.isMalicious) {
+          AppLogger.warn(`Malicious request detected: ${url}`, result);
+          throw new Error("Request blocked: Malicious pattern detected.");
+        }
+        (window as any).nehonixShieldLastRequestResult = result;
+      } catch (error) {
+        AppLogger.error("Request analysis error:", error);
+      }
+      return originalFetch(input, init);
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
+  // Deep Scan: Analyze DOM, scripts, and extensions
+  const startDeepScan = async () => {
+    setIsScanning(true);
+    const report: DeepScanReport = {
+      domActivity: [],
+      scriptActivity: [],
+      extensionActivity: [],
+      detectedIssues: [],
+    };
+
+    try {
+      // DOM Activity: Monitor DOM changes
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          const log: ActivityLog = {
+            timestamp: Date.now(),
+            type: mutation.type,
+            details: `Target: ${mutation.target.nodeName}, Added: ${mutation.addedNodes.length}, Removed: ${mutation.removedNodes.length}`,
+          };
+          report.domActivity.push(log);
+
+          // Analyze added nodes for malicious content
+          mutation.addedNodes.forEach(async (node) => {
+            if (node instanceof Element) {
+              const content = node.outerHTML;
+              const result = await NSB.analyzeUrl(
+                `http://mock.nehonix.space?data=${encodeURIComponent(content)}`
+              );
+              if (result.isMalicious) report.detectedIssues.push(result);
+            }
+          });
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // Script Activity: Monitor script execution
+      const scripts = Array.from(document.getElementsByTagName("script"));
+      for (const script of scripts) {
+        const src = script.src || script.innerHTML;
+        if (src) {
+          const result = await NSB.analyzeUrl(src);
+          report.scriptActivity.push({
+            timestamp: Date.now(),
+            type: "script",
+            details: `Source: ${src.slice(0, 50)}...`,
+          });
+          if (result.isMalicious) report.detectedIssues.push(result);
+        }
+      }
+
+      // Extension Activity: Attempt to detect extensions (limited by browser APIs)
+      if ((navigator as any).browser) {
+        // Firefox-specific API (hypothetical, as this is not standard)
+        const extensions = await (
+          navigator as any
+        ).browser.runtime.getAllExtensions?.();
+        for (const ext of extensions || []) {
+          const result = await NSB.analyzeUrl(
+            `http://mock.nehonix.space?ext=${ext.id}`
+          );
+          report.extensionActivity.push({
+            id: ext.id,
+            name: ext.name,
+            permissions: ext.permissions || [],
+            detectedIssues: result.isMalicious ? [result] : [],
+          });
+        }
+      } else {
+        AppLogger.warn("Extension scanning not supported in this browser.");
+      }
+
+      setDeepScanReport(report);
+    } catch (error) {
+      AppLogger.error("Deep scan error:", error);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Function to analyze a specific request
+  const analyzeRequest = async (
+    url: string,
+    options: MaliciousPatternOptions = {}
+  ) => {
+    const result = await NSB.analyzeUrl(url, options);
+    setScanResult(result);
+    return result;
+  };
+
+  // Context value
+  const contextValue: NehonixShieldContextT = {
+    scanResult,
+    deepScanReport,
+    isScanning,
+    analyzeRequest,
+    startDeepScan,
+  };
+
+  return (
+    <NehonixShieldContext.Provider value={contextValue}>
+      {children}
+    </NehonixShieldContext.Provider>
+  );
+};

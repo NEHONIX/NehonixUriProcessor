@@ -17,18 +17,18 @@ const App: React.FC = () => {
 };
 
 const SecurityDemo: React.FC = () => {
-  const { scanUrl, provideFeedback, getPerformanceMetrics } =
-    useNehonixShield();
+  // const { scanUrl, provideFeedback, getPerformanceMetrics } =
+  //   useNehonixShield();
   const [result, setResult] = useState<MaliciousPatternResult | null>(null);
 
   const handleAnalyze = async () => {
     const url = "https://malicious.com/login?obj[__proto__][polluted]=true";
-    const analysis = await scanUrl(url, {
-      ignorePatterns: [MaliciousPatternType.ANOMALY],
-    });
-    setResult(analysis);
-    provideFeedback(url, analysis, true);
-    console.log("Metrics:", getPerformanceMetrics());
+    // const analysis = await scanUrl(url, {
+    //   ignorePatterns: [MaliciousPatternType.ANOMALY],
+    // });
+    // setResult(analysis);
+    // provideFeedback(url, analysis, true);
+    // console.log("Metrics:", getPerformanceMetrics());
   };
 
   return (

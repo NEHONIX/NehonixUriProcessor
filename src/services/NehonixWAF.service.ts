@@ -1,5 +1,5 @@
 import { AppLogger } from "../common/AppLogger";
-import { MaliciousPatternOptions } from "../types/v2.2.0";
+import { WAFMaliciousPatternOptions as MaliciousPatternOptions } from "../types/v2.2.0";
 
 /**
  * Web Application Firewall (WAF) service for detecting and preventing encoded attack patterns

@@ -4,7 +4,7 @@ import { MaliciousComponentType } from "../types/v2.2.0";
  * Interface defining detection result with detailed information
  */
 export interface MaliciousPatternResult {
-  url?:string
+  url?: string;
   isMalicious: boolean;
   detectedPatterns: DetectedPattern[];
   score: number;
@@ -101,6 +101,8 @@ export enum MaliciousPatternType {
   KNOWN_THREAT = "known_threat",
   RCE = "rce",
   ANOMALY_DETECTED = "anomaly_detected",
+
+  SUSPICIOUS_EXTENSION = "SUSPICIOUS_EXTENSION",
 }
 
 /**
@@ -160,7 +162,6 @@ export interface MaliciousPatternOptions {
  * NehonixNMPS => NMPS
  *
  */
-
 
 //v2.3.0
 // Interface for ThreatSignature

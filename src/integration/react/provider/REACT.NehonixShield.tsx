@@ -1,0 +1,547 @@
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useContext,
+  createContext,
+} from "react";
+import {
+  MaliciousPatternResult,
+  MaliciousPatternOptions,
+  DetectedPattern,
+} from "../../../services/MaliciousPatterns.service";
+import { NSB } from "../../../services/NehonixSecurityBooster.service";
+import {
+  NehonixShieldConfig,
+  NehonixShieldContextT,
+  ShieldAnalysisResult,
+} from "../../types/frameworks.type";
+import { NehonixShieldContext } from "../context/REACT.ShieldContext";
+
+// Default configuration
+const defaultConfig: NehonixShieldConfig = {
+  enableBackgroundScanning: true,
+  scanInterval: 30000, // 30 seconds
+  interceptRequests: true,
+  enableDeepScan: false,
+  scanOptions: {
+    analyseOptions: {
+      debug: true,
+    },
+    global: {
+      ignoreCase: true,
+      checkEncoding: true,
+      maxEncodingLayers: 3,
+      analyzeContext: true,
+      confidence: "medium",
+    },
+  },
+  blockMaliciousRequests: true,
+  blockMaliciousResponses: true,
+  trustedDomains: [],
+  blacklistedPatterns: [],
+};
+
+// Initialize empty analysis results
+const initialAnalysisResults: ShieldAnalysisResult = {
+  analysisResults: [],
+  lastScanTimestamp: 0,
+  totalScanned: 0,
+  totalBlocked: 0,
+  activeThreats: [],
+  performanceMetrics: {
+    avgScanTime: 0,
+    totalScanTime: 0,
+    scanCount: 0,
+  },
+};
+
+/**
+ * Nehonix Shield Provider Component
+ */
+export const NehonixShieldProvider: React.FC<{
+  children: React.ReactNode;
+  initialConfig?: Partial<NehonixShieldConfig>;
+}> = ({ children, initialConfig = {} }) => {
+  // Merge the default config with the provided initialConfig
+  const [config, setConfig] = useState<NehonixShieldConfig>({
+    ...defaultConfig,
+    ...initialConfig,
+  });
+
+  const [analysisResults, setAnalysisResults] = useState<ShieldAnalysisResult>(
+    initialAnalysisResults
+  );
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+
+  // Use refs for values that need to be accessed in effects
+  const configRef = useRef(config);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Update the config ref when config changes
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  /**
+   * Update the configuration
+   */
+  const updateConfig = (newConfig: Partial<NehonixShieldConfig>) => {
+    setConfig((prevConfig) => {
+      // Merge nested objects
+      const updatedConfig = {
+        ...prevConfig,
+        ...newConfig,
+        scanOptions: {
+          ...prevConfig.scanOptions,
+          ...(newConfig.scanOptions || {}),
+        },
+      };
+      return updatedConfig;
+    });
+  };
+
+  /**
+   * Pause background scanning
+   */
+  const pauseScanning = () => {
+    setIsPaused(true);
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+  };
+
+  /**
+   * Resume background scanning
+   */
+  const resumeScanning = () => {
+    if (configRef.current.enableBackgroundScanning) {
+      setIsPaused(false);
+      startBackgroundScanning();
+    }
+  };
+
+  /**
+   * Clear analysis results
+   */
+  const clearResults = () => {
+    setAnalysisResults(initialAnalysisResults);
+  };
+
+  /**
+   * Start background scanning
+   */
+  const startBackgroundScanning = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+    }
+
+    scanIntervalRef.current = setInterval(() => {
+      if (!isPaused && configRef.current.enableBackgroundScanning) {
+        performScan();
+      }
+    }, configRef.current.scanInterval);
+  };
+
+  /**
+   * Perform a security scan
+   */
+  const performScan = async () => {
+    setIsScanning(true);
+    const startTime = performance.now();
+
+    try {
+      // Scan the current URL
+      const currentUrl = window.location.href;
+      const urlResult = await NSB.analyzeUrl(
+        currentUrl,
+        configRef.current.scanOptions.analyseOptions
+      );
+
+      // Deep scan if enabled
+      let deepScanResults: MaliciousPatternResult[] = [];
+      if (configRef.current.enableDeepScan) {
+        deepScanResults = await performDeepScan();
+      }
+
+      // Combine results
+      const allResults = [urlResult, ...deepScanResults];
+      const newActiveThreats = allResults
+        .flatMap((result) => result.detectedPatterns)
+        .filter((threat) => threat.severity === "high");
+
+      // Update scan metrics
+      const endTime = performance.now();
+      const scanTime = endTime - startTime;
+
+      setAnalysisResults((prev) => {
+        // Calculate new metrics
+        const totalScanTime = prev.performanceMetrics.totalScanTime + scanTime;
+        const scanCount = prev.performanceMetrics.scanCount + 1;
+
+        return {
+          analysisResults: [...prev.analysisResults, ...allResults],
+          lastScanTimestamp: Date.now(),
+          totalScanned: prev.totalScanned + allResults.length,
+          totalBlocked:
+            prev.totalBlocked +
+            (allResults.some(
+              (r) => r.isMalicious && configRef.current.blockMaliciousRequests
+            )
+              ? 1
+              : 0),
+          activeThreats: newActiveThreats,
+          performanceMetrics: {
+            avgScanTime: totalScanTime / scanCount,
+            totalScanTime,
+            scanCount,
+          },
+        };
+      });
+
+      // Call onDetection callback if threats were found
+      if (
+        allResults.some((r) => r.isMalicious) &&
+        configRef.current.onDetection
+      ) {
+        configRef.current.onDetection(urlResult);
+      }
+    } catch (error) {
+      console.error("Nehonix Shield scan error:", error);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  /**
+   * Perform a deep scan of the document and resources
+   */
+  const performDeepScan = async (): Promise<MaliciousPatternResult[]> => {
+    const results: MaliciousPatternResult[] = [];
+
+    try {
+      // Scan all links in the document
+      const links = Array.from(document.querySelectorAll("a")).map(
+        (a) => a.href
+      );
+      const uniqueLinks = [...new Set(links)].filter((link) => {
+        // Filter out links that don't have a valid protocol or are in trusted domains
+        if (!link.startsWith("http")) return false;
+
+        // Check against trusted domains
+        if (configRef.current.trustedDomains?.length) {
+          return !configRef.current.trustedDomains.some((domain) =>
+            link.includes(domain)
+          );
+        }
+
+        return true;
+      });
+
+      // Limit the number of links to scan to avoid performance issues
+      const linksToScan = uniqueLinks.slice(0, 10);
+
+      // Scan each link
+      for (const link of linksToScan) {
+        try {
+          const result = await NSB.analyzeUrl(
+            link,
+            configRef.current.scanOptions.analyseOptions
+          );
+          results.push(result);
+        } catch (error) {
+          console.error(`Error scanning link ${link}:`, error);
+        }
+      }
+
+      // Scan script sources
+      const scripts = Array.from(document.querySelectorAll("script"))
+        .map((s) => s.src)
+        .filter(Boolean);
+      const uniqueScripts = [...new Set(scripts)].filter((src) =>
+        src.startsWith("http")
+      );
+
+      for (const src of uniqueScripts.slice(0, 5)) {
+        try {
+          const result = await NSB.analyzeUrl(
+            src,
+            configRef.current.scanOptions.analyseOptions
+          );
+          results.push(result);
+        } catch (error) {
+          console.error(`Error scanning script ${src}:`, error);
+        }
+      }
+
+      // Scan iframes
+      const iframes = Array.from(document.querySelectorAll("iframe"))
+        .map((i) => i.src)
+        .filter(Boolean);
+
+      for (const src of iframes) {
+        try {
+          const result = await NSB.analyzeUrl(
+            src,
+            configRef.current.scanOptions.analyseOptions
+          );
+          results.push(result);
+        } catch (error) {
+          console.error(`Error scanning iframe ${src}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("Deep scan error:", error);
+    }
+
+    return results;
+  };
+
+  /**
+   * Force an immediate scan
+   */
+  const forceScan = async () => {
+    await performScan();
+  };
+
+  // Initialize request interception
+  useEffect(() => {
+    if (config.interceptRequests) {
+      setupRequestInterception();
+    }
+
+    return () => {
+      // Cleanup
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Start background scanning when enabled
+  useEffect(() => {
+    if (config.enableBackgroundScanning && !isPaused) {
+      startBackgroundScanning();
+      // Run initial scan
+      performScan();
+    } else if (!config.enableBackgroundScanning && scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+
+    return () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    };
+  }, [config.enableBackgroundScanning, config.scanInterval, isPaused]);
+
+  /**
+   * Setup request interception using fetch API
+   */
+  const setupRequestInterception = () => {
+    // Store original fetch function
+    const originalFetch = window.fetch;
+
+    // Override fetch to intercept requests
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : (input as any).url;
+
+      // Skip interception for trusted domains
+      if (
+        configRef.current.trustedDomains?.some((domain) => url.includes(domain))
+      ) {
+        return originalFetch(input, init);
+      }
+
+      try {
+        // Analyze the URL before making the request
+        const analysisResult = await NSB.analyzeUrl(
+          url,
+          configRef.current.scanOptions.analyseOptions
+        );
+
+        // Block malicious requests if configured
+        if (
+          analysisResult.isMalicious &&
+          configRef.current.blockMaliciousRequests
+        ) {
+          console.warn(
+            "Nehonix Shield blocked malicious request:",
+            url,
+            analysisResult
+          );
+
+          // Call onBlock callback if provided
+          if (configRef.current.onBlock) {
+            configRef.current.onBlock(analysisResult, new Request(url, init));
+          }
+
+          // Return a blocked response
+          return Promise.reject(
+            new Error(
+              "Request blocked by Nehonix Shield: Malicious URL detected"
+            )
+          );
+        }
+
+        // Make the original request
+        const response = await originalFetch(input, init);
+
+        // Clone the response so we can read it multiple times
+        const responseClone = response.clone();
+
+        // Check response if content scanning is enabled
+        if (configRef.current.blockMaliciousResponses) {
+          try {
+            // Read response as text
+            const responseText = await responseClone.text();
+
+            // Only analyze text responses
+            const contentType = response.headers.get("content-type") || "";
+            if (
+              contentType.includes("text/") ||
+              contentType.includes("application/json")
+            ) {
+              // Create a mock URL with the response content for analysis
+              const mockUrl = `http://mock.nehonix.space?data=${encodeURIComponent(
+                responseText.substring(0, 2000)
+              )}`;
+              const responseAnalysis = await NSB.analyzeUrl(
+                mockUrl,
+                configRef.current.scanOptions.analyseOptions
+              );
+
+              // Block malicious responses
+              if (responseAnalysis.isMalicious) {
+                console.warn(
+                  "Nehonix Shield blocked malicious response:",
+                  url,
+                  responseAnalysis
+                );
+
+                // Call onBlock callback if provided
+                if (configRef.current.onBlock) {
+                  configRef.current.onBlock(
+                    responseAnalysis,
+                    new Request(url, init)
+                  );
+                }
+
+                return Promise.reject(
+                  new Error(
+                    "Response blocked by Nehonix Shield: Malicious content detected"
+                  )
+                );
+              }
+            }
+
+            // Reconstruct the response
+            return new Response(responseText, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers,
+            });
+          } catch (error) {
+            console.error("Error analyzing response:", error);
+            return response;
+          }
+        }
+
+        return response;
+      } catch (error) {
+        console.error("Error in request interception:", error);
+        return originalFetch(input, init);
+      }
+    };
+
+    // Also intercept XHR if needed
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    const originalXHRSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (
+      method: string,
+      url: string | URL,
+      ...args: any[]
+    ) {
+      const urlString = url.toString();
+      (this as any)._nehonixUrl = urlString;
+      return originalXHROpen.apply(this, [method, url, ...args] as any);
+    };
+
+    XMLHttpRequest.prototype.send = async function (
+      body?: Document | XMLHttpRequestBodyInit
+    ) {
+      if (
+        !(this as any)._nehonixUrl ||
+        configRef.current.trustedDomains?.some((domain) =>
+          (this as any)._nehonixUrl.includes(domain)
+        )
+      ) {
+        return originalXHRSend.apply(this, [body]);
+      }
+
+      try {
+        const analysisResult = await NSB.analyzeUrl(
+          (this as any)._nehonixUrl,
+          configRef.current.scanOptions.analyseOptions
+        );
+
+        if (
+          analysisResult.isMalicious &&
+          configRef.current.blockMaliciousRequests
+        ) {
+          console.warn(
+            "Nehonix Shield blocked malicious XHR request:",
+            (this as any)._nehonixUrl,
+            analysisResult
+          );
+
+          // Call onBlock callback if provided
+          if (configRef.current.onBlock) {
+            const request = new Request((this as any)._nehonixUrl);
+            configRef.current.onBlock(analysisResult, request);
+          }
+
+          // Abort the request
+          this.abort();
+
+          // Trigger error event
+          const errorEvent = new ErrorEvent("error", {
+            error: new Error(
+              "Request blocked by Nehonix Shield: Malicious URL detected"
+            ),
+            message:
+              "Request blocked by Nehonix Shield: Malicious URL detected",
+          });
+          this.dispatchEvent(errorEvent);
+
+          return;
+        }
+      } catch (error) {
+        console.error("Error in XHR interception:", error);
+      }
+
+      return originalXHRSend.apply(this, [body]);
+    };
+  };
+
+  const contextValue: NehonixShieldContextT = {
+    config,
+    updateConfig,
+    analysisResults,
+    isScanning,
+    pauseScanning,
+    resumeScanning,
+    forceScan,
+    clearResults,
+  };
+
+  return (
+    <NehonixShieldContext.Provider value={contextValue}>
+      {children}
+    </NehonixShieldContext.Provider>
+  );
+};

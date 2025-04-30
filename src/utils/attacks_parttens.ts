@@ -261,76 +261,75 @@ export class PATTERNS {
     // JSON stringification bypass attempts
     /(?:[?&;:=])(?:[a-zA-Z0-9_$.]+)=(?:{"["'][$](?!gt|gte|lt|lte|ne|in|nin|eq|all)[a-zA-Z0-9_$]+["'"]"\s*:)|(?:JSON\.parse\(\s*['"`]\s*\{[\s\S]*?[$](?!gt|gte|lt|lte|ne|in|nin|eq|all)[a-zA-Z0-9_$]+["'\']\s*:)/i,
   ];
-  // ========== GRAPHQL INJECTION PATTERNS (continued) ==========
   static readonly GRAPHQL_INJECTION_PATTERNS = [
-    // Introspection queries with better boundaries
-    /(?:query\s+[\w_]*\s*\{|query\s*=\s*(?:.*)){?\s*(?:__schema|__type|__typename)\s*(?:\([\s\S]*?\))?\s*{/i,
+    // Introspection queries with better boundaries and context
+    /(?:query\s+[\w_]*\s*\{|query\s*=\s*(?:[^{]*)){?\s*(?:__schema|__type|__typename)\s*(?:\([\s\S]*?\))?\s*\{(?!\s*\w+\s*\{)/i,
 
-    // Deep nesting attacks with context
-    /(?:query\s+[\w_]*\s*\{|query\s*=\s*(?:.*)){1}\s*(?:\w+(?:\([\s\S]*?\))?\s*{){4,}/i,
+    // Deep nesting attacks with improved boundaries and specificity
+    /(?:query\s+[\w_]*\s*\{|query\s*=\s*(?:[^{]*)){1}\s*(?:\w+(?:\([\s\S]*?\))?\s*\{){5,}/i,
 
-    // Batch/aliased query detection
-    /(?:query\s+[\w_]*\s*\{|query\s*=\s*(?:.*))(?:\s*[a-zA-Z0-9_]+\s*:\s*\w+(?:\([\s\S]*?\))?\s*{){3,}/i,
+    // Batch/aliased query detection with reduced false positives
+    /(?:query\s+[\w_]*\s*\{|query\s*=\s*(?:[^{]*))(?:\s*[a-zA-Z0-9_]+\s*:\s*\w+(?:\([\s\S]*?\))?\s*\{){4,}/i,
 
-    // Fragments with potential for bypassing controls
-    /(?:fragment\s+\w+\s+on\s+\w+\s*{(?:[\s\S]*?__typename|[\s\S]*?id|[\s\S]*?name))|(?:\.{3}\s*\w+Fragment\s*)/i,
+    // Fragments with potential for bypassing controls - more specific context
+    /(?:fragment\s+\w+\s+on\s+\w+\s*\{(?:[\s\S]*?__\w+|[\s\S]*?\bid\b|[\s\S]*?\bname\b))|(?:\.{3}\s*\w+Fragment(?:\s|$))/i,
 
-    // Variable manipulation
-    /(?:query\s+\w+\s*\(\s*\$[\w_]+\s*:\s*\w+!\s*=\s*(?:null|false|0|""|{}|\[\])\s*\))|(?:variables\s*=\s*\{[\s\S]*?\}\s*$)/i,
+    // Variable manipulation with improved boundary checking
+    /(?:query\s+\w+\s*\(\s*\$[\w_]+\s*:\s*\w+!\s*=\s*(?:null|false|0|""|{}|\[\])\s*\))|(?:variables\s*=\s*\{[\s\S]*?(?:\bnull\b|\bfalse\b|\btrue\b|[{}\[\]])[\s\S]*?\}\s*$)/i,
 
-    // Directive abuse
-    /(?:\s@\w+\s*\(\s*(?:if|include|skip)\s*:\s*[^)"']*(?:===|!==|==|!=|>=|<=|>|<|&&|\|\||\!|\?:))/i,
+    // Directive abuse with more specific patterns
+    /(?:\s@\w+\s*\(\s*(?:if|include|skip)\s*:\s*[^)"']*(?:===|!==|==|!=|>=|<=|>|<|&&|\|\||\!)[^)"']*\))/i,
 
-    // Mutation detection with better context
-    /(?:mutation\s+\w*\s*{|mutation\s*=\s*(?:.*)){1}\s*\w+(?:\([\s\S]*?\))?\s*{(?:[\s\S]*?(?:id|delete|remove|update|create|drop|add|insert))}/i,
+    // Mutation detection with improved context and specificity
+    /(?:mutation\s+\w*\s*\{|mutation\s*=\s*(?:[^{]*)){1}\s*\w+(?:\([\s\S]*?\))?\s*\{(?:[\s\S]*?(?:\bid\b|\bdelete\b|\bremove\b|\bupdate\b|\bcreate\b|\bdrop\b|\badd\b|\binsert\b))(?:[^}]*)\}/i,
 
-    // Custom directive injection
-    /(?:\s@\w+\s*\(\s*[\w]+\s*:\s*(?:["'`][\s\S]*?["'`]|[-\d.]+)\s*\))/i,
+    // Custom directive injection with better boundary checking
+    /(?:\s@\w+\s*\(\s*[\w]+\s*:\s*(?:["'`][\s\S]*?["'`]|[-\d.]+)\s*\))(?:\s*@|\s*\{|\s*$)/i,
 
-    // Field suggestion exploitation
-    /(?:__schema\s*{[\s\S]*?}|__type\s*\(\s*name\s*:\s*["'`][\w_]+["'`]?\s*\)\s*{[\s\S]*?})/i,
+    // Field suggestion exploitation with more precise detection
+    /(?:__schema\s*\{[\s\S]*?(?:types|queryType|mutationType|subscriptionType|directives)[\s\S]*?\}|__type\s*\(\s*name\s*:\s*["'`][\w_]+["'`]?\s*\)\s*\{[\s\S]*?(?:fields|interfaces|enumValues|possibleTypes)[\s\S]*?\})/i,
 
-    // Operation name manipulation
-    /(?:operationName\s*=\s*["'`][\w_]+["'`])/i,
+    // Operation name manipulation with improved boundary detection
+    /(?:operationName\s*=\s*["'`][\w_]+["'`])(?:\s*[,&]|\s*$)/i,
   ];
 
   // ========== ENCODED PAYLOAD PATTERNS ==========
   static readonly ENCODED_PAYLOAD_PATTERNS = [
-    // Object serialization with improved detection
-    /(?:O:[0-9]+:"[a-zA-Z0-9_\\\\]+":[0-9]+:\{|a:[0-9]+:\{(?:i:[0-9]+;|s:[0-9]+:")|N;}\)|C:[0-9]+:"[a-zA-Z0-9_\\\\]+")/i,
+    // Object serialization with improved detection and reduced false positives
+    /(?:O:[1-9][0-9]*:"[a-zA-Z0-9_\\\\]+(?<!\\)":[1-9][0-9]*:\{|a:[1-9][0-9]*:\{(?:i:[0-9]+;|s:[1-9][0-9]*:")|N;}\)|C:[1-9][0-9]*:"[a-zA-Z0-9_\\\\]+")/i,
 
-    // JSON type juggling detection
-    /(?:\{"[$](?:type|ref|id|class|identity)":"[^"]*(?:Function|Object|Array|Date|RegExp|Promise|Error|Symbol|Map|Set|WeakMap|WeakSet|ArrayBuffer|SharedArrayBuffer|DataView|JSON|Math|Reflect|Intl|WebAssembly)"|"jsonrpc"\s*:\s*['"]\d+\.?\d*['"])/i,
+    // JSON type juggling detection with better context
+    /(?:\{"[$](?:type|ref|id|class|identity)"\s*:\s*"[^"]*(?:Function|Object|Array|Date|RegExp|Promise|Error|Symbol|Map|Set|WeakMap|WeakSet|ArrayBuffer|SharedArrayBuffer|DataView|JSON|Math|Reflect|Intl|WebAssembly)"|"jsonrpc"\s*:\s*['"]\d+\.?\d*['"])/i,
 
-    // Multi-encoding detection with context
-    /(?:%(?:[0-9A-F]{2})){10,}|(?:%[0-9A-F]{2})+(?:%(?:[0-9A-F]{2})){5,}/i,
+    // Multi-encoding detection with better context and minimum length
+    /(?:%(?:[0-9A-F]{2})){12,}|(?:%[0-9A-F]{2}){2,}(?:%(?:[0-9A-F]{2})){7,}/i,
 
-    // Unicode escape sequence detection
-    /(?:\\u[0-9A-Fa-f]{4}){5,}|(?:%u[0-9A-Fa-f]{4}){5,}/i,
+    // Unicode escape sequence detection with minimum threshold
+    /(?:\\u[0-9A-Fa-f]{4}){6,}|(?:%u[0-9A-Fa-f]{4}){6,}/i,
 
-    // HTML entity encoding with context
-    /(?:&#(?:x[0-9a-fA-F]{2}|[0-9]{2,3});){5,}/i,
+    // HTML entity encoding with minimum threshold and better specificity
+    /(?:&#(?:x[0-9a-fA-F]{2}|[0-9]{2,3});){6,}/i,
 
-    // Base64 detection with improved boundaries
-    /(?:base64[,;:=](?:[A-Za-z0-9+/]){20,}(?:={0,2}))|(?:^|[=:()[\]{}|&!^,;]|url\(|data:)(?:[A-Za-z0-9+/]){30,}(?:={0,2})/i,
+    // Base64 detection with improved boundaries and character validation
+    /(?:base64[,;:=]\s*(?:[A-Za-z0-9+/]){20,}(?:={0,2}))|(?:^|[=:()[\]{}|&!^,;]|url\(|data:)(?:[A-Za-z0-9+/]){30,}(?:={0,2})(?:$|[^A-Za-z0-9+/=])/i,
 
-    // Protocol-independent URL encoding
-    /(?:%2F%2F|\/\/|\\\/\\\/|%5C%2F%5C%2F)/i,
+    // Protocol-independent URL encoding with better context
+    /(?:%2F%2F|\/\/|\\\/\\\/|%5C%2F%5C%2F)(?:[\w%.-]+\.[\w%.-]+|\d{1,3}(?:\.\d{1,3}){3})/i,
 
-    // Binary data detection
-    /(?:\\x[0-9A-Fa-f]{2}){10,}/i,
+    // Binary data detection with minimum threshold
+    /(?:\\x[0-9A-Fa-f]{2}){12,}/i,
 
-    // Long hexadecimal values
-    /(?:0x[0-9a-fA-F]{10,})/i,
+    // Long hexadecimal values with improved boundaries
+    /(?:\b0x[0-9a-fA-F]{10,}\b)/i,
 
-    // Data URI with potential payloads
-    /(?:data:(?:text\/html|text\/javascript|application\/javascript|application\/x-javascript|image\/svg\+xml);base64,[A-Za-z0-9+/=]{20,})/i,
+    // Data URI with potential payloads - improved specificity
+    /(?:data:(?:text\/html|text\/javascript|application\/javascript|application\/x-javascript|image\/svg\+xml);base64,(?:[A-Za-z0-9+/]){20,}(?:={0,2}))/i,
 
-    // Character code conversion
-    /(?:String\.fromCharCode\((?:\d+(?:\s*,\s*\d+){5,})\))|(?:(?:\\u[0-9A-Fa-f]{4}|\\\d{1,3}|\\x[0-9A-Fa-f]{2})){10,}/i,
+    // Character code conversion with better specificity
+    /(?:String\.fromCharCode\((?:\d+(?:\s*,\s*\d+){7,})\))|(?:(?:\\u[0-9A-Fa-f]{4}|\\\d{1,3}|\\x[0-9A-Fa-f]{2})){12,}/i,
 
-    // Advanced sequences detection
-    /(?:[^<>=+\-*/\s()\[\]{};&|^%"'`.,][<>=+\-*/&\s|^%](?:[^<>=+\-*/\s()\[\]{};&|^%"'`.,])){5,}/i,
+    // Advanced sequences detection with improved context and reduced false positives
+    /(?:[^\w\s<>=+\-*/\\()\[\]{};&|^%"'`.,][<>=+\-*/&|^%](?:[^\w\s<>=+\-*/\\()\[\]{};&|^%"'`.,])){7,}/i,
   ];
 
   // ========== SUSPICIOUS TLD PATTERNS ==========
@@ -403,8 +402,16 @@ export class PATTERNS {
   ];
 
   // ========== SUSPICIOUS_PARAMETER_NAMES ==========
-  static readonly SUSPICIOUS_PARAMETER_NAMES = [
-    // Command execution related
+  // ========== SUSPICIOUS_PARAMETER_NAMES ==========
+  /**
+   * Enhanced list of suspicious parameter names with:
+   * - Better organization by category (via comments)
+   * - Improved naming patterns to catch variations
+   * - Removal of common false positives
+   * - Addition of modern attack vectors
+   */
+  static readonly SUSPICIOUS_PARAMETER_NAMES: string[] = [
+    // ----- COMMAND EXECUTION (HIGH RISK) -----
     "cmd",
     "exec",
     "command",
@@ -412,18 +419,7 @@ export class PATTERNS {
     "execute",
     "ping",
     "query",
-    "jump",
     "code",
-    "reg",
-    "do",
-    "func",
-    "function",
-    "option",
-    "load",
-    "process",
-    "step",
-    "read",
-    "feature",
     "run",
     "exe",
     "payload",
@@ -431,45 +427,161 @@ export class PATTERNS {
     "eval",
     "runtime",
     "call",
+    "system",
+    "spawn",
+    "child_process",
+    "proc_open",
+    "popen",
+    "passthru",
+    "execute_cmd",
+    "exec_shell",
+    "syscall",
+    "script_exec",
+    "shellexec",
+    "bash",
+    "sh",
+    "powershell",
+    "cmd.exe",
 
-    // Admin/privileged access related
+    // ----- OS & SYSTEM ACCESS (HIGH RISK) -----
+    "system",
+    "os",
+    "kernel",
+    "driver",
+    "service",
+    "proc",
+    "process",
+    "memory",
+    "hardware",
+    "device",
+    "thread",
+    "job",
+    "application",
+    "binary",
+    "sysctrl",
+    "sysreq",
+    "crash",
+    "overflow",
+    "buffer",
+    "stack",
+    "heap",
+    "sysconf",
+
+    // ----- PRIVILEGED ACCESS (HIGH RISK) -----
     "admin",
     "root",
     "superuser",
     "supervisor",
     "manager",
-    "master",
-    "enable",
-    "grant",
-    "priv",
-    "privs",
+    "sudo",
+    "su",
+    "elevation",
     "privilege",
+    "grant",
+    "privs",
+    "permissions",
+    "rights",
     "access",
     "auth",
     "authenticate",
-    "sudo",
-    "su",
+    "runas",
+    "elevated",
+    "uac",
+    "setuid",
+    "setgid",
+    "chmod",
+    "chown",
+    "priv_esc",
+    "escalate",
+    "authority",
 
-    // Configuration related
-    "cfg",
-    "config",
-    "conf",
-    "setting",
-    "setup",
-    "option",
-    "parameter",
-    "arg",
-    "prop",
-    "property",
-    "module",
-    "env",
-    "environment",
-    "init",
-    "startup",
-    "boot",
-    "registry",
+    // ----- INJECTION VECTORS (HIGH RISK) -----
+    "injection",
+    "sql",
+    "sqli",
+    "nosql",
+    "ldap",
+    "xpath",
+    "template",
+    "ssti",
+    "expression",
+    "render",
+    "compile",
+    "statement",
+    "sanitize",
+    "escape",
+    "unsafe",
+    "raw",
+    "unescaped",
+    "unfiltered",
+    "eval_tpl",
+    "jinja",
+    "erb",
+    "handlebars",
+    "vulnerable",
+    "deserialize",
+    "pickle",
 
-    // Credential related
+    // ----- FILE OPERATIONS (HIGH RISK) -----
+    "file",
+    "path",
+    "include",
+    "require",
+    "load",
+    "import",
+    "open",
+    "read",
+    "write",
+    "upload",
+    "download",
+    "save",
+    "delete",
+    "unlink",
+    "filepath",
+    "pathname",
+    "dir",
+    "directory",
+    "folder",
+    "lfi",
+    "rfi",
+    "path_traversal",
+    "directory_traversal",
+    "symlink",
+    "readfile",
+    "writefile",
+    "fopen",
+    "fread",
+
+    // ----- NETWORK & URL (HIGH RISK) -----
+    "url",
+    "uri",
+    "domain",
+    "host",
+    "server",
+    "endpoint",
+    "address",
+    "remote",
+    "proxy",
+    "dns",
+    "connect",
+    "ssrf",
+    "request_uri",
+    "redirect_uri",
+    "callback_url",
+    "webhook",
+    "forward_to",
+    "next_url",
+    "return_url",
+    "dest",
+    "destination",
+    "target",
+    "location",
+    "referrer",
+    "resource",
+    "cors",
+    "origin",
+
+    // ----- CREDENTIALS & SECRETS (HIGH RISK) -----
     "password",
     "passwd",
     "pwd",
@@ -485,30 +597,77 @@ export class PATTERNS {
     "login",
     "cred",
     "credential",
-    "auth",
+    "apikey",
+    "api_key",
+    "jwt",
+    "oauth",
+    "bearer",
+    "cert",
     "certificate",
+    "private_key",
+    "public_key",
+    "sign",
+    "signature",
+    "crypto",
+    "encrypt",
+    "decrypt",
 
-    // Data access related
-    "source",
+    // ----- DATABASE ACCESS (MEDIUM RISK) -----
     "db",
     "database",
     "query",
     "sql",
     "data",
-    "file",
-    "path",
-    "include",
-    "require",
-    "load",
-    "import",
-    "open",
-    "read",
-    "write",
-    "close",
-    "stream",
-    "socket",
+    "source",
+    "dsn",
+    "db_query",
+    "db_name",
+    "table",
+    "column",
+    "select",
+    "insert",
+    "update",
+    "delete",
+    "where",
+    "from",
+    "join",
+    "group",
+    "order",
+    "having",
+    "limit",
+    "mongo",
+    "redis",
+    "memcache",
+    "dba",
 
-    // Debug/testing related
+    // ----- CONFIGURATION (MEDIUM RISK) -----
+    "config",
+    "conf",
+    "cfg",
+    "setting",
+    "setup",
+    "option",
+    "init",
+    "env",
+    "environment",
+    "registry",
+    "boot",
+    "startup",
+    "module",
+    "component",
+    "flag",
+    "feature",
+    "toggle",
+    "switch",
+    "control",
+    "param",
+    "parameter",
+    "arg",
+    "argument",
+    "prop",
+    "property",
+
+    // ----- DEBUGGING & TESTING (MEDIUM RISK) -----
     "debug",
     "test",
     "dev",
@@ -519,52 +678,86 @@ export class PATTERNS {
     "info",
     "log",
     "console",
-    "output",
-    "print",
     "dump",
-    "stack",
+    "profile",
     "bypass",
-    "overflow",
+    "skip_validation",
+    "no_check",
+    "backdoor",
+    "testing",
+    "diagnostics",
+    "troubleshoot",
+    "debug_mode",
+    "mock",
+    "stub",
 
-    // Network related
-    "ip",
-    "host",
-    "url",
-    "uri",
-    "domain",
-    "net",
-    "web",
-    "site",
-    "server",
-    "port",
-    "connect",
-    "network",
-    "endpoint",
-    "address",
-    "remote",
-    "local",
-    "proxy",
-    "dns",
+    // ----- WEB & FRONTEND (LOWER RISK) -----
+    "html",
+    "xml",
+    "json",
+    "yaml",
+    "text",
+    "script",
+    "iframe",
+    "embed",
+    "object",
+    "xss",
+    "javascript",
+    "js",
+    "css",
+    "dom",
+    "render",
+    "view",
+    "template",
+    "layout",
+    "page",
+    "content",
+    "sanitize",
+    "filter",
+    "encode",
+    "decode",
+    "transform",
 
-    // System related
-    "system",
-    "os",
-    "kernel",
-    "hardware",
-    "device",
-    "driver",
-    "service",
-    "task",
-    "proc",
+    // ----- COMMON OPERATION VERBS (CONTEXT-DEPENDENT) -----
+    "do",
+    "load",
     "process",
-    "thread",
-    "job",
-    "app",
-    "application",
-    "program",
-    "memory",
-  ];
+    "step",
+    "action",
+    "act",
+    "perform",
+    "trigger",
+    "dispatch",
+    "execute",
+    "run",
+    "launch",
+    "start",
 
+    // ----- MODERN ATTACK VECTORS -----
+    "prototype",
+    "constructor",
+    "proto",
+    "__proto__",
+    "function",
+    "callback",
+    "promise",
+    "async",
+    "await",
+    "timeout",
+    "interval",
+    "worker",
+    "child",
+    "parent",
+    "iframe",
+    "window",
+    "document",
+    "global",
+    "fetch",
+    "xhr",
+    "ajax",
+    "jsonp",
+    "postmessage",
+  ];
   // ========== RFI_PATTERNS ==========
   static readonly RFI_PATTERNS = [
     // External file inclusion with better context

@@ -33,8 +33,7 @@ export class NSS {
     PATTERNS.GRAPHQL_INJECTION_PATTERNS;
   private static ENCODED_PAYLOAD_PATTERNS = PATTERNS.ENCODED_PAYLOAD_PATTERNS;
   private static SUSPICIOUS_TLD_PATTERNS = PATTERNS.SUSPICIOUS_TLD_PATTERNS;
-  private static HOMOGRAPH_ATTACK_PATTERNS =
-    PATTERNS.HOMOGRAPH_ATTACK_PATTERNS;
+  private static HOMOGRAPH_ATTACK_PATTERNS = PATTERNS.HOMOGRAPH_ATTACK_PATTERNS;
   private static MULTI_ENCODING_PATTERNS = PATTERNS.MULTI_ENCODING_PATTERNS;
   private static SUSPICIOUS_PARAMETER_NAMES =
     PATTERNS.SUSPICIOUS_PARAMETER_NAMES;
@@ -90,15 +89,16 @@ export class NSS {
         },
         characterSet: options.characterSet ?? "all",
       };
+      const parsedInput = NDS.decodeAnyToPlaintext(receivedInput).val();
 
       if (opts.debug) {
         AppLogger.debug("NMPS: Analyzing input with options:", opts);
       }
 
       // Normalize Unicode input
-      const normalizedInput = receivedInput.normalize("NFC");
+      const normalizedInput = parsedInput.normalize("NFC");
       // Use normalized input for checks
-      const inputsToCheck = [normalizedInput, receivedInput].filter(
+      const inputsToCheck = [normalizedInput, parsedInput].filter(
         (i, idx, arr) => i !== arr[idx - 1]
       );
       let decodedInput = "";
@@ -609,6 +609,7 @@ export class NSS {
 
           if (valueResult.detectedPatterns.length > 0) {
             for (const pattern of valueResult.detectedPatterns) {
+              console.log("pattern", pattern);
               detectedPatterns.push({
                 ...pattern,
                 location: `query:parameter_value:${key}:${pattern.location}`,
