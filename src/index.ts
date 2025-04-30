@@ -461,3 +461,5 @@ export const decodeB64 = (input: string) =>
 //v2.3.x
 export * from "./integration/react/hook/REACT.ShieldHooks";
 export * from "./integration/react/provider/REACT.NehonixShield";
+export * from "./integration/react/provider/REACT.NehonixDomPlugging.hooks";
+export { DetectedPattern } from "./services/MaliciousPatterns.service";

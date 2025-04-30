@@ -609,7 +609,7 @@ export class NSS {
 
           if (valueResult.detectedPatterns.length > 0) {
             for (const pattern of valueResult.detectedPatterns) {
-              console.log("pattern", pattern);
+              AppLogger.log("pattern", pattern);
               detectedPatterns.push({
                 ...pattern,
                 location: `query:parameter_value:${key}:${pattern.location}`,

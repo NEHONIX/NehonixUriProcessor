@@ -188,23 +188,23 @@ export const useShieldConfig = () => {
 
   const addTrustedDomain = useCallback(
     (domain: string) => {
-      const trustedDomains = [...(config.trustedDomains || [])];
+      const trustedDomains = [...(config.urlUtils.trustedDomains || [])];
       if (!trustedDomains.includes(domain)) {
         trustedDomains.push(domain);
-        updateConfig({ trustedDomains });
+        updateConfig({ urlUtils: { trustedDomains } });
       }
     },
-    [config.trustedDomains, updateConfig]
+    [config.urlUtils.trustedDomains, updateConfig]
   );
 
   const removeTrustedDomain = useCallback(
     (domain: string) => {
-      const trustedDomains = (config.trustedDomains || []).filter(
+      const trustedDomains = (config.urlUtils.trustedDomains || []).filter(
         (d) => d !== domain
       );
-      updateConfig({ trustedDomains });
+      updateConfig({ urlUtils: { trustedDomains } });
     },
-    [config.trustedDomains, updateConfig]
+    [config.urlUtils.trustedDomains, updateConfig]
   );
 
   const addBlacklistedPattern = useCallback(
@@ -278,7 +278,9 @@ export const useSecureFetch = () => {
       try {
         // Check if URL is in trusted domains
         if (
-          config.trustedDomains?.some((domain) => urlString.includes(domain))
+          config.urlUtils.trustedDomains?.some((domain) =>
+            urlString.includes(domain)
+          )
         ) {
           return fetch(url, options);
         }

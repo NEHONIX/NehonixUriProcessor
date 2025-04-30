@@ -146,7 +146,7 @@ export class NSB extends NSS {
     try {
       const cacheKey = `${input}:${JSON.stringify(options)}`;
       let url = (await NDS.asyncDecodeAnyToPlainText(input)).val();
-      const checkUrl = ncu.checkUrl(url, this.default_checkurl_opt);
+      const checkUrl = ncu.checkUrl(url.normalize("NFC"), this.default_checkurl_opt);
       if (!checkUrl.isValid) {
         url = `http://mock.nehonix.space?q=${url}`;
       }
