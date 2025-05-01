@@ -163,7 +163,7 @@ export interface DomProcessorStats {
     elementType: string;
     timestamp: number;
     threatTypes: string[];
-    metadata?: {
+    metadata: {
       domLocation: string;
       elementId?: string;
       className?: string;
@@ -194,7 +194,7 @@ export interface ElementScanResult {
   timestamp: number;
   hasMaliciousContent: boolean;
   error?: string;
-  metadata?: {
+  metadata: {
     domLocation: string; // outerHTML of the element
     elementId?: string; // id attribute
     className?: string; // class attribute
