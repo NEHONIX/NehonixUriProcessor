@@ -103,6 +103,7 @@ export enum MaliciousPatternType {
   ANOMALY_DETECTED = "anomaly_detected",
 
   SUSPICIOUS_EXTENSION = "SUSPICIOUS_EXTENSION",
+  KNOWN_MALICIOUS_URL = "known_malicious_url",
 }
 
 /**

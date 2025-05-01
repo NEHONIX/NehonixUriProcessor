@@ -1,5 +1,15 @@
-import React, { useEffect, useState, useRef, createContext } from "react";
-import { MaliciousPatternResult } from "../../../services/MaliciousPatterns.service";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useContext,
+  createContext,
+} from "react";
+import {
+  MaliciousPatternResult,
+  MaliciousPatternOptions,
+  DetectedPattern,
+} from "../../../services/MaliciousPatterns.service";
 import { NSB } from "../../../services/NehonixSecurityBooster.service";
 import {
   NehonixShieldConfig,
@@ -9,7 +19,7 @@ import {
 import { NehonixShieldContext } from "../context/REACT.ShieldContext";
 import { ncu } from "../../../utils/NehonixCoreUtils";
 import NDS from "../../../services/NehonixDec.service";
-import { mapConfidenceToNumber } from "./utils/confidence";
+import { kStringMaxLength } from "buffer";
 
 // Default configuration
 const defaultConfig: NehonixShieldConfig = {
@@ -17,8 +27,6 @@ const defaultConfig: NehonixShieldConfig = {
   scanInterval: 30000, // 30 seconds
   interceptRequests: true,
   enableDeepScan: false,
-  confidenceThreshold: 0.7, // Added for confidence-based filtering
-  enableContextAnalysis: true, // Added for context-aware scanning
   scanOptions: {
     analyseOptions: {
       debug: true,
@@ -35,7 +43,6 @@ const defaultConfig: NehonixShieldConfig = {
   blockMaliciousResponses: true,
   urlUtils: {
     trustedDomains: [],
-    dynamicWhitelist: [], // Added for runtime whitelisting
   },
   blacklistedPatterns: [],
 };
@@ -76,9 +83,6 @@ export const NehonixShieldProvider: React.FC<{
   // Use refs for values that need to be accessed in effects
   const configRef = useRef(config);
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const urlCache = useRef<
-    Map<string, { result: MaliciousPatternResult; timestamp: number }>
-  >(new Map());
 
   // Update the config ref when config changes
   useEffect(() => {
@@ -90,6 +94,7 @@ export const NehonixShieldProvider: React.FC<{
    */
   const updateConfig = (newConfig: Partial<NehonixShieldConfig>) => {
     setConfig((prevConfig) => {
+      // Merge nested objects
       const updatedConfig = {
         ...prevConfig,
         ...newConfig,
@@ -97,26 +102,9 @@ export const NehonixShieldProvider: React.FC<{
           ...prevConfig.scanOptions,
           ...(newConfig.scanOptions || {}),
         },
-        urlUtils: {
-          ...prevConfig.urlUtils,
-          ...(newConfig.urlUtils || {}),
-        },
       };
       return updatedConfig;
     });
-  };
-
-  /**
-   * Add URL to dynamic whitelist
-   */
-  const addToDynamicWhitelist = (url: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      urlUtils: {
-        ...prev.urlUtils,
-        dynamicWhitelist: [...(prev.urlUtils.dynamicWhitelist || []), url],
-      },
-    }));
   };
 
   /**
@@ -145,7 +133,6 @@ export const NehonixShieldProvider: React.FC<{
    */
   const clearResults = () => {
     setAnalysisResults(initialAnalysisResults);
-    urlCache.current.clear();
   };
 
   /**
@@ -171,46 +158,12 @@ export const NehonixShieldProvider: React.FC<{
     const startTime = performance.now();
 
     try {
+      // Scan the current URL
       const currentUrl = NDS.decodeAnyToPlaintext(window.location.href).val();
-
-      // Check cache first
-      const cached = urlCache.current.get(currentUrl);
-      if (cached && Date.now() - cached.timestamp < 60 * 1000) {
-        return cached.result;
-      }
-
-      // Context analysis
-      const context = configRef.current.enableContextAnalysis
-        ? {
-            referrer: document.referrer,
-            userAgent: navigator.userAgent,
-            pageTitle: document.title,
-          }
-        : {};
-
-      const urlResult = await NSB.analyzeUrl(currentUrl, {
-        ...configRef.current.scanOptions.analyseOptions,
-        /**
-         * TODO:  context,
-         * we'll add context later
-         * */
-      });
-
-      // Apply confidence threshold
-      if (
-        urlResult.isMalicious &&
-        mapConfidenceToNumber(urlResult.confidence) <
-          configRef.current.confidenceThreshold
-      ) {
-        urlResult.isMalicious = false;
-        console.warn("Low-confidence threat detected:", urlResult);
-      }
-
-      // Update cache
-      urlCache.current.set(currentUrl, {
-        result: urlResult,
-        timestamp: Date.now(),
-      });
+      const urlResult = await NSB.analyzeUrl(
+        currentUrl,
+        configRef.current.scanOptions.analyseOptions
+      );
 
       // Deep scan if enabled
       let deepScanResults: MaliciousPatternResult[] = [];
@@ -218,34 +171,18 @@ export const NehonixShieldProvider: React.FC<{
         deepScanResults = await performDeepScan();
       }
 
-      // Apply confidence threshold to deep scan results
-      deepScanResults = deepScanResults.map((result) => {
-        if (
-          result.isMalicious &&
-          mapConfidenceToNumber(result.confidence) <
-            configRef.current.confidenceThreshold
-        ) {
-          return { ...result, isMalicious: false };
-        }
-        return result;
-      });
-
       // Combine results
       const allResults = [urlResult, ...deepScanResults];
-      const newActiveThreats = allResults.flatMap((result) =>
-        result.detectedPatterns.filter(
-          (threat) =>
-            threat.severity === "high" &&
-            mapConfidenceToNumber(result.confidence) >=
-              configRef.current.confidenceThreshold
-        )
-      );
+      const newActiveThreats = allResults
+        .flatMap((result) => result.detectedPatterns)
+        .filter((threat) => threat.severity === "high");
 
       // Update scan metrics
       const endTime = performance.now();
       const scanTime = endTime - startTime;
 
       setAnalysisResults((prev) => {
+        // Calculate new metrics
         const totalScanTime = prev.performanceMetrics.totalScanTime + scanTime;
         const scanCount = prev.performanceMetrics.scanCount + 1;
 
@@ -300,40 +237,31 @@ export const NehonixShieldProvider: React.FC<{
       const uniqueLinks = [...new Set(links)].filter((link) => {
         const checkLink = ncu.checkUrl(link, checkOpt);
 
-        // Filter out links that don't have a valid protocol or are in trusted/dynamic whitelists
+        // Filter out links that don't have a valid protocol or are in trusted domains
         if (!checkLink.isValid) return false;
 
-        if (
-          current.urlUtils.trustedDomains?.some((domain) =>
+        // Check against trusted domains
+        if (current.urlUtils.trustedDomains?.length) {
+          return !current.urlUtils.trustedDomains.some((domain) =>
             link.includes(domain)
-          ) ||
-          current.urlUtils.dynamicWhitelist?.includes(link)
-        ) {
-          return false;
+          );
         }
 
         return true;
       });
 
-      // Limit the number of links to scan
+      // Limit the number of links to scan to avoid performance issues
       const linksToScan = uniqueLinks.slice(0, 10);
 
       // Scan each link
       for (const link of linksToScan) {
         try {
-          const norm = await NDS.asyncDecodeAnyToPlainText(link);
-          const url = norm.val();
+          const norm = NDS.asyncDecodeAnyToPlainText(link);
+          const url = (await norm).val();
           const result = await NSB.analyzeUrl(
             url.normalize("NFC"),
             current.scanOptions.analyseOptions
           );
-          if (
-            result.isMalicious &&
-            mapConfidenceToNumber(result.confidence) <
-              current.confidenceThreshold
-          ) {
-            result.isMalicious = false;
-          }
           results.push(result);
         } catch (error) {
           console.error(`Error scanning link ${link}:`, error);
@@ -345,29 +273,17 @@ export const NehonixShieldProvider: React.FC<{
         .map((s) => s.src)
         .filter(Boolean);
       const uniqueScripts = [...new Set(scripts)].filter(
-        (src) =>
-          ncu.checkUrl(src, checkOpt).isValid &&
-          !current.urlUtils.trustedDomains?.some((domain) =>
-            src.includes(domain)
-          ) &&
-          !current.urlUtils.dynamicWhitelist?.includes(src)
+        (src) => ncu.checkUrl(src, checkOpt).isValid
       );
 
       for (const src of uniqueScripts.slice(0, 5)) {
         try {
-          const norm = await NDS.asyncDecodeAnyToPlainText(src);
-          const url = norm.val();
+          const norm = NDS.asyncDecodeAnyToPlainText(src);
+          const url = (await norm).val();
           const result = await NSB.analyzeUrl(
             url.normalize("NFC"),
-            current.scanOptions.analyseOptions
+            configRef.current.scanOptions.analyseOptions
           );
-          if (
-            result.isMalicious &&
-            mapConfidenceToNumber(result.confidence) <
-              current.confidenceThreshold
-          ) {
-            result.isMalicious = false;
-          }
           results.push(result);
         } catch (error) {
           console.error(`Error scanning script ${src}:`, error);
@@ -378,30 +294,15 @@ export const NehonixShieldProvider: React.FC<{
       const iframes = Array.from(document.querySelectorAll("iframe"))
         .map((i) => i.src)
         .filter(Boolean);
-      const uniqueIframes = [...new Set(iframes)].filter(
-        (src) =>
-          ncu.checkUrl(src, checkOpt).isValid &&
-          !current.urlUtils.trustedDomains?.some((domain) =>
-            src.includes(domain)
-          ) &&
-          !current.urlUtils.dynamicWhitelist?.includes(src)
-      );
 
-      for (const src of uniqueIframes) {
+      for (const src of iframes) {
         try {
-          const norm = await NDS.asyncDecodeAnyToPlainText(src);
-          const url = norm.val();
+          const norm = NDS.asyncDecodeAnyToPlainText(src);
+          const url = (await norm).val();
           const result = await NSB.analyzeUrl(
             url.normalize("NFC"),
-            current.scanOptions.analyseOptions
+            configRef.current.scanOptions.analyseOptions
           );
-          if (
-            result.isMalicious &&
-            mapConfidenceToNumber(result.confidence) <
-              current.confidenceThreshold
-          ) {
-            result.isMalicious = false;
-          }
           results.push(result);
         } catch (error) {
           console.error(`Error scanning iframe ${src}:`, error);
@@ -428,16 +329,18 @@ export const NehonixShieldProvider: React.FC<{
     }
 
     return () => {
+      // Cleanup
       if (scanIntervalRef.current) {
         clearInterval(scanIntervalRef.current);
       }
     };
-  }, [config.interceptRequests]);
+  }, []);
 
   // Start background scanning when enabled
   useEffect(() => {
     if (config.enableBackgroundScanning && !isPaused) {
       startBackgroundScanning();
+      // Run initial scan
       performScan();
     } else if (!config.enableBackgroundScanning && scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
@@ -455,32 +358,34 @@ export const NehonixShieldProvider: React.FC<{
    * Setup request interception using fetch API
    */
   const setupRequestInterception = () => {
+    // Store original fetch function
     const originalFetch = window.fetch;
 
+    // Override fetch to intercept requests
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : (input as any)?.url ?? "";
 
+      // Skip interception for trusted domains
       if (
         configRef.current.urlUtils.trustedDomains?.some((domain) =>
           url.includes(domain)
-        ) ||
-        configRef.current.urlUtils.dynamicWhitelist?.includes(url)
+        )
       ) {
         return originalFetch(input, init);
       }
 
       try {
-        const norm = await NDS.asyncDecodeAnyToPlainText(url);
-        const link = norm.val();
+        // Analyze the URL before making the request
+        const norm = NDS.asyncDecodeAnyToPlainText(url);
+        const link = (await norm).val();
         const analysisResult = await NSB.analyzeUrl(
           link.normalize("NFC"),
           configRef.current.scanOptions.analyseOptions
         );
 
+        // Block malicious requests if configured
         if (
           analysisResult.isMalicious &&
-          mapConfidenceToNumber(analysisResult.confidence) >=
-            configRef.current.confidenceThreshold &&
           configRef.current.blockMaliciousRequests
         ) {
           console.warn(
@@ -489,10 +394,12 @@ export const NehonixShieldProvider: React.FC<{
             analysisResult
           );
 
+          // Call onBlock callback if provided
           if (configRef.current.onBlock) {
             configRef.current.onBlock(analysisResult, new Request(url, init));
           }
 
+          // Return a blocked response
           return Promise.reject(
             new Error(
               "Request blocked by Nehonix Shield: Malicious URL detected"
@@ -500,39 +407,46 @@ export const NehonixShieldProvider: React.FC<{
           );
         }
 
+        // Make the original request
         const response = await originalFetch(input, init);
+
+        // Clone the response so we can read it multiple times
         const responseClone = response.clone();
 
+        // Check response if content scanning is enabled
         if (configRef.current.blockMaliciousResponses) {
           try {
+            // Read response as text
             const responseText = await responseClone.text();
+
+            // Only analyze text responses
             const contentType = response.headers.get("content-type") || "";
             if (
               contentType.includes("text/") ||
               contentType.includes("application/json")
             ) {
+              // Create a mock URL with the response content for analysis
               const mockUrl = `http://mock.nehonix.space?data=${encodeURIComponent(
                 responseText.substring(0, 2000)
               )}`;
-              const norm = await NDS.asyncDecodeAnyToPlainText(mockUrl);
-              const mockUrlDecoded = norm.val();
+              // Analyze the response content
+              const norm = NDS.asyncDecodeAnyToPlainText(mockUrl);
+              const mockUrlDecoded = (await norm).val();
               const mockUrlNormalized = mockUrlDecoded.normalize("NFC");
               const responseAnalysis = await NSB.analyzeUrl(
                 mockUrlNormalized,
                 configRef.current.scanOptions.analyseOptions
               );
 
-              if (
-                responseAnalysis.isMalicious &&
-                mapConfidenceToNumber(responseAnalysis.confidence) >=
-                  configRef.current.confidenceThreshold
-              ) {
+              // Block malicious responses
+              if (responseAnalysis.isMalicious) {
                 console.warn(
                   "Nehonix Shield blocked malicious response:",
                   url,
                   responseAnalysis
                 );
 
+                // Call onBlock callback if provided
                 if (configRef.current.onBlock) {
                   configRef.current.onBlock(
                     responseAnalysis,
@@ -548,6 +462,7 @@ export const NehonixShieldProvider: React.FC<{
               }
             }
 
+            // Reconstruct the response
             return new Response(responseText, {
               status: response.status,
               statusText: response.statusText,
@@ -566,6 +481,7 @@ export const NehonixShieldProvider: React.FC<{
       }
     };
 
+    // Also intercept XHR if needed
     const originalXHROpen = XMLHttpRequest.prototype.open;
     const originalXHRSend = XMLHttpRequest.prototype.send;
 
@@ -586,19 +502,15 @@ export const NehonixShieldProvider: React.FC<{
         !(this as any)._nehonixUrl ||
         configRef.current.urlUtils.trustedDomains?.some((domain) =>
           (this as any)._nehonixUrl.includes(domain)
-        ) ||
-        configRef.current.urlUtils.dynamicWhitelist?.includes(
-          (this as any)._nehonixUrl
         )
       ) {
         return originalXHRSend.apply(this, [body]);
       }
 
       try {
-        const norm = await NDS.asyncDecodeAnyToPlainText(
-          (this as any)._nehonixUrl
-        );
-        const link = norm.val();
+        // Analyze the URL before making the request
+        const norm = NDS.asyncDecodeAnyToPlainText((this as any)._nehonixUrl);
+        const link = (await norm).val();
         const normalisedLink = link.normalize("NFC");
         const analysisResult = await NSB.analyzeUrl(
           normalisedLink,
@@ -607,8 +519,6 @@ export const NehonixShieldProvider: React.FC<{
 
         if (
           analysisResult.isMalicious &&
-          mapConfidenceToNumber(analysisResult.confidence) >=
-            configRef.current.confidenceThreshold &&
           configRef.current.blockMaliciousRequests
         ) {
           console.warn(
@@ -617,13 +527,16 @@ export const NehonixShieldProvider: React.FC<{
             analysisResult
           );
 
+          // Call onBlock callback if provided
           if (configRef.current.onBlock) {
             const request = new Request((this as any)._nehonixUrl);
             configRef.current.onBlock(analysisResult, request);
           }
 
+          // Abort the request
           this.abort();
 
+          // Trigger error event
           const errorEvent = new ErrorEvent("error", {
             error: new Error(
               "Request blocked by Nehonix Shield: Malicious URL detected"
@@ -652,7 +565,6 @@ export const NehonixShieldProvider: React.FC<{
     resumeScanning,
     forceScan,
     clearResults,
-    addToDynamicWhitelist,
   };
 
   return (

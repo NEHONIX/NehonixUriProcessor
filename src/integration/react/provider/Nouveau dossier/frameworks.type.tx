@@ -18,35 +18,43 @@ export interface PerformanceMetrics {
   avgAnalysisTime?: number;
 }
 
+//
+
 /**
  * Interface for the Nehonix Shield configuration
  */
 export interface NehonixShieldConfig {
+  // Core settings
   enableBackgroundScanning: boolean;
-  scanInterval: number;
+  scanInterval: number; // in milliseconds
   interceptRequests: boolean;
   enableDeepScan: boolean;
-  confidenceThreshold: number;
-  enableContextAnalysis: boolean;
+
+  // Scanning options
   scanOptions: {
     analyseOptions: MaliciousPatternOptions;
     global: {
       ignoreCase: boolean;
       checkEncoding: boolean;
-      maxEncodingLayers: number;
+      maxEncodingLayers: 3;
       analyzeContext: boolean;
       confidence: "low" | "medium" | "high";
     };
   };
+
+  // Response handling
   blockMaliciousRequests: boolean;
   blockMaliciousResponses: boolean;
+
+  // Callbacks
   onDetection?: (result: MaliciousPatternResult) => void;
   onBlock?: (result: MaliciousPatternResult, request: Request) => void;
+
+  // Whitelist/Blacklist
   blacklistedPatterns?: string[];
   urlUtils: UrlValidationOptions & {
     allowedProtocol?: string[];
     trustedDomains?: string[];
-    dynamicWhitelist?: string[];
   };
 }
 
@@ -78,9 +86,7 @@ export interface NehonixShieldContextT {
   resumeScanning: () => void;
   forceScan: () => Promise<void>;
   clearResults: () => void;
-  addToDynamicWhitelist: (url: string) => void;
 }
-
 /**
  * Configuration for the DOM Processor
  */
@@ -136,12 +142,6 @@ export interface DomProcessorConfig {
     ignoreCase: boolean;
     maxEncodingLayers: number;
   };
-  enableThreatIntelligence: boolean;
-  adaptiveChunkSize: boolean;
-  threatIntelligenceApiKey?: string;
-  detailedLogging: boolean;
-  confidenceThreshold: number;
-  urlUtils?: { dynamicWhitelist?: string[] };
 }
 
 /**
@@ -163,19 +163,6 @@ export interface DomProcessorStats {
     elementType: string;
     timestamp: number;
     threatTypes: string[];
-    metadata?: {
-      domLocation: string;
-      elementId?: string;
-      className?: string;
-      parentElement?: {
-        tagName: string;
-        id?: string;
-        className?: string;
-      };
-      domPath: string;
-      innerTextSnippet?: string;
-      attributes: Record<string, string>;
-    };
   }>;
   pendingElements: number;
   avgProcessingTimePerElement: number;
@@ -194,19 +181,6 @@ export interface ElementScanResult {
   timestamp: number;
   hasMaliciousContent: boolean;
   error?: string;
-  metadata?: {
-    domLocation: string; // outerHTML of the element
-    elementId?: string; // id attribute
-    className?: string; // class attribute
-    parentElement?: {
-      tagName: string;
-      id?: string;
-      className?: string;
-    }; // Parent element details
-    domPath: string; // CSS selector path
-    innerTextSnippet?: string; // Truncated innerText
-    attributes: Record<string, string>; // All attributes
-  };
 }
 
 /**
@@ -230,7 +204,6 @@ export interface DomProcessorContextT {
   resetStats: () => void;
   getSecurityReport: () => Record<string, any>;
   isScanning: boolean;
-  addToDynamicWhitelist: (url: string) => void;
 }
 
 /**

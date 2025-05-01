@@ -12,7 +12,6 @@ import {
 } from "../../../services/MaliciousPatterns.service";
 import { NSB } from "../../../services/NehonixSecurityBooster.service";
 import NDS from "../../../services/NehonixDec.service";
-import { NehonixDomProcessorContext } from "../provider/REACT.NehonixDomProcessor";
 
 /**
  * Hook for accessing threat information
@@ -345,5 +344,3 @@ export const useNehonixShield = () => {
   }
   return context;
 };
-
-

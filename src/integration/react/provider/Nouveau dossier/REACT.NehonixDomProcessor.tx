@@ -51,30 +51,6 @@ const mapConfidenceToNumber = (
   }
 };
 
-// Utility to generate a CSS selector path for an element
-const getDomPath = (element: Element): string => {
-  if (!element.parentElement) return element.tagName.toLowerCase();
-  const pathParts: string[] = [];
-  let current: Element | null = element;
-
-  while (current && current.tagName) {
-    let selector = current.tagName.toLowerCase();
-    if (current.id) {
-      selector = `#${current.id}`;
-      pathParts.unshift(selector);
-      break;
-    }
-    if (current.className && typeof current.className === "string") {
-      const classes = current.className.trim().split(/\s+/).join(".");
-      if (classes) selector += `.${classes}`;
-    }
-    pathParts.unshift(selector);
-    current = current.parentElement;
-  }
-
-  return pathParts.join(" > ");
-};
-
 // Default configuration for the DOM processor
 const defaultConfig: DomProcessorConfig = {
   enabled: true,
@@ -252,35 +228,6 @@ export const NehonixDomProcessorProvider: React.FC<{
     const elementType = element.tagName.toLowerCase();
     const scannedAttributes: Record<string, MaliciousPatternResult> = {};
 
-    // Collect metadata for debugging
-    const metadata: ElementScanResult["metadata"] = {
-      domLocation:
-        element.outerHTML.length > 500
-          ? element.outerHTML.substring(0, 500) + "..."
-          : element.outerHTML,
-      elementId: element.id || undefined,
-      className: element.className || undefined,
-      parentElement: element.parentElement
-        ? {
-            tagName: element.parentElement.tagName.toLowerCase(),
-            id: element.parentElement.id || undefined,
-            className: element.parentElement.className || undefined,
-          }
-        : undefined,
-      domPath: getDomPath(element),
-      innerTextSnippet:
-        element.textContent && element.textContent.length > 100
-          ? element.textContent.substring(0, 100) + "..."
-          : element.textContent || undefined,
-      attributes: Array.from(element.attributes).reduce(
-        (acc, attr) => ({
-          ...acc,
-          [attr.name]: attr.value,
-        }),
-        {} as Record<string, string>
-      ),
-    };
-
     try {
       if (
         !configRef.current.targetElements[
@@ -295,7 +242,6 @@ export const NehonixDomProcessorProvider: React.FC<{
           duration: performance.now() - startTime,
           timestamp: Date.now(),
           hasMaliciousContent: false,
-          metadata,
         };
       }
 
@@ -313,7 +259,6 @@ export const NehonixDomProcessorProvider: React.FC<{
             duration: performance.now() - startTime,
             timestamp: Date.now(),
             hasMaliciousContent: false,
-            metadata,
           };
         }
       }
@@ -386,7 +331,6 @@ export const NehonixDomProcessorProvider: React.FC<{
                   decoded: normalizedValue,
                   patterns: analysisResult.detectedPatterns,
                   confidence: analysisResult.confidence,
-                  metadata,
                 });
               }
 
@@ -436,7 +380,6 @@ export const NehonixDomProcessorProvider: React.FC<{
                 content: scriptContent.substring(0, 200),
                 patterns: scriptAnalysis.detectedPatterns,
                 confidence: scriptAnalysis.confidence,
-                metadata,
               });
             }
 
@@ -476,7 +419,6 @@ export const NehonixDomProcessorProvider: React.FC<{
                 content: cssContent.substring(0, 200),
                 patterns: cssAnalysis.detectedPatterns,
                 confidence: cssAnalysis.confidence,
-                metadata,
               });
             }
 
@@ -529,7 +471,6 @@ export const NehonixDomProcessorProvider: React.FC<{
         duration: performance.now() - startTime,
         timestamp: Date.now(),
         hasMaliciousContent,
-        metadata,
       };
     } catch (error) {
       console.error(`Error scanning element ${elementType}:`, error);
@@ -542,7 +483,6 @@ export const NehonixDomProcessorProvider: React.FC<{
         timestamp: Date.now(),
         hasMaliciousContent: false,
         error: error instanceof Error ? error.message : String(error),
-        metadata,
       };
     }
   };
@@ -599,7 +539,6 @@ export const NehonixDomProcessorProvider: React.FC<{
               threatTypes: result.results
                 .map((r) => r.detectedPatterns.map((p) => p.type))
                 .flatMap((x) => x),
-              metadata: result.metadata, // Include metadata in blockedElements
             });
 
             result.results.forEach((threat) => {
