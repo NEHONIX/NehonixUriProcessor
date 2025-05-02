@@ -23,7 +23,7 @@ import { spawn } from "child_process";
 import { ncu } from "../utils/NehonixCoreUtils";
 
 // Configuration for free threat intelligence APIs
-const ABUSEIPDB_API_KEY = process.env.ABUSEIPDB_API_KEY || ""; // Free tier available, empty if not used
+const ABUSEIPDB_API_KEY = ""; 
 const PHISHTANK_API_URL = "https://checkurl.phishtank.com/checkurl/"; // Free API
 // Local blocklist (mock data or community-driven list)
 const LOCAL_BLOCKLIST: DistributedThreatEntry[] = [
