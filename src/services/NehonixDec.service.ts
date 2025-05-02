@@ -1466,7 +1466,12 @@ class NDS {
     return {
       confidence,
       encodingType,
-      val: () => result,
+      val: () => {
+        if (opt.output?.encodeUrl) {
+          return NES.encode(result, "url");
+        }
+        return result;
+      },
       decodingHistory,
     };
   }
