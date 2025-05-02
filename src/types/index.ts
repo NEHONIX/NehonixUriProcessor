@@ -36,6 +36,12 @@ export type ENC_TYPE =
   | "url";
 
 export type DEC_FEATURE_TYPE = "url" | "any";
+
+interface PartialEncodingInfo {
+  type: string; // The encoding type detected
+  confidence: number; // Confidence score for this partial encoding
+}
+
 /**
  * Result of encoding detection. This interface describes the outcome of an
  * attempt to identify the encoding scheme used in a given string. It provides
@@ -43,6 +49,9 @@ export type DEC_FEATURE_TYPE = "url" | "any";
  * confidence score for that detection.
  */
 export interface EncodingDetectionResult {
+  partialEncodings?: PartialEncodingInfo[]; // Information about partial encodings if detected
+
+  // partialEncodings: [{ type: ENC_TYPE; confidence: number }];
   /**
    * An array of all encoding types detected in the input string.
    */
@@ -50,7 +59,7 @@ export interface EncodingDetectionResult {
   /**
    * The encoding type that is considered the most likely based on analysis.
    */
-  mostLikely: ENC_TYPE | "plainText";
+  mostLikely: ENC_TYPE | "plainText" | "mixedEncoding";
   /**
    * A numerical value representing the confidence level of the most likely
    * encoding detection, usually between 0 and 1.
@@ -63,7 +72,7 @@ export interface EncodingDetectionResult {
   /**
    * If nested encoding is detected, this array lists the inner encoding types.
    */
-  nestedTypes?: string[];
+  nestedTypes?: (ENC_TYPE | "mixedEncoding")[]; // Types of nested encodings if detected
 }
 
 /**
