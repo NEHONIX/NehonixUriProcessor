@@ -33,7 +33,8 @@ export type ENC_TYPE =
   //new
   | "rawHexadecimal"
   | "jwt"
-  | "url";
+  | "url"
+  | "rawHex";
 
 export type DEC_FEATURE_TYPE = "url" | "any";
 

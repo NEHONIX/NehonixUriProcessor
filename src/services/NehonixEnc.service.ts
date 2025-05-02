@@ -3,10 +3,8 @@ import punycode from "punycode";
 import { NehonixCoreUtils as NCU } from "../utils/NehonixCoreUtils";
 import { htmlEntities } from "../utils/html.enties";
 import { AppLogger } from "../common/AppLogger";
-class NES {
-  // private static NCU: typeof NehonixCoreUtils = NehonixCoreUtils;
-  // private static decodeBase64 = NES.NCU.drwp;
 
+class NES {
   /**
    * Encodes a string according to a specific encoding type
    * @param input The string to encode
@@ -15,7 +13,6 @@ class NES {
    */
   static encode(input: string, encodingType: ENC_TYPE): string {
     try {
-      // AppLogger.log(`Selected type: ${encodingType}`);
       switch (encodingType) {
         case "percentEncoding":
           return NES.encodePercentEncoding(input);
@@ -35,7 +32,6 @@ class NES {
           return NES.encodeASCIIWithHex(input);
         case "asciioct":
           return NES.encodeASCIIWithOct(input);
-        // New encoding types
         case "rot13":
           return NES.encodeROT13(input);
         case "base32":
@@ -52,11 +48,16 @@ class NES {
           return NES.encodeQuotedPrintable(input);
         case "decimalHtmlEntity":
           return NES.encodeDecimalHTMLEntities(input);
+        case "jwt":
+          return NES.encodeJWT(input);
+        case "rawHex":
+          return NES.encodeRawHex(input);
+        case "url":
+          return NES.encodeUrl(input);
         default:
           throw new Error(`Unsupported encoding type: ${encodingType}`);
       }
     } catch (e: any) {
-      // AppLogger.error(`Error while encoding (${encodingType}):`, e);
       throw e;
     }
   }
@@ -68,12 +69,9 @@ class NES {
    */
   static encodePercentEncoding(input: string, encodeSpaces = false): string {
     let encoded = encodeURIComponent(input);
-
-    // If requested, convert spaces to %20 instead of +
     if (encodeSpaces) {
       encoded = encoded.replace(/\+/g, "%20");
     }
-
     return encoded;
   }
 
@@ -81,10 +79,7 @@ class NES {
    * Encodes with double percent encoding
    */
   static encodeDoublePercentEncoding(input: string): string {
-    // First encoding
     const firstPass = NES.encodePercentEncoding(input, true);
-
-    // Second encoding (converts % to %25)
     return firstPass.replace(/%/g, "%25");
   }
 
@@ -93,18 +88,13 @@ class NES {
    */
   static encodeBase64(input: string): string {
     try {
-      // Node.js
       if (typeof Buffer !== "undefined") {
         return Buffer.from(input).toString("base64");
-      }
-      // Browser
-      else {
+      } else {
         return btoa(input);
       }
     } catch (e: any) {
-      // For non-ASCII characters in browser
       if (e.name === "InvalidCharacterError") {
-        // Convert to UTF-8 before encoding
         const bytes = new TextEncoder().encode(input);
         let binary = "";
         for (let i = 0; i < bytes.length; i++) {
@@ -135,11 +125,8 @@ class NES {
     let result = "";
     for (let i = 0; i < input.length; i++) {
       const cp = input.codePointAt(i)!;
-
-      // For characters that require more than 4 hex digits
       if (cp > 0xffff) {
         result += `\\u{${cp.toString(16)}}`;
-        // Skip the next element for surrogate pairs
         if (cp > 0xffff) i++;
       } else {
         result += `\\u${cp.toString(16).padStart(4, "0")}`;
@@ -157,21 +144,17 @@ class NES {
       const char = input[i];
       result += htmlEntities[char] || char;
     }
-
     return result;
   }
 
   /**
    * Encodes in punycode
-   * Note: Requires the 'punycode' library
    */
   static encodePunycode(input: string): string {
     try {
-      // If the punycode module is available
       if (typeof require !== "undefined") {
         return `xn--${punycode.encode(input)}`;
       } else {
-        // Alternative for browser (not implemented)
         AppLogger.warn(
           "Punycode module not available, punycode encoding not performed"
         );
@@ -208,7 +191,6 @@ class NES {
 
   /**
    * Encodes all characters in percent encoding
-   * Useful for WAF bypasses
    */
   static encodeAllChars(input: string): string {
     let result = "";
@@ -224,71 +206,47 @@ class NES {
    */
   static calculateBase64Confidence(input: string): number {
     if (!NCU.hasBase64Pattern(input)) return 0;
-
-    // Isolate the potential Base64 part in URL parameters
     let testString = input;
     if (input.includes("=")) {
       const parts = input.split("=");
       testString = parts[parts.length - 1];
     }
-
-    // The higher the ratio of base64 characters, the higher the confidence
     const base64Chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=_-";
     let validCharsCount = 0;
-
     for (let i = 0; i < testString.length; i++) {
       if (base64Chars.includes(testString[i])) {
         validCharsCount++;
       }
     }
-
     const ratio = validCharsCount / testString.length;
-
-    // Length checks for Base64 - should be near multiple of 4
     const lengthMod4 = testString.length % 4;
     const lengthFactor = lengthMod4 === 0 ? 0.1 : 0;
-
-    // Try to decode
     try {
-      // Prepare string for decoding
       let decodableString = testString;
-
-      // Replace URL-safe chars
       decodableString = decodableString.replace(/-/g, "+").replace(/_/g, "/");
-
-      // Add padding if needed
       while (decodableString.length % 4 !== 0) {
         decodableString += "=";
       }
-
       const decoded = NCU.decodeB64(decodableString);
-
-      // Analyze decoded content
       const readableChars = decoded.replace(/[^\x20-\x7E]/g, "").length;
       const readableRatio = readableChars / decoded.length;
-
-      // If decoded text seems readable, increase confidence
       if (readableRatio > 0.7) {
         return Math.min(0.95, ratio + 0.2 + lengthFactor);
       }
     } catch (e) {
-      // If decoding fails completely, decrease confidence
       return Math.max(0.1, ratio - 0.3);
     }
-
     return Math.min(0.8, ratio + lengthFactor);
   }
 
   /**
-   * Encodes using ROT13 cipher (rotates letters by 13 positions)
+   * Encodes using ROT13 cipher
    */
   static encodeROT13(input: string): string {
     return input.replace(/[a-zA-Z]/g, (char) => {
       const code = char.charCodeAt(0);
-      // A-Z (65-90), a-z (97-122)
       const base = code < 91 ? 65 : 97;
-      // Rotate by 13 positions within the alphabet
       return String.fromCharCode(((code - base + 13) % 26) + base);
     });
   }
@@ -301,52 +259,39 @@ class NES {
     let result = "";
     let bits = 0;
     let value = 0;
-
     for (let i = 0; i < input.length; i++) {
       value = (value << 8) | input.charCodeAt(i);
       bits += 8;
-
       while (bits >= 5) {
         result += alphabet[(value >> (bits - 5)) & 31];
         bits -= 5;
       }
     }
-
     if (bits > 0) {
       result += alphabet[(value << (5 - bits)) & 31];
     }
-
-    // Add padding
     while (result.length % 8 !== 0) {
       result += "=";
     }
-
     return result;
   }
 
   /**
    * Encodes in URL-safe Base64
-   * Uses - and _ instead of + and /
    */
   static encodeURLSafeBase64(input: string): string {
-    // First encode to standard Base64
     const base64 = NES.encodeBase64(input);
-
-    // Replace standard Base64 characters with URL-safe variants
     return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
   /**
    * Encodes string with JavaScript escape sequences
-   * Useful for injecting into JS contexts
    */
   static encodeJavaScriptEscape(input: string): string {
     let result = "";
     for (let i = 0; i < input.length; i++) {
       const cp = input.codePointAt(i)!;
-
       if (cp < 128) {
-        // ASCII characters
         switch (input[i]) {
           case "\\":
             result += "\\\\";
@@ -374,17 +319,14 @@ class NES {
             break;
           default:
             if (cp < 32 || cp === 127) {
-              // Control characters
               result += `\\x${cp.toString(16).padStart(2, "0")}`;
             } else {
               result += input[i];
             }
         }
       } else if (cp <= 0xffff) {
-        // BMP characters
         result += `\\u${cp.toString(16).padStart(4, "0")}`;
       } else {
-        // Supplementary planes - use surrogate pairs
         result += `\\u${input
           .charCodeAt(i)
           .toString(16)
@@ -392,7 +334,7 @@ class NES {
           .charCodeAt(i + 1)
           .toString(16)
           .padStart(4, "0")}`;
-        i++; // Skip the second surrogate
+        i++;
       }
     }
     return result;
@@ -400,27 +342,22 @@ class NES {
 
   /**
    * Encodes string with CSS escape sequences
-   * Useful for CSS selectors or values
    */
   static encodeCSSEscape(input: string): string {
     let result = "";
     for (let i = 0; i < input.length; i++) {
       const cp = input.codePointAt(i)!;
-
       if (cp === 0) {
-        // Unicode NULL is not allowed in CSS - replace with FFFD
         result += "\\FFFD ";
       } else if (
         cp < 33 ||
         cp === 127 ||
         /[\\!"#$%&'()*+,./:;<=>?@[\]^`{|}~]/.test(input[i])
       ) {
-        // Special characters in CSS need escaping
         result += `\\${cp.toString(16).toUpperCase()} `;
       } else if (cp > 0xffff) {
-        // For characters outside the BMP
         result += `\\${cp.toString(16).toUpperCase()} `;
-        if (cp > 0xffff) i++; // Skip the next element for surrogate pairs
+        if (cp > 0xffff) i++;
       } else {
         result += input[i];
       }
@@ -430,65 +367,47 @@ class NES {
 
   /**
    * Encodes in UTF-7
-   * Useful for some legacy contexts
    */
   static encodeUTF7(input: string): string {
     let result = "";
     let inBase64 = false;
     let base64Buffer = "";
-
     for (let i = 0; i < input.length; i++) {
       const cp = input.charCodeAt(i);
-
-      // ASCII characters (except for + which needs special handling)
       if (cp >= 33 && cp <= 126 && cp !== 43) {
         if (inBase64) {
-          // End Base64 encoding
           result += base64Buffer.replace(/=+$/, "") + "-";
           base64Buffer = "";
           inBase64 = false;
         }
         result += input[i];
       } else {
-        // Non-ASCII characters or + sign
         if (!inBase64) {
           result += "+";
           inBase64 = true;
         }
-
-        // Use the buffer approach for handling Unicode characters
         let unicodeChar = String.fromCharCode(cp);
-
-        // Encode the character using our base64 method
-        // We need to handle the surrogate pairs properly
         base64Buffer += NES.encodeBase64(unicodeChar).replace(/=+$/, "");
       }
     }
-
-    // Close any open base64 section
     if (inBase64) {
       result += base64Buffer + "-";
     }
-
     return result;
   }
 
   /**
    * Encodes in Quoted-Printable
-   * Used in email systems
    */
   static encodeQuotedPrintable(input: string): string {
     let result = "";
     const unsafe = /[^\x20-\x7E]|[=]/g;
-
     for (let i = 0; i < input.length; i++) {
       const char = input[i];
       const code = input.charCodeAt(i);
-
       if (char === "\r" || char === "\n") {
         result += char;
       } else if (char === " " || char === "\t") {
-        // Space and tab at the end of a line must be encoded
         if (
           i === input.length - 1 ||
           input[i + 1] === "\r" ||
@@ -503,29 +422,57 @@ class NES {
       } else {
         result += char;
       }
-
-      // Add soft line breaks (QP lines should be no longer than 76 chars)
       if (result.length >= 75 && i < input.length - 1) {
         result += "=\r\n";
       }
     }
-
     return result;
   }
 
   /**
    * Encodes in decimal HTML entity format
-   * Unlike the existing HTML entity encoder, this uses decimal &#123; format for all chars
    */
   static encodeDecimalHTMLEntities(input: string): string {
     let result = "";
     for (let i = 0; i < input.length; i++) {
       const cp = input.codePointAt(i)!;
       result += `&#${cp};`;
-      // Skip surrogate pair
       if (cp > 0xffff) i++;
     }
     return result;
+  }
+
+  /**
+   * Encodes in raw hexadecimal (no prefixes)
+   */
+  static encodeRawHex(input: string): string {
+    let result = "";
+    for (let i = 0; i < input.length; i++) {
+      const hex = input.charCodeAt(i).toString(16).padStart(2, "0");
+      result += hex;
+    }
+    return result;
+  }
+
+  /**
+   * Encodes as a JWT with the input as the payload
+   */
+  static encodeJWT(input: string): string {
+    try {
+      const header = { alg: "none" };
+      const headerEncoded = NES.encodeURLSafeBase64(JSON.stringify(header));
+      const payloadEncoded = NES.encodeURLSafeBase64(input);
+      return `${headerEncoded}.${payloadEncoded}.`;
+    } catch (e: any) {
+      throw new Error(`JWT encoding failed: ${e.message}`);
+    }
+  }
+
+  /**
+   * Encodes as a URL (percent-encoding with spaces as %20)
+   */
+  static encodeUrl(input: string): string {
+    return NES.encodePercentEncoding(input, true);
   }
 }
 

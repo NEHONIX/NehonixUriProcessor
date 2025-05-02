@@ -91,8 +91,8 @@ class NehonixURIProcessor {
    * console.log(base64); // dHJ1ZQ==
    * ```
    */
-  static encode(input: string, encodingType: ENC_TYPE) {
-    return enc.encode(input, encodingType);
+  static encode(...p: Parameters<typeof enc.encode>) {
+    return enc.encode(...p);
   }
 
   /**
