@@ -1323,40 +1323,18 @@ class NDS {
     // Smart initial handling for URLs
     const isUrl = ncu.isValidUrl(result, NDS.default_checkurl_opt);
     if (isUrl) {
-      try {
-        const parsedUrl = new URL(result);
-        // Process query parameters
-        const paramProcessed = NDS.handleUriParameters(
+      const paramProcessed = NDS.handleUriParameters(
+        result,
+        maxIterations,
+        opt
+      );
+      if (paramProcessed !== result) {
+        result = paramProcessed;
+        decodingHistory.push({
           result,
-          maxIterations,
-          opt
-        );
-        if (paramProcessed !== result) {
-          result = paramProcessed;
-          decodingHistory.push({
-            result,
-            type: "urlParameters",
-            confidence: 0.9,
-          });
-        }
-        // Process pathname if it contains percent encoding
-        if (/%[0-9A-Fa-f]{2}/.test(parsedUrl.pathname)) {
-          const decodedPath = NDS.decodePartial(
-            parsedUrl.pathname,
-            "percentEncoding"
-          );
-          const newUrl = `${parsedUrl.protocol}//${parsedUrl.host}${decodedPath}${parsedUrl.search}${parsedUrl.hash}`;
-          if (newUrl !== result) {
-            result = newUrl;
-            decodingHistory.push({
-              result,
-              type: "urlPathPercentEncoding",
-              confidence: 0.85,
-            });
-          }
-        }
-      } catch (e) {
-        AppLogger.warn("URL processing error:", e);
+          type: "urlParameters",
+          confidence: 0.9,
+        });
       }
     }
 
@@ -1391,9 +1369,6 @@ class NDS {
         try {
           let decoded: string;
           encodingType = type as ENC_TYPE;
-
-          // Skip "url" type since pathname and parameters are handled above
-          if (type === "url") continue;
 
           // Handle partial encodings
           if (type.startsWith("partial")) {
@@ -1470,6 +1445,7 @@ class NDS {
       decodingHistory,
     };
   }
+
   private static handleUriParameters(
     uri: string,
     maxIterations: number,
