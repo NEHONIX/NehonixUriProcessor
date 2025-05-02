@@ -127,8 +127,8 @@ const defaultConfig: DomProcessorConfig = {
   enableThreatIntelligence: false,
   adaptiveChunkSize: true,
   threatIntelligenceApiKey:
-    process.env.REACT_NEHONIX_DOM_PROCESSOR_PUBLIC_API_KEY ||
-    "AIzaSyAj46be9NZBVkFxD2FujgaoBD2GyrLA5z4",
+    // process.env.REACT_NEHONIX_DOM_PROCESSOR_PUBLIC_API_KEY ||
+    "AIzaSyAj46be9NZBVkFxD2FujgaoBD2GyrLA5z4", //public api 'REACT_NEHONIX_DOM_PROCESSOR_PUBLIC_API_KEY': AIzaSyAj46be9NZBVkFxD2FujgaoBD2GyrLA5z4
   detailedLogging: true,
   confidenceThreshold: 0.7,
   urlUtils: { dynamicWhitelist: [] },
