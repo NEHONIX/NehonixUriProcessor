@@ -1642,36 +1642,12 @@ class NDS {
    * @param encodingType The encoding type to use for decoding
    * @returns The decoded string
    */
+
   static decodeSingle(
     input: string,
     encodingType: ENC_TYPE | "mixedEncoding" | "plainText"
   ): string {
     try {
-      // Handle partial encoding types by routing to partial decoder
-      if (encodingType.startsWith("partial")) {
-        const baseType =
-          encodingType.replace("partial", "").charAt(0).toLowerCase() +
-          encodingType.replace("partial", "").slice(1);
-        return NDS.decodePartial(input, baseType as ENC_TYPE);
-      }
-
-      // Handle mixed encoding type
-      if (encodingType === "mixedEncoding") {
-        return NDS.decodeMixed(input);
-      }
-
-      // Handle nested encoding types
-      if (encodingType.startsWith("nested:")) {
-        const encodingTypes = encodingType.slice(7).split("+");
-        if (encodingTypes.length === 2) {
-          const outerType = encodingTypes[0] as ENC_TYPE;
-          const innerType = encodingTypes[1] as ENC_TYPE;
-          const intermediate = NDS.decodeSingle(input, outerType);
-          return NDS.decodeSingle(intermediate, innerType);
-        }
-      }
-
-      // Standard encoding types
       switch (encodingType) {
         case "percentEncoding":
         case "url":

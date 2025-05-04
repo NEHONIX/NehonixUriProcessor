@@ -220,27 +220,32 @@ class NehonixCommonUtils {
    * @param s The string to check
    */
   static isBase64(input: string): boolean {
-    if (!input || input.length < 4) return false;
+    // Base64 can be padded with = at the end
+    const base64Regex = /^[A-Za-z0-9+/=_-]*$/;
 
-    // Stricter Base64 regex
-    const base64Regex = /^[A-Za-z0-9+\/=]+$/;
+    // Check basic pattern
     if (!base64Regex.test(input)) return false;
 
-    // Check length (with padding)
-    const cleanInput = input.replace(/=+$/, "");
-    if (cleanInput.length % 4 !== 0) return false;
+    // Check length - must be divisible by 4 or could be made so with padding
+    const paddedLength = input.endsWith("=")
+      ? input.length
+      : input.length + ((4 - (input.length % 4)) % 4);
+    if (paddedLength % 4 !== 0) return false;
 
+    // Try to decode it to verify
     try {
-      // Attempt to decode and verify output
-      const decoded = this.decodeB64(input);
-      // Check if decoded output is mostly printable ASCII
-      const printableChars = decoded.replace(/[^\x20-\x7E]/g, "").length;
-      const printableRatio = printableChars / decoded.length;
-      return printableRatio > 0.7;
+      const decoded = Buffer.from(
+        input.replace(/-/g, "+").replace(/_/g, "/"),
+        "base64"
+      ).toString();
+      // Check if the decoded result makes sense
+      const printableChars = decoded.replace(/[^\x20-\x7E\t\r\n]/g, "").length;
+      return printableChars / decoded.length > 0.7;
     } catch {
       return false;
     }
   }
+
   static decodeBase64(input: string): string {
     // Fix padding and URL-safe chars
     let normalizedInput = input;
