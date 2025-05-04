@@ -531,7 +531,26 @@ export interface UrlValidationOptions {
   debug?: boolean;
   fullCustomValidation?: Record<string, string | number>;
   allowInternationalChars?: boolean;
+
+  //v2.3.12
+  allowIPAddresses?: boolean; // New: Allow IP addresses as hostnames
+  ipv4Only?: boolean; // New: Restrict to IPv4 addresses if IP allowed
+  allowFragments?: boolean; // New: Control whether URL fragments are allowed
+  allowCredentials?: boolean; // New: Control whether username/password is allowed
+  maxQueryParams?: number; // New: Limit number of query parameters
+  maxPathSegments?: number; // New: Limit number of path segments
+  disallowedKeywords?: string[]; // New: Reject URLs containing specific keywords
+  validationLevel?: UrlValidationLevel; // New: Preset validation levels
+  disallowEmptyParameterValues?: boolean; // New: Reject empty parameter values
+  requireSecureProtocolForNonLocalhost?: boolean; // New: Require HTTPS for non-localhost
+  allowSubdomains?: boolean; // New: Control subdomain allowance
+  allowedDomains?: string[]; // New: Whitelist of allowed domains
+  minUrlLength?: number; // New: Minimum URL length
+  allowDataUrl?: boolean; // New: Allow data URLs
+  allowMailto?: boolean; // New: Allow mailto URLs
 }
+
+export type UrlValidationLevel = "strict" | "moderate" | "relaxed";
 
 export type AsyncUrlValidationOptions = UrlValidationOptions &
   AsyncUrlValidationOptFeature;
@@ -667,6 +686,7 @@ export interface UrlCheckResult {
       actualLength?: number;
       /** The maximum allowed length as specified in options. */
       maxLength?: number | "NO_LIMIT";
+      minLength?: number;
     };
 
     /**
@@ -822,6 +842,70 @@ export interface UrlCheckResult {
       message: string;
       containsNonAscii?: boolean;
       containsPunycode?: boolean;
+    };
+
+    //v2.3.13
+    dataUrl?: {
+      isValid: boolean;
+      message?: string;
+    };
+
+    mailto?: {
+      isValid: boolean;
+      message?: string;
+    };
+    disallowedKeywords?: {
+      isValid: boolean;
+      message?: string;
+      foundKeywords?: string[];
+    };
+    secureNonLocalhost?: {
+      isValid: boolean;
+      message?: string;
+    };
+    allowSubdomains?: {
+      isValid: boolean;
+      message?: string;
+    };
+    credentials?: {
+      isValid: boolean;
+      message?: string;
+    };
+    fragments?: {
+      isValid: boolean;
+      message?: string;
+    };
+    allowedDomains?: {
+      isValid: boolean;
+      message?: string;
+      hostname?: string;
+      allowedDomains?: string[];
+    };
+
+    ipAddress?: {
+      isValid: boolean;
+      message?: string;
+      ipAddress?: string;
+      hostname?: string;
+      isIPv4?: boolean;
+      isIPv6?: boolean;
+    };
+    pathSegments?: {
+      isValid: boolean;
+      segmentCount?: number;
+      maxSegments?: number;
+      message?: string;
+    };
+    queryParamCount?: {
+      isValid: boolean;
+      paramCount?: number;
+      maxParams?: number;
+      message?: string;
+    };
+    emptyParams?: {
+      isValid: boolean;
+      message: string;
+      emptyParams?: string[];
     };
   };
 }

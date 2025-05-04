@@ -9,6 +9,7 @@ import {
   AsyncUrlValidationOptions,
   ComparisonRule,
   UrlCheckResult,
+  UrlValidationLevel,
   UrlValidationOptions,
   ValidUrlComponents,
 } from "../types";
@@ -37,6 +38,7 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
    * @param options Validation options
    * @returns UrlCheckResult object with detailed validation information
    */
+
   /**
    * Checks a URL string and returns detailed validation results.
    * @param url The URL string to check
@@ -47,40 +49,20 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
     url: string,
     options: UrlValidationOptions = this.defautltValidationOpt
   ): UrlCheckResult {
+    // Apply validation level if specified (overrides other options)
+    if (options.validationLevel) {
+      options = this.getValidationOptionsByLevel(
+        options.validationLevel,
+        options
+      );
+    }
+
     const result: UrlCheckResult = {
       isValid: true,
       validationDetails: {},
       cause: "",
     };
     AppLogger.debugs_state = options.debug || false;
-
-    // Check URL length
-    if (options.maxUrlLength) {
-      if (
-        typeof options.maxUrlLength === "number" &&
-        options.maxUrlLength > 0 &&
-        url.length > options.maxUrlLength
-      ) {
-        const message = `URL exceeds maximum length of ${options.maxUrlLength} characters`;
-        result.cause = message;
-        result.validationDetails.length = {
-          isValid: false,
-          message,
-          actualLength: url.length,
-          maxLength: options.maxUrlLength,
-        };
-        result.isValid = false;
-        return result;
-      } else {
-        const message = `URL length is within the allowed limit of ${options.maxUrlLength} characters`;
-        result.validationDetails.length = {
-          isValid: true,
-          message,
-          actualLength: url.length,
-          maxLength: options.maxUrlLength,
-        };
-      }
-    }
 
     // Check if URL is empty
     if (!url.trim()) {
@@ -99,15 +81,169 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       };
     }
 
+    // Minimum URL length check
+    if (options.minUrlLength && url.length < options.minUrlLength) {
+      const message = `URL is too short. Minimum length is ${options.minUrlLength} characters`;
+      result.cause = message;
+      result.validationDetails.length = {
+        isValid: false,
+        message,
+        actualLength: url.length,
+        minLength: options.minUrlLength,
+        maxLength: options.maxUrlLength,
+      };
+      result.isValid = false;
+      return result;
+    }
+
+    // Maximum URL length check
+    if (options.maxUrlLength) {
+      if (
+        typeof options.maxUrlLength === "number" &&
+        options.maxUrlLength > 0 &&
+        url.length > options.maxUrlLength
+      ) {
+        const message = `URL exceeds maximum length of ${options.maxUrlLength} characters`;
+        result.cause = message;
+        result.validationDetails.length = {
+          isValid: false,
+          message,
+          actualLength: url.length,
+          maxLength: options.maxUrlLength,
+        };
+        result.isValid = false;
+        return result;
+      } else {
+        result.validationDetails.length = {
+          isValid: true,
+          message: `URL length is within the allowed limit of ${options.maxUrlLength} characters`,
+          actualLength: url.length,
+          maxLength: options.maxUrlLength,
+        };
+      }
+    }
+
+    // Check for disallowed keywords
+    if (options.disallowedKeywords && options.disallowedKeywords.length > 0) {
+      const lowerUrl = url.toLowerCase();
+      const foundKeywords = options.disallowedKeywords.filter((keyword) =>
+        lowerUrl.includes(keyword.toLowerCase())
+      );
+
+      if (foundKeywords.length > 0) {
+        const message = `URL contains disallowed keywords: ${foundKeywords.join(
+          ", "
+        )}`;
+        result.cause = message;
+        result.validationDetails.disallowedKeywords = {
+          isValid: false,
+          message,
+          foundKeywords,
+        };
+        result.isValid = false;
+        return result;
+      } else {
+        result.validationDetails.disallowedKeywords = {
+          isValid: true,
+          message: "No disallowed keywords found",
+        };
+      }
+    }
+
     try {
+      // Special handling for data URLs if enabled
+      if (url.startsWith("data:") && options.allowDataUrl) {
+        const dataUrlPattern =
+          /^data:([a-z]+\/[a-z0-9-+.]+)?(;base64)?,([a-z0-9!$&',()*+;=\-._~:@/?%\s]*\s*)$/i;
+        if (!dataUrlPattern.test(url)) {
+          const message = "Invalid data URL format";
+          result.cause = message;
+          result.validationDetails.dataUrl = {
+            isValid: false,
+            message,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.dataUrl = {
+            isValid: true,
+            message: "Valid data URL format",
+          };
+          return result; // Skip other checks for data URLs
+        }
+      } else if (url.startsWith("data:") && !options.allowDataUrl) {
+        const message = "Data URLs are not allowed";
+        result.cause = message;
+        result.validationDetails.dataUrl = {
+          isValid: false,
+          message,
+        };
+        result.isValid = false;
+        return result;
+      }
+
+      // Special handling for mailto URLs if enabled
+      if (url.startsWith("mailto:") && options.allowMailto) {
+        const mailtoPattern =
+          /^mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
+        if (!mailtoPattern.test(url)) {
+          const message = "Invalid mailto URL format";
+          result.cause = message;
+          result.validationDetails.mailto = {
+            isValid: false,
+            message,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.mailto = {
+            isValid: true,
+            message: "Valid mailto URL format",
+          };
+          return result; // Skip other checks for mailto URLs
+        }
+      } else if (url.startsWith("mailto:") && !options.allowMailto) {
+        const message = "Mailto URLs are not allowed";
+        result.cause = message;
+        result.validationDetails.mailto = {
+          isValid: false,
+          message,
+        };
+        result.isValid = false;
+        return result;
+      }
+
+      // Handle protocol requirements and validation
+      // This checks for a valid protocol pattern like "http://" or "https://"
+      const validProtocolPattern = /^[a-z][a-z0-9+.-]*:\/\//i;
+      const hasValidProtocol = validProtocolPattern.test(url);
+
+      // This specifically checks for common malformed protocols
+      const malformedProtocolPattern =
+        /^[a-z][a-z0-9+.-]*:(?!\/{2})|^[a-z][a-z0-9+.-]*\/(?!\/)/i;
+      const hasMalformedProtocol = malformedProtocolPattern.test(url);
+
+      // Reject malformed protocols in strict mode
+      if (options.strictMode && hasMalformedProtocol) {
+        const message =
+          "Malformed protocol - must include '://' (e.g. 'https://')";
+        result.cause = message;
+        result.validationDetails.protocol = {
+          isValid: false,
+          message,
+          allowedProtocols: options.allowedProtocols,
+        };
+        result.isValid = false;
+        return result;
+      }
+
       // Handle protocol requirements
       let parsedUrl = url;
-      const hasProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(url);
 
-      if (!hasProtocol) {
+      if (!hasValidProtocol) {
         if (options.requireProtocol) {
           const message =
-            "A protocol (e.g., 'http://' or 'https://') is required";
+            "A valid protocol (e.g., 'http://' or 'https://') is required";
           result.cause = message;
           result.validationDetails.protocol = {
             isValid: false,
@@ -117,18 +253,19 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           result.isValid = false;
           return result;
         }
-        result.cause = "";
         parsedUrl = "https://" + url;
       }
 
       // Parse the URL
       let urlObj: URL | null = null;
       try {
-        urlObj = new URL(url);
+        urlObj = new URL(parsedUrl);
       } catch (error: any) {
+        const message = `Failed to parse URL: ${error.message}`;
+        result.cause = message;
         result.validationDetails.parsing = {
           isValid: false,
-          message: `Failed to parse URL: ${error.message}`,
+          message,
         };
         result.isValid = false;
         return result;
@@ -300,7 +437,6 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           result.isValid = false;
           return result;
         } else {
-          result.cause = "";
           result.validationDetails.protocol = {
             isValid: true,
             message: `Protocol '${protocol}' is allowed`,
@@ -329,41 +465,184 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         };
       }
 
-      // Domain validation
-      const hostParts = urlObj.hostname.split(".");
+      // Secure protocol for non-localhost validation
       if (
-        (hostParts.length < 2 || hostParts.some((part) => part === "")) &&
-        !(options.allowLocalhost && urlObj.hostname === "localhost")
+        options.requireSecureProtocolForNonLocalhost &&
+        urlObj.hostname !== "localhost" &&
+        protocol !== "https"
       ) {
-        const message = `Invalid hostname '${
-          urlObj.hostname
-        }'; expected a valid domain${
-          options.allowLocalhost ? " or 'localhost'" : ""
-        }`;
+        const message = "HTTPS protocol is required for non-localhost domains";
         result.cause = message;
-        result.validationDetails.domain = {
+        result.validationDetails.secureNonLocalhost = {
           isValid: false,
-          type: "INV_DOMAIN_ERR",
-          error: "Invalid domain structure",
           message,
-          hostname: urlObj.hostname,
         };
         result.isValid = false;
         return result;
       } else {
+        result.validationDetails.secureNonLocalhost = {
+          isValid: true,
+          message: "Secure protocol requirements for non-localhost are met",
+        };
+      }
+
+      // Credentials validation
+      if (!options.allowCredentials && (urlObj.username || urlObj.password)) {
+        const message = "Username and password in URLs are not allowed";
+        result.cause = message;
+        result.validationDetails.credentials = {
+          isValid: false,
+          message,
+        };
+        result.isValid = false;
+        return result;
+      } else {
+        result.validationDetails.credentials = {
+          isValid: true,
+          message: options.allowCredentials
+            ? "Credentials are allowed"
+            : "No credentials found in URL",
+        };
+      }
+
+      // URL fragment validation
+      if (options.allowFragments === false && urlObj.hash) {
+        const message = "URL fragments (hash) are not allowed";
+        result.cause = message;
+        result.validationDetails.fragments = {
+          isValid: false,
+          message,
+        };
+        result.isValid = false;
+        return result;
+      } else {
+        result.validationDetails.fragments = {
+          isValid: true,
+          message:
+            options.allowFragments === false
+              ? "No URL fragments found"
+              : "URL fragments are allowed",
+        };
+      }
+
+      // Domain validation
+      const hostParts = urlObj.hostname.split(".");
+
+      // Check allowed domains if specified
+      if (options.allowedDomains && options.allowedDomains.length > 0) {
+        const isAllowedDomain = options.allowedDomains.some((domain) => {
+          // Exact match
+          if (urlObj.hostname === domain) return true;
+          // Subdomain match if allowed
+          if (options.allowSubdomains && urlObj.hostname.endsWith(`.${domain}`))
+            return true;
+          return false;
+        });
+
+        if (!isAllowedDomain) {
+          const message = `Domain '${urlObj.hostname}' is not in the allowed domains list`;
+          result.cause = message;
+          result.validationDetails.allowedDomains = {
+            isValid: false,
+            message,
+            hostname: urlObj.hostname,
+            allowedDomains: options.allowedDomains,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.allowedDomains = {
+            isValid: true,
+            message: `Domain '${urlObj.hostname}' is allowed`,
+            hostname: urlObj.hostname,
+            allowedDomains: options.allowedDomains,
+          };
+        }
+      }
+
+      // Check for IP address validation
+      const ipv4Pattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+      const ipv6Pattern = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
+      const isIPv4 = ipv4Pattern.test(urlObj.hostname);
+      const isIPv6 = ipv6Pattern.test(urlObj.hostname);
+      const isIP = isIPv4 || isIPv6;
+
+      if (isIP) {
+        if (!options.allowIPAddresses) {
+          const message = `IP addresses are not allowed as hostnames: ${urlObj.hostname}`;
+          result.cause = message;
+          result.validationDetails.ipAddress = {
+            isValid: false,
+            message,
+            hostname: urlObj.hostname,
+            isIPv4,
+            isIPv6,
+          };
+          result.isValid = false;
+          return result;
+        } else if (options.ipv4Only && isIPv6) {
+          const message = "Only IPv4 addresses are allowed";
+          result.cause = message;
+          result.validationDetails.ipAddress = {
+            isValid: false,
+            message,
+            hostname: urlObj.hostname,
+            isIPv4,
+            isIPv6,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.ipAddress = {
+            isValid: true,
+            message: `IP address ${urlObj.hostname} is allowed`,
+            hostname: urlObj.hostname,
+            isIPv4,
+            isIPv6,
+          };
+        }
+      }
+
+      // Standard domain validation (skip for IP addresses or localhost)
+      if (
+        !isIP &&
+        !(options.allowLocalhost && urlObj.hostname === "localhost")
+      ) {
+        if (hostParts.length < 2 || hostParts.some((part) => part === "")) {
+          const message = `Invalid hostname '${
+            urlObj.hostname
+          }'; expected a valid domain${
+            options.allowLocalhost ? " or 'localhost'" : ""
+          }`;
+          result.cause = message;
+          result.validationDetails.domain = {
+            isValid: false,
+            type: "INV_DOMAIN_ERR",
+            error: "Invalid domain structure",
+            message,
+            hostname: urlObj.hostname,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.domain = {
+            isValid: true,
+            type: "INV_DOMAIN_ERR",
+            message: "Domain structure is valid",
+            hostname: urlObj.hostname,
+          };
+        }
+      } else if (options.allowLocalhost && urlObj.hostname === "localhost") {
         result.validationDetails.domain = {
           isValid: true,
           type: "INV_DOMAIN_ERR",
-          message:
-            options.allowLocalhost && urlObj.hostname === "localhost"
-              ? "Localhost is valid"
-              : "Domain structure is valid",
+          message: "Localhost is valid",
           hostname: urlObj.hostname,
         };
       }
 
       // TLD validation
-      if (options.allowedTLDs) {
+      if (options.allowedTLDs && !isIP && urlObj.hostname !== "localhost") {
         if (options.allowedTLDs.length > 0) {
           const tld = hostParts[hostParts.length - 1].toLowerCase();
           if (!options.allowedTLDs.includes(tld)) {
@@ -390,6 +669,32 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
         }
       }
 
+      // Path segments validation
+      if (options.maxPathSegments) {
+        const pathSegments = urlObj.pathname
+          .split("/")
+          .filter((segment) => segment.length > 0);
+        if (pathSegments.length > options.maxPathSegments) {
+          const message = `URL contains too many path segments (${pathSegments.length}); maximum allowed is ${options.maxPathSegments}`;
+          result.cause = message;
+          result.validationDetails.pathSegments = {
+            isValid: false,
+            message,
+            segmentCount: pathSegments.length,
+            maxSegments: options.maxPathSegments,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.pathSegments = {
+            isValid: true,
+            message: `Path segment count (${pathSegments.length}) is within limits`,
+            segmentCount: pathSegments.length,
+            maxSegments: options.maxPathSegments,
+          };
+        }
+      }
+
       // Path/query requirement validation
       if (
         options.requirePathOrQuery &&
@@ -409,6 +714,63 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
           isValid: true,
           message: "Path or query requirements are met",
         };
+      }
+
+      // Query parameter count validation
+      if (urlObj.search && options.maxQueryParams) {
+        const params = urlObj.searchParams;
+        const uniqueParamKeys = new Set([...params.keys()]);
+
+        if (uniqueParamKeys.size > options.maxQueryParams) {
+          const message = `URL contains too many query parameters (${uniqueParamKeys.size}); maximum allowed is ${options.maxQueryParams}`;
+          result.cause = message;
+          result.validationDetails.queryParamCount = {
+            isValid: false,
+            message,
+            paramCount: uniqueParamKeys.size,
+            maxParams: options.maxQueryParams,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.queryParamCount = {
+            isValid: true,
+            message: `Query parameter count (${uniqueParamKeys.size}) is within limits`,
+            paramCount: uniqueParamKeys.size,
+            maxParams: options.maxQueryParams,
+          };
+        }
+      }
+
+      // Empty parameter values validation
+      if (options.disallowEmptyParameterValues && urlObj.search) {
+        const params = urlObj.searchParams;
+        const emptyParams: string[] = [];
+
+        for (const [key, value] of params.entries()) {
+          if (value === "") {
+            emptyParams.push(key);
+          }
+        }
+
+        if (emptyParams.length > 0) {
+          const message = `URL contains parameters with empty values: ${emptyParams.join(
+            ", "
+          )}`;
+          result.cause = message;
+          result.validationDetails.emptyParams = {
+            isValid: false,
+            message,
+            emptyParams,
+          };
+          result.isValid = false;
+          return result;
+        } else {
+          result.validationDetails.emptyParams = {
+            isValid: true,
+            message: "No parameters with empty values found",
+          };
+        }
       }
 
       // Strict mode path validation
@@ -714,38 +1076,57 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
     return x.isMalicious;
   }
 
-  private static detectDuplicatedValues(uri: string) {
-    // Input
-    const url = new URL(uri); // e.g., "https://example.com?param1=value1&param2=value1&param1=value2"
-    const parameters = Object.fromEntries(new URLSearchParams(url.search)); // { param1: "value2", param VHF
+  static detectDuplicatedValues(url: string): {
+    duplicatedKeys: string[];
+    duplicatedValues: string[];
+    params: Record<string, string[]>;
+  } {
+    try {
+      const urlObj = new URL(url);
+      const queryString = urlObj.search.substring(1);
 
-    // Step 1: Find duplicated keys in query string
-    const params = new URLSearchParams(url.search);
-    const keyCounts: Record<string, number> = {};
-    for (const key of params.keys()) {
-      keyCounts[key] = (keyCounts[key] || 0) + 1;
+      if (!queryString) {
+        return { duplicatedKeys: [], duplicatedValues: [], params: {} };
+      }
+
+      const params: Record<string, string[]> = {};
+      const paramPairs = queryString.split("&");
+      const duplicatedKeys: string[] = [];
+      const duplicatedValues: string[] = [];
+      const seenValues = new Set<string>();
+
+      for (const pair of paramPairs) {
+        if (!pair) continue;
+
+        const [key, value] = pair.split("=").map((p) => decodeURIComponent(p));
+
+        if (!params[key]) {
+          params[key] = [];
+        }
+
+        // Check for duplicated keys
+        if (params[key].length > 0 && !duplicatedKeys.includes(key)) {
+          duplicatedKeys.push(key);
+        }
+
+        // Check for duplicated values
+        if (value !== undefined) {
+          if (seenValues.has(value) && !duplicatedValues.includes(value)) {
+            duplicatedValues.push(value);
+          }
+          seenValues.add(value);
+          params[key].push(value);
+        } else {
+          params[key].push("");
+        }
+      }
+
+      return { duplicatedKeys, duplicatedValues, params };
+    } catch (error) {
+      return { duplicatedKeys: [], duplicatedValues: [], params: {} };
     }
-    const duplicatedKeys = Object.keys(keyCounts).filter(
-      (key) => keyCounts[key] > 1
-    );
-
-    // Step 2: Find duplicated values in parameters
-    const valueToKeys: Record<string, string[]> = {};
-    Object.entries(parameters).forEach(([key, value]) => {
-      const valueKey = String(value ?? "null");
-      if (!valueToKeys[valueKey]) valueToKeys[valueKey] = [];
-      valueToKeys[valueKey].push(key);
-    });
-    const duplicatedValues = Object.values(valueToKeys)
-      .filter((keys) => keys.length > 1)
-      .flat();
-
-    // Step 3: Combine results
-    return {
-      duplicatedKeys, // Keys repeated in query string
-      duplicatedValues, // Keys sharing the same value
-    };
   }
+
   /**
    * Checks if the string matches base64 pattern
    */
@@ -883,6 +1264,71 @@ export class NehonixCoreUtils extends NehonixSharedUtils {
       return header && (header.alg !== undefined || header.typ !== undefined);
     } catch {
       return false;
+    }
+  }
+
+  //v2.3.13
+
+  // New method for setting validation level presets
+  static getValidationOptionsByLevel(
+    level: UrlValidationLevel,
+    baseOptions?: Partial<UrlValidationOptions>
+  ): UrlValidationOptions {
+    const defaultOptions = { ...this.defautltValidationOpt };
+
+    switch (level) {
+      case "strict":
+        return {
+          ...defaultOptions,
+          ...baseOptions,
+          strictMode: true,
+          httpsOnly: true,
+          requireProtocol: true,
+          strictParamEncoding: true,
+          rejectDuplicateParams: true,
+          rejectDuplicatedValues: true,
+          allowUnicodeEscapes: false,
+          allowInternationalChars: false,
+          allowCredentials: false,
+          disallowEmptyParameterValues: true,
+          requireSecureProtocolForNonLocalhost: true,
+        };
+      case "moderate":
+        return {
+          ...defaultOptions,
+          ...baseOptions,
+          strictMode: false,
+          httpsOnly: true,
+          requireProtocol: false,
+          strictParamEncoding: true,
+          rejectDuplicateParams: true,
+          rejectDuplicatedValues: false,
+          allowUnicodeEscapes: true,
+          allowInternationalChars: true,
+          allowCredentials: true,
+          disallowEmptyParameterValues: false,
+          requireSecureProtocolForNonLocalhost: true,
+        };
+      case "relaxed":
+        return {
+          ...defaultOptions,
+          ...baseOptions,
+          strictMode: false,
+          httpsOnly: false,
+          requireProtocol: false,
+          strictParamEncoding: false,
+          rejectDuplicateParams: false,
+          rejectDuplicatedValues: false,
+          allowUnicodeEscapes: true,
+          allowInternationalChars: true,
+          allowCredentials: true,
+          allowIPAddresses: true,
+          allowLocalhost: true,
+          disallowEmptyParameterValues: false,
+          requireSecureProtocolForNonLocalhost: false,
+        };
+      default:
+        return { ...defaultOptions, ...baseOptions };
     }
   }
 }
