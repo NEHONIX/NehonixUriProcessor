@@ -1,4 +1,4 @@
-import { NehonixEncService as enc } from "./services/NehonixEnc.service";
+import NES, { NehonixEncService as enc } from "./services/NehonixEnc.service";
 import { SecurityRules as sr } from "./rules/security.rules";
 import NDS, { NehonixDecService as dec } from "./services/NehonixDec.service";
 import { DEC_FEATURE_TYPE, ENC_TYPE } from "./types";
@@ -435,6 +435,33 @@ class NehonixURIProcessor {
   static async asyncIsUrlValid(...p: Parameters<typeof ncu.asyncIsUrlValid>) {
     return await ncu.asyncIsUrlValid(...p);
   }
+
+  //v2.3.x
+
+  /**
+   * Performs multiple encodings on an input string asynchronously
+   * @param input The string to encode
+   * @param types Array of encoding types to apply
+   * @param options Configuration options for nested encoding
+   * @returns Promise resolving to object containing encoding results
+   */
+  static async encodeMultipleAsync(
+    ...p: Parameters<typeof NES.encodeMultipleAsync>
+  ) {
+    const x = await NES.encodeMultipleAsync(...p);
+    return x;
+  }
+
+  /**
+   * Performs multiple encodings on an input string synchronously
+   * @param input The string to encode
+   * @param types Array of encoding types to apply
+   * @param options Configuration options for nested encoding
+   * @returns Object containing encoding results
+   */
+  static encodeMultiple(...p: Parameters<typeof NES.encodeMultiple>) {
+    return NES.encodeMultiple(...p);
+  }
 }
 
 export { NehonixURIProcessor };
@@ -462,6 +489,6 @@ export const decodeB64 = (input: string) =>
 export * from "./integration/react/hook/REACT.ShieldHooks";
 export * from "./integration/react/provider/REACT.NehonixShield";
 export * from "./integration/react/hook/REACT.NehonixDomPlugging.hooks";
-export * from "./integration/express/Middleware/express.middleware"
+export * from "./integration/express/Middleware/express.middleware";
 export { DetectedPattern } from "./services/MaliciousPatterns.service";
 export const { detectDuplicatedValues: detectDuplicateUrlParams } = ncu;

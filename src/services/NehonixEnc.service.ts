@@ -3,7 +3,11 @@ import punycode from "punycode";
 import { NehonixCoreUtils as NCU } from "../utils/NehonixCoreUtils";
 import { htmlEntities } from "../utils/html.enties";
 import { AppLogger } from "../common/AppLogger";
-
+import {
+  EncodingResult,
+  NestedEncodingOptions,
+  NestedEncodingResponse,
+} from "../types/enc.type";
 class NES {
   /**
    * Encodes a string according to a specific encoding type
@@ -473,6 +477,176 @@ class NES {
    */
   static encodeUrl(input: string): string {
     return NES.encodePercentEncoding(input, true);
+  }
+
+  /**
+   * Performs multiple encodings on an input string synchronously
+   * @param input The string to encode
+   * @param types Array of encoding types to apply
+   * @param options Configuration options for nested encoding
+   * @returns Object containing encoding results
+   */
+  static encodeMultiple(
+    input: string,
+    types: ENC_TYPE[],
+    options: NestedEncodingOptions = {}
+  ): NestedEncodingResponse {
+    // Default options
+    const { sequential = false, includeIntermediate = true } = options;
+
+    const results: EncodingResult[] = [];
+    let currentInput = input;
+
+    // Process each encoding type
+    for (let i = 0; i < types.length; i++) {
+      const encodingType = types[i];
+
+      try {
+        // Encode the current input using the specified encoding type
+        const encodedResult = NES.encode(currentInput, encodingType);
+
+        // Store the result
+        results.push({
+          original: currentInput,
+          encoded: encodedResult,
+          type: encodingType,
+        });
+
+        // If sequential, use this result as input for the next encoding
+        if (sequential && i < types.length - 1) {
+          currentInput = encodedResult;
+        }
+      } catch (e: any) {
+        // Log the error but continue with other encodings
+        AppLogger.error(`Error encoding with ${encodingType}: ${e.message}`);
+        results.push({
+          original: currentInput,
+          encoded: `ERROR: ${e.message}`,
+          type: encodingType,
+        });
+      }
+    }
+
+    // Prepare response object
+    const response: NestedEncodingResponse = {
+      input: input,
+      results: includeIntermediate ? results : [],
+    };
+
+    // For sequential encoding, add the final result
+    if (sequential) {
+      response.finalResult =
+        results.length > 0 ? results[results.length - 1].encoded : input;
+    }
+
+    // If not including intermediate results but not sequential,
+    // we still want to include all direct encoding results
+    if (!includeIntermediate && !sequential) {
+      response.results = results;
+    }
+
+    return response;
+  }
+
+  /**
+   * Performs multiple encodings on an input string asynchronously
+   * @param input The string to encode
+   * @param types Array of encoding types to apply
+   * @param options Configuration options for nested encoding
+   * @returns Promise resolving to object containing encoding results
+   */
+  static async encodeMultipleAsync(
+    input: string,
+    types: ENC_TYPE[],
+    options: NestedEncodingOptions = {}
+  ): Promise<NestedEncodingResponse> {
+    // Default options
+    const { sequential = false, includeIntermediate = true } = options;
+
+    const results: EncodingResult[] = [];
+    let currentInput = input;
+
+    if (sequential) {
+      // For sequential processing, we need to process in order
+      for (let i = 0; i < types.length; i++) {
+        const encodingType = types[i];
+
+        try {
+          // Encode the current input using the specified encoding type
+          // Wrap in Promise.resolve to handle potential async operations
+          const encodedResult = await Promise.resolve(
+            NES.encode(currentInput, encodingType)
+          );
+
+          // Store the result
+          results.push({
+            original: currentInput,
+            encoded: encodedResult,
+            type: encodingType,
+          });
+
+          // Use this result as input for the next encoding
+          if (i < types.length - 1) {
+            currentInput = encodedResult;
+          }
+        } catch (e: any) {
+          // Log the error but continue with other encodings
+          AppLogger.error(`Error encoding with ${encodingType}: ${e.message}`);
+          results.push({
+            original: currentInput,
+            encoded: `ERROR: ${e.message}`,
+            type: encodingType,
+          });
+        }
+      }
+    } else {
+      // For parallel processing, we can process all encodings concurrently
+      const encodingPromises = types.map(async (encodingType) => {
+        try {
+          // Encode the input using the specified encoding type
+          const encodedResult = await Promise.resolve(
+            NES.encode(input, encodingType)
+          );
+
+          return {
+            original: input,
+            encoded: encodedResult,
+            type: encodingType,
+          };
+        } catch (e: any) {
+          // Log the error but continue with other encodings
+          AppLogger.error(`Error encoding with ${encodingType}: ${e.message}`);
+          return {
+            original: input,
+            encoded: `ERROR: ${e.message}`,
+            type: encodingType,
+          };
+        }
+      });
+
+      // Wait for all encodings to complete
+      results.push(...(await Promise.all(encodingPromises)));
+    }
+
+    // Prepare response object
+    const response: NestedEncodingResponse = {
+      input: input,
+      results: includeIntermediate ? results : [],
+    };
+
+    // For sequential encoding, add the final result
+    if (sequential) {
+      response.finalResult =
+        results.length > 0 ? results[results.length - 1].encoded : input;
+    }
+
+    // If not including intermediate results but not sequential,
+    // we still want to include all direct encoding results
+    if (!includeIntermediate && !sequential) {
+      response.results = results;
+    }
+
+    return response;
   }
 }
 
