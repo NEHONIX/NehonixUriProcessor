@@ -489,6 +489,6 @@ export const decodeB64 = (input: string) =>
 export * from "./integration/react/hook/REACT.ShieldHooks";
 export * from "./integration/react/provider/REACT.NehonixShield";
 export * from "./integration/react/hook/REACT.NehonixDomPlugging.hooks";
-export * from "./integration/express/Middleware/express.middleware";
+export * from "./integration/express/Middleware/exports/EXPRESS.exports";
 export { DetectedPattern } from "./services/MaliciousPatterns.service";
 export const { detectDuplicatedValues: detectDuplicateUrlParams } = ncu;
