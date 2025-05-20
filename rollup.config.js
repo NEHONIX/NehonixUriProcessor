@@ -28,19 +28,23 @@ export default [
       ...Object.keys(pkg.peerDependencies || {}),
     ],
   },
-  // CommonJS build
+  // CommonJS build - Fixed configuration
   {
     input: "src/index.ts",
     output: {
       file: "dist/index.cjs",
       format: "cjs",
       sourcemap: true,
-      exports: "named",
+      exports: "auto", // Changed from "named" to "auto"
+      esModule: false, // Added to ensure proper CJS behavior
     },
     plugins: [
       resolve(),
       commonjs(),
-      typescript({ tsconfig: "./tsconfig.json" }),
+      typescript({
+        tsconfig: "./tsconfig.json",
+        declaration: false, // Prevent duplicate declarations
+      }),
     ],
     external: [
       ...Object.keys(pkg.dependencies || {}),
@@ -55,5 +59,6 @@ export default [
       format: "es",
     },
     plugins: [dts()],
+    external: ["nehonix-uri-processor"],
   },
 ];

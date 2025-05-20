@@ -1,0 +1,49 @@
+{
+  "status": "success",
+  "metadata": {
+    "training_time": "2025-05-09 12:39:21",
+    "model_version": "v1.0",
+    "num_samples": 12000,
+    "num_features": 46,
+    "train_accuracy": 1.0,
+    "validation_accuracy": 0.9991728701406121,
+    "auc_score": 0.9999986317123915,
+    "pr_auc": 0.9999986317119235,
+    "cv_scores": [
+      0.9999999999999999,
+      1.0,
+      0.9999999999999999,
+      1.0,
+      1.0
+    ],
+    "mean_cv_score": 1.0,
+    "top_features": [
+      "avg_param_length",
+      "special_char_ratio",
+      "unusual_port",
+      "tld_length",
+      "targets_cloud_metadata",
+      "url_length_ratio",
+      "suspicious_keyword_count",
+      "subdomain_count",
+      "query_length",
+      "percent_encoded_chars"
+    ],
+    "top_importance": [
+      0.2683622828784119,
+      0.23316790736145573,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pos_class_ratio": 0.5
+  },
+  "num_samples": 12000,
+  "num_malicious": 5956,
+  "num_benign": 6044
+}

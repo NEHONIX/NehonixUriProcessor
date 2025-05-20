@@ -195,3 +195,233 @@
 2025-04-27 22:08:41 [INFO] Cross-validation completed {"cv_scores": [0.9999921874999999, 0.9999578125, 0.9999125000000001, 0.9999984375, 1.0], "mean_cv_score": 0.9999721874999998}
 2025-04-27 22:09:13 [INFO] Model trained and saved {"model_path": "microservices/models/ml_model_v1.0.joblib", "train_accuracy": 0.9995, "validation_accuracy": 0.999, "auc_score": 1.0, "pr_auc": 1.0, "training_time_sec": 1434.648419380188, "top_features": ["special_char_ratio", "avg_param_length", "subdomain_count", "domain_similarity", "param_count", "domain_length", "has_xxe", "suspicious_keyword_count", "unusual_port", "percent_encoded_chars"]}
 2025-04-27 22:09:16 [INFO] Model and scaler loaded 
+2025-05-09 08:33:23 [INFO] Starting synthetic data generation 
+2025-05-09 08:33:23 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-09 08:33:26 [ERROR] Training pipeline failed: name 'random' is not defined 
+2025-05-09 08:34:20 [INFO] Starting synthetic data generation 
+2025-05-09 08:34:20 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-09 08:34:25 [ERROR] Training pipeline failed: name 'random' is not defined 
+2025-05-09 08:35:31 [INFO] Starting synthetic data generation 
+2025-05-09 08:35:31 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-09 08:35:34 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "path_traversal": 222, "unknown": 2267, "http_response_splitting": 223, "file_upload": 144, "xxe": 164, "jwt_manipulation": 202, "command_injection": 211, "deserialization": 200, "sql_injection": 186, "xss": 249, "ssrf": 156, "ssrf_dns_rebinding": 136, "nosql_injection": 199, "ldap_injection": 210, "csrf": 231}}
+2025-05-09 08:35:34 [INFO] Enhancing training data with augmentation 
+2025-05-09 08:35:34 [INFO] Enhancing training data 
+2025-05-09 08:35:34 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-09 08:35:34 [INFO] Starting model training 
+2025-05-09 08:35:34 [INFO] Processing training data 
+2025-05-09 08:36:10 [INFO] Starting synthetic data generation 
+2025-05-09 08:36:10 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-09 08:36:15 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"xxe": 164, "unknown": 2267, "benign": 5000, "nosql_injection": 199, "ssrf": 156, "http_response_splitting": 223, "ldap_injection": 210, "jwt_manipulation": 202, "xss": 249, "csrf": 231, "command_injection": 211, "path_traversal": 222, "sql_injection": 186, "ssrf_dns_rebinding": 136, "file_upload": 144, "deserialization": 200}}
+2025-05-09 08:36:15 [INFO] Enhancing training data with augmentation 
+2025-05-09 08:36:15 [INFO] Enhancing training data 
+2025-05-09 08:36:15 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-09 08:36:15 [INFO] Starting model training 
+2025-05-09 08:36:15 [INFO] Processing training data 
+2025-05-15 07:17:22 [INFO] Model and scaler loaded 
+2025-05-15 07:18:41 [INFO] Model and scaler loaded 
+2025-05-15 07:18:41 [INFO] Model and scaler loaded 
+2025-05-15 07:18:41 [INFO] Model and scaler loaded 
+2025-05-15 07:18:42 [INFO] Model and scaler loaded 
+2025-05-15 07:18:42 [INFO] Model and scaler loaded 
+2025-05-15 07:18:42 [INFO] Model and scaler loaded 
+2025-05-15 07:18:42 [INFO] Model and scaler loaded 
+2025-05-15 07:40:55 [INFO] Starting synthetic data generation 
+2025-05-15 07:40:55 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:40:57 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"file_upload": 216, "benign": 5000, "unknown": 2408, "http_response_splitting": 193, "deserialization": 194, "xxe": 223, "csrf": 189, "sql_injection": 202, "xss": 208, "ssrf": 77, "ldap_injection": 192, "nosql_injection": 208, "command_injection": 217, "jwt_manipulation": 229, "path_traversal": 244}}
+2025-05-15 07:40:57 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:40:57 [INFO] Enhancing training data 
+2025-05-15 07:40:57 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:40:57 [INFO] Starting model training 
+2025-05-15 07:40:57 [INFO] Processing training data 
+2025-05-15 07:40:57 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 07:44:42 [INFO] Starting synthetic data generation 
+2025-05-15 07:44:42 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:44:44 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"deserialization": 194, "unknown": 2408, "benign": 5000, "xss": 208, "http_response_splitting": 193, "jwt_manipulation": 229, "csrf": 189, "command_injection": 217, "sql_injection": 202, "path_traversal": 244, "file_upload": 216, "xxe": 223, "ldap_injection": 192, "nosql_injection": 208, "ssrf": 77}}
+2025-05-15 07:44:44 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:44:44 [INFO] Enhancing training data 
+2025-05-15 07:44:44 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:44:44 [INFO] Starting model training 
+2025-05-15 07:44:44 [INFO] Processing training data 
+2025-05-15 07:44:44 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 07:44:46 [INFO] Starting synthetic data generation 
+2025-05-15 07:44:46 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:44:48 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"http_response_splitting": 193, "benign": 5000, "command_injection": 217, "unknown": 2408, "xxe": 223, "file_upload": 216, "nosql_injection": 208, "sql_injection": 202, "deserialization": 194, "jwt_manipulation": 229, "xss": 208, "ldap_injection": 192, "ssrf": 77, "csrf": 189, "path_traversal": 244}}
+2025-05-15 07:44:48 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:44:48 [INFO] Enhancing training data 
+2025-05-15 07:44:48 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:44:48 [INFO] Starting model training 
+2025-05-15 07:44:48 [INFO] Processing training data 
+2025-05-15 07:44:48 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 07:45:15 [INFO] Starting synthetic data generation 
+2025-05-15 07:45:15 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:45:16 [INFO] Starting synthetic data generation 
+2025-05-15 07:45:16 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:45:18 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"ldap_injection": 192, "xss": 208, "benign": 5000, "unknown": 2408, "xxe": 223, "http_response_splitting": 193, "deserialization": 194, "sql_injection": 202, "ssrf": 77, "path_traversal": 244, "command_injection": 217, "jwt_manipulation": 229, "csrf": 189, "file_upload": 216, "nosql_injection": 208}}
+2025-05-15 07:45:18 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:45:18 [INFO] Enhancing training data 
+2025-05-15 07:45:18 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:45:18 [INFO] Starting model training 
+2025-05-15 07:45:18 [INFO] Processing training data 
+2025-05-15 07:45:18 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 07:45:18 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "unknown": 2408, "http_response_splitting": 193, "path_traversal": 244, "csrf": 189, "sql_injection": 202, "file_upload": 216, "command_injection": 217, "xss": 208, "nosql_injection": 208, "ldap_injection": 192, "deserialization": 194, "jwt_manipulation": 229, "ssrf": 77, "xxe": 223}}
+2025-05-15 07:45:18 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:45:18 [INFO] Enhancing training data 
+2025-05-15 07:45:19 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:45:19 [INFO] Starting model training 
+2025-05-15 07:45:19 [INFO] Processing training data 
+2025-05-15 07:45:19 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 07:46:09 [INFO] Starting synthetic data generation 
+2025-05-15 07:46:09 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:46:10 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "jwt_manipulation": 229, "sql_injection": 202, "unknown": 2408, "path_traversal": 244, "ldap_injection": 192, "xxe": 223, "command_injection": 217, "deserialization": 194, "http_response_splitting": 193, "xss": 208, "file_upload": 216, "nosql_injection": 208, "csrf": 189, "ssrf": 77}}
+2025-05-15 07:46:10 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:46:10 [INFO] Enhancing training data 
+2025-05-15 07:46:11 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:46:11 [INFO] Starting model training 
+2025-05-15 07:46:11 [INFO] Processing training data 
+2025-05-15 07:46:11 [ERROR] Training pipeline failed: cannot access local variable 're' where it is not associated with a value 
+2025-05-15 07:47:10 [INFO] Starting synthetic data generation 
+2025-05-15 07:47:10 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:47:11 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "ssrf": 77, "deserialization": 194, "http_response_splitting": 193, "xss": 208, "unknown": 2408, "sql_injection": 202, "ldap_injection": 192, "nosql_injection": 208, "xxe": 223, "csrf": 189, "path_traversal": 244, "file_upload": 216, "jwt_manipulation": 229, "command_injection": 217}}
+2025-05-15 07:47:11 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:47:11 [INFO] Enhancing training data 
+2025-05-15 07:47:11 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:47:11 [INFO] Starting model training 
+2025-05-15 07:47:11 [INFO] Processing training data 
+2025-05-15 07:47:11 [ERROR] Training pipeline failed: cannot access local variable 're' where it is not associated with a value 
+2025-05-15 07:47:52 [INFO] Starting synthetic data generation 
+2025-05-15 07:47:52 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:47:54 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2408, "xxe": 223, "benign": 5000, "command_injection": 217, "http_response_splitting": 193, "ssrf": 77, "ldap_injection": 192, "csrf": 189, "nosql_injection": 208, "jwt_manipulation": 229, "xss": 208, "path_traversal": 244, "deserialization": 194, "file_upload": 216, "sql_injection": 202}}
+2025-05-15 07:47:54 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:47:54 [INFO] Enhancing training data 
+2025-05-15 07:47:54 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:47:54 [INFO] Starting model training 
+2025-05-15 07:47:54 [INFO] Processing training data 
+2025-05-15 07:47:54 [ERROR] Training pipeline failed: cannot access local variable 're' where it is not associated with a value 
+2025-05-15 07:49:09 [INFO] Starting synthetic data generation 
+2025-05-15 07:49:09 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:49:11 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "unknown": 2408, "deserialization": 194, "csrf": 189, "sql_injection": 202, "path_traversal": 244, "jwt_manipulation": 229, "http_response_splitting": 193, "file_upload": 216, "ldap_injection": 192, "nosql_injection": 208, "command_injection": 217, "xxe": 223, "xss": 208, "ssrf": 77}}
+2025-05-15 07:49:11 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:49:11 [INFO] Enhancing training data 
+2025-05-15 07:49:12 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:49:12 [INFO] Starting model training 
+2025-05-15 07:49:12 [INFO] Processing training data 
+2025-05-15 07:49:12 [ERROR] Training pipeline failed: cannot access local variable 're' where it is not associated with a value 
+2025-05-15 07:49:52 [INFO] Starting synthetic data generation 
+2025-05-15 07:49:52 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:49:55 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "unknown": 2408, "deserialization": 194, "ssrf": 77, "file_upload": 216, "path_traversal": 244, "xxe": 223, "xss": 208, "command_injection": 217, "nosql_injection": 208, "http_response_splitting": 193, "ldap_injection": 192, "csrf": 189, "jwt_manipulation": 229, "sql_injection": 202}}
+2025-05-15 07:49:55 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:49:55 [INFO] Enhancing training data 
+2025-05-15 07:49:55 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:49:55 [INFO] Starting model training 
+2025-05-15 07:49:55 [INFO] Processing training data 
+2025-05-15 07:49:55 [ERROR] Training pipeline failed: cannot access local variable 're' where it is not associated with a value 
+2025-05-15 07:50:04 [INFO] Starting synthetic data generation 
+2025-05-15 07:50:04 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:50:06 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"jwt_manipulation": 229, "xss": 208, "sql_injection": 202, "benign": 5000, "unknown": 2408, "csrf": 189, "file_upload": 216, "http_response_splitting": 193, "command_injection": 217, "path_traversal": 244, "xxe": 223, "deserialization": 194, "ssrf": 77, "nosql_injection": 208, "ldap_injection": 192}}
+2025-05-15 07:50:06 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:50:06 [INFO] Enhancing training data 
+2025-05-15 07:50:06 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:50:06 [INFO] Starting model training 
+2025-05-15 07:50:06 [INFO] Processing training data 
+2025-05-15 07:50:06 [ERROR] Training pipeline failed: cannot access local variable 're' where it is not associated with a value 
+2025-05-15 07:55:30 [INFO] Starting synthetic data generation 
+2025-05-15 07:55:30 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:55:32 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "csrf": 189, "unknown": 2408, "sql_injection": 202, "nosql_injection": 208, "http_response_splitting": 193, "xxe": 223, "file_upload": 216, "path_traversal": 244, "command_injection": 217, "jwt_manipulation": 229, "deserialization": 194, "ldap_injection": 192, "ssrf": 77, "xss": 208}}
+2025-05-15 07:55:32 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:55:32 [INFO] Enhancing training data 
+2025-05-15 07:55:32 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:55:32 [INFO] Starting model training 
+2025-05-15 07:55:32 [INFO] Processing training data 
+2025-05-15 07:57:38 [INFO] Starting synthetic data generation 
+2025-05-15 07:57:38 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:57:40 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2408, "csrf": 189, "file_upload": 216, "benign": 5000, "deserialization": 194, "sql_injection": 202, "nosql_injection": 208, "path_traversal": 244, "command_injection": 217, "jwt_manipulation": 229, "ldap_injection": 192, "xss": 208, "xxe": 223, "http_response_splitting": 193, "ssrf": 77}}
+2025-05-15 07:57:40 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:57:40 [INFO] Enhancing training data 
+2025-05-15 07:57:40 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:57:40 [INFO] Starting model training 
+2025-05-15 07:57:40 [INFO] Processing training data 
+2025-05-15 07:57:45 [INFO] Starting synthetic data generation 
+2025-05-15 07:57:45 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 07:57:47 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "nosql_injection": 208, "unknown": 2408, "path_traversal": 244, "command_injection": 217, "sql_injection": 202, "xss": 208, "http_response_splitting": 193, "ldap_injection": 192, "jwt_manipulation": 229, "xxe": 223, "ssrf": 77, "deserialization": 194, "file_upload": 216, "csrf": 189}}
+2025-05-15 07:57:47 [INFO] Enhancing training data with augmentation 
+2025-05-15 07:57:47 [INFO] Enhancing training data 
+2025-05-15 07:57:47 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 07:57:47 [INFO] Starting model training 
+2025-05-15 07:57:47 [INFO] Processing training data 
+2025-05-15 08:33:07 [INFO] Starting synthetic data generation 
+2025-05-15 08:33:07 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 08:33:09 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2408, "benign": 5000, "nosql_injection": 208, "jwt_manipulation": 229, "xss": 208, "sql_injection": 202, "command_injection": 217, "xxe": 223, "deserialization": 194, "csrf": 189, "path_traversal": 244, "file_upload": 216, "ldap_injection": 192, "ssrf": 77, "http_response_splitting": 193}}
+2025-05-15 08:33:09 [INFO] Enhancing training data with augmentation 
+2025-05-15 08:33:09 [INFO] Enhancing training data 
+2025-05-15 08:33:09 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 08:33:09 [INFO] Starting model training 
+2025-05-15 08:33:09 [INFO] Processing training data 
+2025-05-15 08:49:10 [INFO] Starting synthetic data generation 
+2025-05-15 08:49:10 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 08:49:12 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2435, "path_traversal": 223, "benign": 5000, "http_response_splitting": 212, "jwt_manipulation": 219, "xxe": 212, "file_upload": 192, "xss": 214, "ssrf": 73, "sql_injection": 204, "command_injection": 202, "csrf": 184, "ldap_injection": 223, "nosql_injection": 201, "deserialization": 206}}
+2025-05-15 08:49:12 [INFO] Enhancing training data with augmentation 
+2025-05-15 08:49:12 [INFO] Enhancing training data 
+2025-05-15 08:49:12 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 08:49:12 [INFO] Starting model training 
+2025-05-15 08:49:12 [INFO] Processing training data 
+2025-05-15 08:49:53 [INFO] Starting synthetic data generation 
+2025-05-15 08:49:53 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 08:49:55 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"xss": 214, "benign": 5000, "unknown": 2435, "xxe": 212, "path_traversal": 223, "nosql_injection": 201, "file_upload": 192, "http_response_splitting": 212, "ldap_injection": 223, "deserialization": 206, "command_injection": 202, "csrf": 184, "sql_injection": 204, "jwt_manipulation": 219, "ssrf": 73}}
+2025-05-15 08:49:55 [INFO] Enhancing training data with augmentation 
+2025-05-15 08:49:55 [INFO] Enhancing training data 
+2025-05-15 08:49:55 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 08:49:55 [INFO] Starting model training 
+2025-05-15 08:49:55 [INFO] Processing training data 
+2025-05-15 08:51:03 [INFO] Starting synthetic data generation 
+2025-05-15 08:51:03 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 08:51:03 [ERROR] Training pipeline failed: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (5,) + inhomogeneous part. 
+2025-05-15 08:55:56 [INFO] Starting synthetic data generation 
+2025-05-15 08:55:56 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 08:55:57 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2435, "nosql_injection": 201, "benign": 5000, "path_traversal": 223, "sql_injection": 204, "http_response_splitting": 212, "deserialization": 206, "xxe": 212, "command_injection": 202, "jwt_manipulation": 219, "xss": 214, "csrf": 184, "ldap_injection": 223, "file_upload": 192, "ssrf": 73}}
+2025-05-15 08:55:57 [INFO] Enhancing training data with augmentation 
+2025-05-15 08:55:57 [INFO] Enhancing training data 
+2025-05-15 08:55:58 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 08:55:58 [INFO] Starting model training 
+2025-05-15 08:55:58 [INFO] Processing training data 
+2025-05-15 08:55:58 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 08:56:33 [INFO] Starting synthetic data generation 
+2025-05-15 08:56:33 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 08:56:35 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2435, "benign": 5000, "ldap_injection": 223, "command_injection": 202, "http_response_splitting": 212, "xss": 214, "xxe": 212, "sql_injection": 204, "file_upload": 192, "csrf": 184, "path_traversal": 223, "deserialization": 206, "jwt_manipulation": 219, "nosql_injection": 201, "ssrf": 73}}
+2025-05-15 08:56:35 [INFO] Enhancing training data with augmentation 
+2025-05-15 08:56:35 [INFO] Enhancing training data 
+2025-05-15 08:56:35 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 08:56:35 [INFO] Starting model training 
+2025-05-15 08:56:35 [INFO] Processing training data 
+2025-05-15 09:01:15 [INFO] Starting synthetic data generation 
+2025-05-15 09:01:15 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 09:01:19 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "ldap_injection": 216, "unknown": 2462, "http_response_splitting": 215, "jwt_manipulation": 217, "xss": 214, "xxe": 207, "file_upload": 189, "ssrf": 72, "nosql_injection": 205, "sql_injection": 199, "path_traversal": 224, "command_injection": 198, "csrf": 173, "deserialization": 209}}
+2025-05-15 09:01:19 [INFO] Enhancing training data with augmentation 
+2025-05-15 09:01:19 [INFO] Enhancing training data 
+2025-05-15 09:01:19 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 09:01:19 [INFO] Starting model training 
+2025-05-15 09:01:19 [INFO] Processing training data 
+2025-05-15 09:01:20 [ERROR] Training pipeline failed: cannot access local variable 'urlparse' where it is not associated with a value 
+2025-05-15 09:02:43 [INFO] Starting synthetic data generation 
+2025-05-15 09:02:43 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 09:02:45 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"benign": 5000, "unknown": 2435, "sql_injection": 204, "file_upload": 192, "nosql_injection": 201, "command_injection": 202, "http_response_splitting": 212, "csrf": 184, "ldap_injection": 223, "path_traversal": 223, "xxe": 212, "xss": 214, "deserialization": 206, "jwt_manipulation": 219, "ssrf": 73}}
+2025-05-15 09:02:45 [INFO] Enhancing training data with augmentation 
+2025-05-15 09:02:45 [INFO] Enhancing training data 
+2025-05-15 09:02:45 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 09:02:45 [INFO] Starting model training 
+2025-05-15 09:02:45 [INFO] Processing training data 
+2025-05-15 09:04:58 [INFO] Starting synthetic data generation 
+2025-05-15 09:04:58 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 09:05:00 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2435, "benign": 5000, "deserialization": 206, "ldap_injection": 223, "xxe": 212, "csrf": 184, "file_upload": 192, "sql_injection": 204, "jwt_manipulation": 219, "xss": 214, "command_injection": 202, "path_traversal": 223, "http_response_splitting": 212, "nosql_injection": 201, "ssrf": 73}}
+2025-05-15 09:05:00 [INFO] Enhancing training data with augmentation 
+2025-05-15 09:05:00 [INFO] Enhancing training data 
+2025-05-15 09:05:00 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 09:05:00 [INFO] Starting model training 
+2025-05-15 09:05:00 [INFO] Processing training data 
+2025-05-15 10:39:45 [INFO] Starting synthetic data generation 
+2025-05-15 10:39:45 [INFO] Generating synthetic training data {"num_samples": 10000, "malicious_ratio": 0.5}
+2025-05-15 10:39:47 [INFO] Synthetic data generation complete {"benign_count": 5000, "malicious_count": 5000, "attack_type_distribution": {"unknown": 2435, "benign": 5000, "http_response_splitting": 212, "file_upload": 192, "xss": 214, "deserialization": 206, "ldap_injection": 223, "jwt_manipulation": 219, "nosql_injection": 201, "path_traversal": 223, "sql_injection": 204, "command_injection": 202, "ssrf": 73, "csrf": 184, "xxe": 212}}
+2025-05-15 10:39:47 [INFO] Enhancing training data with augmentation 
+2025-05-15 10:39:47 [INFO] Enhancing training data 
+2025-05-15 10:39:47 [INFO] Training data enhanced {"original_size": 10000, "augmented_size": 12000, "augmented_count": 2000}
+2025-05-15 10:39:47 [INFO] Starting model training 
+2025-05-15 10:39:47 [INFO] Processing training data 

@@ -492,3 +492,8 @@ export * from "./integration/react/hook/REACT.NehonixDomPlugging.hooks";
 export * from "./integration/express/Middleware/exports/EXPRESS.exports";
 export { DetectedPattern } from "./services/MaliciousPatterns.service";
 export const { detectDuplicatedValues: detectDuplicateUrlParams } = ncu;
+
+//v2.4.x
+export * from "./shield/Core/NSHParser";
+export * from "./shield/Core/NehonixShield";
+export * from "./shield/Core/types/ShieldTypes";

@@ -1,0 +1,310 @@
+{
+  "status": "success",
+  "model_version": "v1.0",
+  "prediction_time_ms": 1133.86,
+  "model_drift": "unknown",
+  "probabilities": [
+    0.00010586355117202051,
+    0.0001406003489707532,
+    0.00014654538967223465,
+    9.106780671976437e-05,
+    0.005126784532486785,
+    0.9986163813175298,
+    0.9964634862274089,
+    0.9999198913574219,
+    0.9999529520670573,
+    0.999820040104001
+  ],
+  "detailed_results": [
+    {
+      "input": "https://stackoverflow.com/terms?lang=en",
+      "probability": 0.00010586355117202051,
+      "classification": "benign",
+      "confidence": 0.999894136448828,
+      "threat_types": [
+        "command_injection",
+        "ssrf",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "char_diversity_ratio",
+          "contribution": 0.020213577596444286,
+          "value": 0.5641025641025641
+        },
+        {
+          "name": "is_common_tld",
+          "contribution": 0.005542567456357054,
+          "value": 1.0
+        },
+        {
+          "name": "has_command_injection",
+          "contribution": 0.0011545731058510893,
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "input": "https://spotify.com/help?lang=en",
+      "probability": 0.0001406003489707532,
+      "classification": "benign",
+      "confidence": 0.9998593996510292,
+      "threat_types": [
+        "ssrf",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "char_diversity_ratio",
+          "contribution": 0.03222118764455019,
+          "value": 0.625
+        },
+        {
+          "name": "is_common_tld",
+          "contribution": 0.005542567456357054,
+          "value": 1.0
+        },
+        {
+          "name": "url_length_ratio",
+          "contribution": 0.0009023294329087389,
+          "value": 0.15625
+        }
+      ]
+    },
+    {
+      "input": "https://microsoft.com/?lang=en",
+      "probability": 0.00014654538967223465,
+      "classification": "benign",
+      "confidence": 0.9998534546103278,
+      "threat_types": [
+        "ssrf",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "domain_similarity",
+          "contribution": 0.18088143603809465,
+          "value": 1.0
+        },
+        {
+          "name": "char_diversity_ratio",
+          "contribution": 0.04043692757302855,
+          "value": 0.6666666666666666
+        },
+        {
+          "name": "is_common_tld",
+          "contribution": 0.005542567456357054,
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "input": "https://example.com/support?filter=recent",
+      "probability": 9.106780671976437e-05,
+      "classification": "benign",
+      "confidence": 0.9999089321932803,
+      "threat_types": [
+        "ssrf",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "domain_similarity",
+          "contribution": 0.016036641426496304,
+          "value": 0.25
+        },
+        {
+          "name": "char_diversity_ratio",
+          "contribution": 0.009978581062593072,
+          "value": 0.5121951219512195
+        },
+        {
+          "name": "is_common_tld",
+          "contribution": 0.005542567456357054,
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "input": "http://zoom.us/faq?page=1",
+      "probability": 0.005126784532486785,
+      "classification": "benign",
+      "confidence": 0.9948732154675132,
+      "threat_types": [
+        "ssrf",
+        "xxe",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "char_diversity_ratio",
+          "contribution": 0.05884017329089946,
+          "value": 0.76
+        },
+        {
+          "name": "has_xxe",
+          "contribution": 0.004269577284551725,
+          "value": 1.0
+        },
+        {
+          "name": "url_length_ratio",
+          "contribution": 0.0011224632541117303,
+          "value": 0.16
+        }
+      ]
+    },
+    {
+      "input": "http://secure.customer-support.ru/get?url=h%74t%70://1%369.254.169.254/lat%65%73t/m%65%74a-data/",
+      "probability": 0.9986163813175298,
+      "classification": "malicious",
+      "confidence": 0.9986163813175298,
+      "threat_types": [
+        "path_traversal",
+        "command_injection",
+        "ssrf",
+        "xxe",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "avg_param_length",
+          "contribution": 0.1355327838499333,
+          "value": 1.0
+        },
+        {
+          "name": "query_length",
+          "contribution": 0.09357406500790806,
+          "value": 1.0
+        },
+        {
+          "name": "length",
+          "contribution": 0.04937915509843423,
+          "value": 96
+        }
+      ]
+    },
+    {
+      "input": "http://banking-online.com/api/data?data=BeanUtils\\.(?:populate|copyProperties)|PropertyUtils",
+      "probability": 0.9964634862274089,
+      "classification": "malicious",
+      "confidence": 0.9964634862274089,
+      "threat_types": [
+        "xss",
+        "command_injection",
+        "deserialization",
+        "ssrf",
+        "xxe",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "avg_param_length",
+          "contribution": 0.1355327838499333,
+          "value": 1.0
+        },
+        {
+          "name": "consecutive_special_chars",
+          "contribution": 0.12983423377446426,
+          "value": 1.0
+        },
+        {
+          "name": "query_length",
+          "contribution": 0.09357406500790806,
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "input": "http://account.banking-online.ru/index.php?id=<\\s*form\\s+[^>]*?method\\s*=\\s*['\\\"]?POST['\\\"]?[^>]*?>",
+      "probability": 0.9999198913574219,
+      "classification": "malicious",
+      "confidence": 0.9999198913574219,
+      "threat_types": [
+        "xss",
+        "path_traversal",
+        "command_injection",
+        "ssrf",
+        "xxe",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "special_char_ratio",
+          "contribution": 0.1569579732193911,
+          "value": 0.3
+        },
+        {
+          "name": "avg_param_length",
+          "contribution": 0.1355327838499333,
+          "value": 1.0
+        },
+        {
+          "name": "consecutive_special_chars",
+          "contribution": 0.12983423377446426,
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "input": "http://update.customer-support.pw/search?q=<[\\s\\S]*?div[^>]*?\\s+style\\s*=\\s*(['\\\"]|\\&\\#[xX]?[0-9a-fA-F]+;?|\\\\[0-9a-fA-F]{2}|\\\\u[%30-9a-fA-F]{4})\\s*bac%6b%67r%6fund-image:\\s*url\\s*\\(\\s*javascri%70t:#payload",
+      "probability": 0.9999529520670573,
+      "classification": "malicious",
+      "confidence": 0.9999529520670573,
+      "threat_types": [
+        "xss",
+        "command_injection",
+        "deserialization",
+        "ssrf",
+        "xxe",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "length",
+          "contribution": 0.32817146264760966,
+          "value": 205
+        },
+        {
+          "name": "entropy",
+          "contribution": 0.17729360775810027,
+          "value": 5.418203733318878
+        },
+        {
+          "name": "special_char_ratio",
+          "contribution": 0.1569579732193911,
+          "value": 0.3
+        }
+      ]
+    },
+    {
+      "input": "http://login.login-secure.com/proxy?u%72l=goph%65%72://1%327.0.0.%31:22/_test#exec",
+      "probability": 0.999820040104001,
+      "classification": "malicious",
+      "confidence": 0.999820040104001,
+      "threat_types": [
+        "path_traversal",
+        "command_injection",
+        "ssrf",
+        "xxe",
+        "ssrf_dns_rebinding"
+      ],
+      "top_features": [
+        {
+          "name": "avg_param_length",
+          "contribution": 0.1355327838499333,
+          "value": 1.0
+        },
+        {
+          "name": "query_length",
+          "contribution": 0.09357406500790806,
+          "value": 1.0
+        },
+        {
+          "name": "entropy",
+          "contribution": 0.05357084327124309,
+          "value": 4.771121487673061
+        }
+      ]
+    }
+  ]
+}
