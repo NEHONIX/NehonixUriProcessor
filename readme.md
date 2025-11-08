@@ -1,13 +1,13 @@
->Warning: Deprecated Library Notice
+>**⚠️Warning: Deprecated Library Notice**
 
-The library previously known as NehonixUriProcessor will be deprecated soon.
+>The library previously known as NehonixUriProcessor will be deprecated soon.
 
-We encourage all users to migrate to the new and improved StruLink library, which offers enhanced URL and string encoding/decoding, validation, and security analysis features while maintaining a lightweight dependency footprint.
+>We encourage all users to migrate to the new and improved StruLink library, which offers enhanced URL and string encoding/decoding, validation, and security analysis features while maintaining a lightweight dependency footprint.
 
-You can find the official StruLink repository here:
+>You can find the official StruLink repository here:
 https://github.com/Nehonix-Team/StruLink
 
-Starting December 2025, NehonixUriProcessor will no longer receive updates or support. Please update your projects accordingly to benefit from the continued improvements and active maintenance provided by StruLink.
+>Starting December 2025, NehonixUriProcessor will no longer receive updates or support. Please update your projects accordingly to benefit from the continued improvements and active maintenance provided by StruLink.
 
 # NehonixURIProcessor
 
