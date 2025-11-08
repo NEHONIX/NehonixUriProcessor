@@ -1,3 +1,14 @@
+> Warning: Deprecated Library Notice
+
+The library previously known as NehonixUriProcessor will be deprecated soon.
+
+We encourage all users to migrate to the new and improved StruLink library, which offers enhanced URL and string encoding/decoding, validation, and security analysis features while maintaining a lightweight dependency footprint.
+
+You can find the official StruLink repository here:
+https://github.com/Nehonix-Team/StruLink
+
+Starting December 2025, NehonixUriProcessor will no longer receive updates or support. Please update your projects accordingly to benefit from the continued improvements and active maintenance provided by StruLink.
+
 # NehonixURIProcessor
 
 A comprehensive TypeScript library for detecting, decoding, and encoding various URI encoding schemes. This utility is designed for security testing, web application penetration testing, and analyzing potential attacks, with powerful auto-detection and decoding capabilities.
