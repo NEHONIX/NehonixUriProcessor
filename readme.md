@@ -1,4 +1,4 @@
-> Warning: Deprecated Library Notice
+>Warning: Deprecated Library Notice
 
 The library previously known as NehonixUriProcessor will be deprecated soon.
 
